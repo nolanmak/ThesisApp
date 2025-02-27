@@ -7,7 +7,86 @@ import { Plus, Filter, RefreshCw, Save, Trash2 } from 'lucide-react';
 import { cache, CACHE_KEYS } from '../services/cache';
 
 // Default prompt for LLM instructions
-const DEFAULT_PROMPT = "You will receive a body of text containing a company's financial report and historical financial metrics. Your task is to: 1. **Extract Key Financial Metrics:** - Revenue for most recent quarter - GAAP EPS for most recent quarter - Non-GAAP EPS for most recent quarter - Forward guidance for revenue and margins for most recent quarter 2. **Compare Metrics:** Provide these metrics in the following format: - \"Revenue: $X billion\" - \"GAAP EPS: $X\" - \"Non-GAAP EPS: $X\" - \"Forward Guidance: Revenue: $X - $Y billion; Non-GAAP Gross Margin: X% - Y%\" 3. **Classify Sentiment:** - Identify forward guidance statements that could impact future performance. - Classify them as: - \"Bullish\" if they indicate growth, expansion, or optimistic outlook. - \"Bearish\" if they indicate contraction, risks, or cautious guidance. - \"Neutral\" if guidance is stable or lacks clear directional information. 4. **Output Structure:** Produce the output as a JSON object with the following structure. If there are not ranges for forward guidance, provide the same number twice: { \"metrics\": { \"revenue_billion\": X.XX, \"gaap_eps\": X.XX, \"non_gaap_eps\": X.XX, \"forward_guidance\": { \"revenue_billion_range\": [X.XX, Y.YY], \"non_gaap_gross_margin_range\": [X, Y], \"non_gaap_operating_margin_range\": [X, Y] } }, \"sentiment_snippets\": [ {\"snippet\": \"Text excerpt here\", \"classification\": \"Bullish/Bearish/Neutral\"} ] } 5. **Highlight Context:** Include the exact text excerpts as \"snippets\" from the report that support each sentiment classification. Pass this JSON output to the Python function for comparison.";
+const DEFAULT_PROMPT = `# Metric Mapping Definition:
+            #   Revenue -> revenue_billion
+            #   Transaction Revenue -> transaction_revenue_billion
+            #   Subscription Revenue -> subscription_revenue_billion
+            #   Gross Profit -> gross_profit_billion
+            #   Net Income -> net_income_billion
+            #   Adjusted Ebitda -> adj_ebitda_billion
+            #   Non Gaap Net Income -> non_gaap_net_income_billion
+            #   Free Cash Flow -> free_cash_flow_billion
+            #
+            # All numerical values provided in millions should be converted to billions by dividing by 1000 and formatted to two decimal places.
+
+            You will receive a body of text containing a company's financial report and historical financial metrics. Your task is to:
+
+            1. **Extract Financial Metrics:**
+            - Identify and extract every financial metric mentioned in the report according to the mapping above.
+            - Explicitly differentiate between **current quarter metrics** and **full year metrics** if both are present. For each metric, capture its value under either "current_quarter" or "full_year" in the output.
+            - Additionally, extract any forward guidance metrics and differentiate them into:
+                    - **Next Quarter Forward Guidance**
+                    - **Fiscal Year Forward Guidance**
+                For each forward guidance metric, if only a single value is provided, output an array with that value repeated.
+            - **Important:** When outputting any range values (such as forward guidance), output a valid JSON array with exactly two numeric elements separated by a comma. For example, if the value is 0.18, the output must be \`[0.18, 0.18]\` (ensure there is a comma between the numbers).
+            - Convert large metric values (provided in millions) to billions format.
+
+            2. **Compare Metrics:**
+            - When historical data is available, compare each current quarter and full year metric with its corresponding historical metric.
+            - Ensure that the keys match exactly. For example, if the report metric is "revenue_billion" under "current_quarter", compare it with the historical metric "current_revenue_billion".
+
+            3. **Classify Sentiment:**
+            - Identify any forward guidance statements or excerpts that may impact future performance.
+            - Classify these excerpts as:
+                - "Bullish" if they suggest growth, expansion, or an optimistic outlook.
+                - "Bearish" if they imply contraction, risk, or a cautious tone.
+                - "Neutral" if they are ambiguous or lack clear directional sentiment.
+            - Include the exact text excerpts (snippets) that support each sentiment classification.
+
+            4. **Output Structure:**
+            - Produce the output as a JSON object with the following structure. For any metrics representing ranges (e.g., forward guidance), if only a single value is provided, output that value twice in the array.
+            {
+                "metrics": {
+                    "current_quarter": {
+                        "<metric_key>": <value>,
+                        ...
+                    },
+                    "full_year": {
+                        "<metric_key>": <value>,
+                        ...
+                    },
+                    "forward_guidance": {
+                        "next_quarter": {
+                            "<metric_key>_range": [<lower>, <upper>],
+                            ...
+                        },
+                        "fiscal_year": {
+                            "<metric_key>_range": [<lower>, <upper>],
+                            ...
+                        }
+                    }
+                },
+                "comparisons": {
+                    "current_quarter": {
+                        "<metric_key>": "Current: $X vs Historical: $Y",
+                        ...
+                    },
+                    "full_year": {
+                        "<metric_key>": "Full Year: $X vs Historical: $Y",
+                        ...
+                    }
+                },
+                "sentiment_snippets": [
+                    {"snippet": "Text excerpt here", "classification": "Bullish/Bearish/Neutral"}
+                ]
+            }
+
+            5. **Highlight Context:**
+            - Include the exact text excerpts as "snippets" from the report that support each sentiment classification.
+            - Ignore standard legal language.
+
+            **Output Requirement:**
+            - The entire output must be valid JSON. Output the JSON in a code block (using triple backticks) to ensure proper formatting.`;
 
 // Helper functions for base64 encoding/decoding
 const encodeBase64 = (str: string): string => {
@@ -433,7 +512,7 @@ const CompanyConfig: React.FC = () => {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <label htmlFor="llm_instructions.system" className="block text-sm font-medium text-gray-700">
-                      System Prompt (Decoded for Editing)
+                      System Prompt
                     </label>
                     <button
                       type="button"
@@ -445,13 +524,10 @@ const CompanyConfig: React.FC = () => {
                   </div>
                   <textarea
                     id="llm_instructions.system"
-                    rows={10}
+                    rows={20}
                     {...register('llm_instructions.system', { required: 'System prompt is required' })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm font-mono"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm font-mono min-h-[500px]"
                   />
-                  <p className="mt-1 text-xs text-gray-500">
-                    This prompt will be base64 encoded when saved to the database.
-                  </p>
                   {errors.llm_instructions?.system && (
                     <p className="mt-1 text-sm text-red-600">{errors.llm_instructions.system.message}</p>
                   )}
