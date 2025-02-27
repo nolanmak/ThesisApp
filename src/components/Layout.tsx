@@ -23,8 +23,8 @@ const Layout: React.FC = () => {
           <ul className="space-y-1">
           <li>
               <Link
-                to="/messages"
-                className={`flex items-center px-4 py-3 rounded-md transition-colors duration-150 ease-in-out ${isActive('/messages')}`}
+                to="/"
+                className={`flex items-center px-4 py-3 rounded-md transition-colors duration-150 ease-in-out ${isActive('/')}`}
               >
                 <MessageSquare className="mr-3" size={18} />
                 <span>Feed</span>
@@ -32,8 +32,8 @@ const Layout: React.FC = () => {
             </li>
             <li>
               <Link
-                to="/"
-                className={`flex items-center px-4 py-3 rounded-md transition-colors duration-150 ease-in-out ${isActive('/')}`}
+                to="/calendar"
+                className={`flex items-center px-4 py-3 rounded-md transition-colors duration-150 ease-in-out ${isActive('/calendar')}`}
               >
                 <Calendar className="mr-3" size={18} />
                 <span>Calendar</span>
