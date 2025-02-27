@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Database, BarChart2, Settings, Calendar } from 'lucide-react';
+import { Database, BarChart2, Settings, Calendar, MessageSquare } from 'lucide-react';
 
 const Layout: React.FC = () => {
   const location = useLocation();
@@ -21,6 +21,15 @@ const Layout: React.FC = () => {
         </div>
         <nav className="mt-6 px-2">
           <ul className="space-y-1">
+          <li>
+              <Link
+                to="/messages"
+                className={`flex items-center px-4 py-3 rounded-md transition-colors duration-150 ease-in-out ${isActive('/messages')}`}
+              >
+                <MessageSquare className="mr-3" size={18} />
+                <span>Feed</span>
+              </Link>
+            </li>
             <li>
               <Link
                 to="/"

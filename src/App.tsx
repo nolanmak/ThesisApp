@@ -7,6 +7,7 @@ import Layout from './components/Layout';
 import EarningsCalendar from './components/EarningsCalendar';
 import HistoricalMetrics from './components/HistoricalMetrics';
 import CompanyConfig from './components/CompanyConfig';
+import Messages from './components/Messages';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route index element={<EarningsCalendar />} />
           <Route path="historical-metrics" element={<HistoricalMetrics />} />
           <Route path="company-config" element={<CompanyConfig />} />
+          <Route path="messages" element={<Messages />} />
         </Route>
       </Routes>
     </Router>

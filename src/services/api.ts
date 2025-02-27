@@ -1,4 +1,4 @@
-import { EarningsItem, HistoricalMetrics, CompanyConfig } from '../types';
+import { EarningsItem, HistoricalMetrics, CompanyConfig, Message } from '../types';
 import { cache, CACHE_KEYS } from './cache';
 
 // API Configuration from environment variables
@@ -10,6 +10,9 @@ const EARNINGS_API_KEY = import.meta.env.VITE_EARNINGS_API_KEY;
 
 const CONFIG_API_BASE_URL = import.meta.env.VITE_CONFIG_API_BASE_URL;
 const CONFIG_API_KEY = import.meta.env.VITE_CONFIG_API_KEY;
+
+const MESSAGES_API_BASE_URL = import.meta.env.VITE_MESSAGES_API_BASE_URL;
+const MESSAGES_API_KEY = import.meta.env.VITE_MESSAGES_API_KEY;
 
 // Cache expiry times (in milliseconds)
 const CACHE_EXPIRY = {
@@ -37,6 +40,87 @@ const fetchWithAuth = async (url: string, apiKey: string, options: RequestInit =
   }
 
   return response.json();
+};
+
+export const getMessages = async (): Promise<Message[]> => {
+  const cacheKey = CACHE_KEYS.MESSAGES;
+  const cachedMessages = cache.get<Message[]>(cacheKey);
+  
+  if (cachedMessages) {
+    return cachedMessages;
+  }
+  
+  try {
+    const url = `${MESSAGES_API_BASE_URL}/messages`;
+    const response = await fetchWithAuth(url, MESSAGES_API_KEY);
+    const messages = await response.json();
+    
+    cache.set(cacheKey, messages, CACHE_EXPIRY.SHORT);
+    return messages;
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    return [];
+  }
+};
+
+export const getMessageById = async (id: string): Promise<Message | null> => {
+  try {
+    const url = `${MESSAGES_API_BASE_URL}/messages/${id}`;
+    const response = await fetchWithAuth(url, MESSAGES_API_KEY);
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null;
+      }
+      throw new Error(`Failed to fetch message: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error(`Error fetching message with ID ${id}:`, error);
+    return null;
+  }
+};
+
+export const markMessageAsRead = async (id: string): Promise<boolean> => {
+  try {
+    const url = `${MESSAGES_API_BASE_URL}/messages/${id}/read`;
+    const response = await fetchWithAuth(url, MESSAGES_API_KEY, {
+      method: 'PATCH',
+      body: JSON.stringify({ is_read: true })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to mark message as read: ${response.statusText}`);
+    }
+    
+    // Clear the messages cache to ensure fresh data on next fetch
+    cache.delete(CACHE_KEYS.MESSAGES);
+    return true;
+  } catch (error) {
+    console.error(`Error marking message ${id} as read:`, error);
+    return false;
+  }
+};
+
+export const deleteMessage = async (id: string): Promise<boolean> => {
+  try {
+    const url = `${MESSAGES_API_BASE_URL}/messages/${id}`;
+    const response = await fetchWithAuth(url, MESSAGES_API_KEY, {
+      method: 'DELETE'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to delete message: ${response.statusText}`);
+    }
+    
+    // Clear the messages cache to ensure fresh data on next fetch
+    cache.delete(CACHE_KEYS.MESSAGES);
+    return true;
+  } catch (error) {
+    console.error(`Error deleting message ${id}:`, error);
+    return false;
+  }
 };
 
 // Earnings Items API

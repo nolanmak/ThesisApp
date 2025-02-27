@@ -18,6 +18,17 @@ export interface HistoricalMetrics {
   next_quarter_sales_estimate_millions: number;
 }
 
+export interface Message {
+  id: string;
+  subject: string;
+  content: string;
+  timestamp: string;
+  is_read: boolean;
+  source?: string;
+  priority?: 'low' | 'normal' | 'high';
+  category?: string;
+}
+
 export interface PollingConfig {
   interval: number;
   max_attempts: number;

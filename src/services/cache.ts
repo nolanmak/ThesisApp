@@ -75,6 +75,7 @@ export const CACHE_KEYS = {
   EARNINGS_ITEMS: 'earnings_items',
   HISTORICAL_METRICS: 'historical_metrics',
   COMPANY_CONFIGS: 'company_configs',
+  MESSAGES: 'messages',
   COMPANY_CONFIG: (ticker: string) => `company_config_${ticker}`,
   HISTORICAL_METRICS_BY_TICKER_DATE: (ticker: string, date: string) => `historical_metrics_${ticker}_${date}`
 };
