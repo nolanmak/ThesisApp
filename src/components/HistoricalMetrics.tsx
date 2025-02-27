@@ -107,7 +107,7 @@ const HistoricalMetrics: React.FC = () => {
           </button>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-blue-700"
           >
             <Plus size={16} className="mr-1" />
             Add Metrics
