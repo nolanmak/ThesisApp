@@ -4,6 +4,23 @@ import { getMessages, deleteMessage } from '../services/api';
 import { Message } from '../types';
 import { RefreshCw, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 
+// Function to convert UTC to Eastern Time (EST/EDT)
+const convertToEasternTime = (utcTimestamp: string): string => {
+  const date = new Date(utcTimestamp);
+  
+  // Format the date to Eastern Time
+  return date.toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true
+  });
+};
+
 const Messages: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,7 +154,7 @@ const Messages: React.FC = () => {
               {isExpanded(message.message_id) && (
                 <>
                   <div className="flex items-center text-sm text-neutral-500 mt-3 mb-3">
-                    <span>{new Date(message.timestamp).toLocaleString()}</span>
+                    <span>{convertToEasternTime(message.timestamp)}</span>
                   </div>
                   <div className="text-neutral-700 whitespace-pre-wrap markdown-content">
                     {message.discord_message}
