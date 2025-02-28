@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { getMessages, deleteMessage } from '../services/api';
+import { getMessages } from '../services/api';
 import { Message } from '../types';
-import { RefreshCw, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 
 // Function to convert UTC to Eastern Time (EST/EDT)
 const convertToEasternTime = (utcTimestamp: string): string => {
@@ -19,6 +19,22 @@ const convertToEasternTime = (utcTimestamp: string): string => {
     second: '2-digit',
     hour12: true
   });
+};
+
+// Function to create a preview of the message content
+const createMessagePreview = (content: string, maxLength: number = 150): string => {
+  if (!content) return '';
+  
+  // Remove any markdown symbols that might make the preview look odd
+  const cleanContent = content.replace(/[#*_~`]/g, '');
+  
+  if (cleanContent.length <= maxLength) return cleanContent;
+  
+  // Find the last space before maxLength to avoid cutting words
+  const lastSpaceIndex = cleanContent.substring(0, maxLength).lastIndexOf(' ');
+  const cutoffIndex = lastSpaceIndex > 0 ? lastSpaceIndex : maxLength;
+  
+  return cleanContent.substring(0, cutoffIndex) + '...';
 };
 
 const Messages: React.FC = () => {
@@ -42,10 +58,10 @@ const Messages: React.FC = () => {
       const fetchedMessages = await getMessages(bypassCache);
       setMessages(fetchedMessages);
       
-      // Set all messages to be expanded by default
+      // Set all messages to be collapsed by default
       const expandedState: Record<string, boolean> = {};
       fetchedMessages.forEach(message => {
-        expandedState[message.message_id] = true;
+        expandedState[message.message_id] = false;
       });
       setExpandedMessages(expandedState);
     } catch (error) {
@@ -53,23 +69,6 @@ const Messages: React.FC = () => {
       toast.error('Failed to fetch messages');
     } finally {
       setLoading(false);
-    }
-  };
-  
-  const handleDelete = async (messageId: string) => {
-    try {
-      const success = await deleteMessage(messageId);
-      if (success) {
-        setMessages(prevMessages => 
-          prevMessages.filter(msg => msg.message_id !== messageId)
-        );
-        toast.success('Message deleted');
-      } else {
-        throw new Error('Failed to delete message');
-      }
-    } catch (error) {
-      console.error('Failed to delete message:', error);
-      toast.error('Failed to delete message');
     }
   };
   
@@ -151,28 +150,20 @@ const Messages: React.FC = () => {
                 </div>
               </div>
               
+              <div className="flex items-center text-sm text-neutral-500 mt-3 mb-3">
+                <span>{convertToEasternTime(message.timestamp)}</span>
+              </div>
+              
+              {!isExpanded(message.message_id) && (
+                <div className="text-neutral-600 whitespace-pre-wrap mt-2 text-sm">
+                  {createMessagePreview(message.discord_message)}
+                </div>
+              )}
+              
               {isExpanded(message.message_id) && (
-                <>
-                  <div className="flex items-center text-sm text-neutral-500 mt-3 mb-3">
-                    <span>{convertToEasternTime(message.timestamp)}</span>
-                  </div>
-                  <div className="text-neutral-700 whitespace-pre-wrap markdown-content">
-                    {message.discord_message}
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-neutral-100">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation(); // Prevent triggering the parent onClick
-                        handleDelete(message.message_id);
-                      }}
-                      className="flex items-center px-3 py-2 bg-error-50 text-error-600 rounded-md hover:bg-error-100 transition-colors"
-                      title="Delete message"
-                    >
-                      <Trash2 size={16} className="mr-2" />
-                      Delete this message
-                    </button>
-                  </div>
-                </>
+                <div className="text-neutral-700 whitespace-pre-wrap markdown-content mt-2">
+                  {message.discord_message}
+                </div>
               )}
             </div>
           ))}
