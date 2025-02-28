@@ -42,9 +42,9 @@ const fetchWithAuth = async (url: string, apiKey: string, options: RequestInit =
   return response.json();
 };
 
-export const getMessages = async (): Promise<Message[]> => {
+export const getMessages = async (bypassCache: boolean = true): Promise<Message[]> => {
   const cacheKey = CACHE_KEYS.MESSAGES;
-  const cachedMessages = cache.get<Message[]>(cacheKey);
+  const cachedMessages = !bypassCache ? cache.get<Message[]>(cacheKey) : null;
   
   if (cachedMessages) {
     return cachedMessages;
@@ -52,7 +52,17 @@ export const getMessages = async (): Promise<Message[]> => {
   
   try {
     const url = `${MESSAGES_API_BASE_URL}/messages`;
-    const response = await fetchWithAuth(url, MESSAGES_API_KEY);
+    const response = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': MESSAGES_API_KEY
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    }
+    
     const messages = await response.json();
     
     cache.set(cacheKey, messages, CACHE_EXPIRY.SHORT);
@@ -63,62 +73,76 @@ export const getMessages = async (): Promise<Message[]> => {
   }
 };
 
-export const getMessageById = async (id: string): Promise<Message | null> => {
+export const getMessageById = async (message_id: string): Promise<Message | null> => {
   try {
-    const url = `${MESSAGES_API_BASE_URL}/messages/${id}`;
-    const response = await fetchWithAuth(url, MESSAGES_API_KEY);
+    const url = `${MESSAGES_API_BASE_URL}/messages/${message_id}`;
+    const response = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': MESSAGES_API_KEY
+      }
+    });
     
     if (!response.ok) {
       if (response.status === 404) {
         return null;
       }
-      throw new Error(`Failed to fetch message: ${response.statusText}`);
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
     }
     
     return await response.json();
   } catch (error) {
-    console.error(`Error fetching message with ID ${id}:`, error);
+    console.error(`Error fetching message ${message_id}:`, error);
     return null;
   }
 };
 
-export const markMessageAsRead = async (id: string): Promise<boolean> => {
+export const markMessageAsRead = async (message_id: string): Promise<boolean> => {
   try {
-    const url = `${MESSAGES_API_BASE_URL}/messages/${id}/read`;
-    const response = await fetchWithAuth(url, MESSAGES_API_KEY, {
+    const url = `${MESSAGES_API_BASE_URL}/messages/${message_id}/read`;
+    const response = await fetch(url, {
       method: 'PATCH',
-      body: JSON.stringify({ is_read: true })
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': MESSAGES_API_KEY
+      }
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to mark message as read: ${response.statusText}`);
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
     }
     
-    // Clear the messages cache to ensure fresh data on next fetch
-    cache.delete(CACHE_KEYS.MESSAGES);
+    // Clear the messages cache since we've updated a message
+    cache.remove(CACHE_KEYS.MESSAGES);
+    
     return true;
   } catch (error) {
-    console.error(`Error marking message ${id} as read:`, error);
+    console.error(`Error marking message ${message_id} as read:`, error);
     return false;
   }
 };
 
-export const deleteMessage = async (id: string): Promise<boolean> => {
+export const deleteMessage = async (message_id: string): Promise<boolean> => {
   try {
-    const url = `${MESSAGES_API_BASE_URL}/messages/${id}`;
-    const response = await fetchWithAuth(url, MESSAGES_API_KEY, {
-      method: 'DELETE'
+    const url = `${MESSAGES_API_BASE_URL}/messages/${message_id}`;
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': MESSAGES_API_KEY
+      }
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to delete message: ${response.statusText}`);
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
     }
     
-    // Clear the messages cache to ensure fresh data on next fetch
-    cache.delete(CACHE_KEYS.MESSAGES);
+    // Clear the messages cache since we've deleted a message
+    cache.remove(CACHE_KEYS.MESSAGES);
+    
     return true;
   } catch (error) {
-    console.error(`Error deleting message ${id}:`, error);
+    console.error(`Error deleting message ${message_id}:`, error);
     return false;
   }
 };

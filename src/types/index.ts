@@ -19,14 +19,15 @@ export interface HistoricalMetrics {
 }
 
 export interface Message {
-  id: string;
-  subject: string;
-  content: string;
+  message_id: string;
+  discord_message: string;
   timestamp: string;
-  is_read: boolean;
+  ticker: string;
+  year: string;
+  quarter: string;
+  is_read?: boolean;
+  subject?: string;
   source?: string;
-  priority?: 'low' | 'normal' | 'high';
-  category?: string;
 }
 
 export interface PollingConfig {

@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import custom styles */
+@import './styles/markdown.css';
+
 @layer base {
   body {
     @apply bg-neutral-50 text-neutral-800 font-sans;

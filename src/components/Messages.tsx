@@ -1,28 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { getMessages, markMessageAsRead, deleteMessage } from '../services/api';
+import { getMessages, deleteMessage } from '../services/api';
 import { Message } from '../types';
-import { RefreshCw, Mail, MailOpen, Trash2, Tag } from 'lucide-react';
+import { RefreshCw, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 
 const Messages: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedMessages, setExpandedMessages] = useState<Record<string, boolean>>({});
   
   useEffect(() => {
     fetchMessages();
     
     // Set up polling to check for new messages every 30 seconds
-    const intervalId = setInterval(fetchMessages, 30000);
+    const intervalId = setInterval(() => fetchMessages(true), 30000);
     
     // Clean up interval on component unmount
     return () => clearInterval(intervalId);
   }, []);
   
-  const fetchMessages = async () => {
+  const fetchMessages = async (bypassCache: boolean = false) => {
     try {
       setLoading(true);
-      const fetchedMessages = await getMessages();
+      const fetchedMessages = await getMessages(bypassCache);
       setMessages(fetchedMessages);
+      
+      // Set all messages to be expanded by default
+      const expandedState: Record<string, boolean> = {};
+      fetchedMessages.forEach(message => {
+        expandedState[message.message_id] = true;
+      });
+      setExpandedMessages(expandedState);
     } catch (error) {
       console.error('Failed to fetch messages:', error);
       toast.error('Failed to fetch messages');
@@ -31,27 +39,12 @@ const Messages: React.FC = () => {
     }
   };
   
-  const handleMarkAsRead = async (messageId: string) => {
-    try {
-      await markMessageAsRead(messageId);
-      setMessages(prevMessages => 
-        prevMessages.map(msg => 
-          msg.id === messageId ? { ...msg, is_read: true } : msg
-        )
-      );
-      toast.success('Message marked as read');
-    } catch (error) {
-      console.error('Failed to mark message as read:', error);
-      toast.error('Failed to update message');
-    }
-  };
-  
   const handleDelete = async (messageId: string) => {
     try {
       const success = await deleteMessage(messageId);
       if (success) {
         setMessages(prevMessages => 
-          prevMessages.filter(msg => msg.id !== messageId)
+          prevMessages.filter(msg => msg.message_id !== messageId)
         );
         toast.success('Message deleted');
       } else {
@@ -64,23 +57,26 @@ const Messages: React.FC = () => {
   };
   
   const handleRefresh = () => {
-    fetchMessages();
+    fetchMessages(true); // Bypass cache to get fresh data
     toast.info('Feed refreshed');
   };
   
-  // Count unread messages
-  const unreadCount = messages.filter(msg => !msg.is_read).length;
+  const toggleExpand = (messageId: string) => {
+    setExpandedMessages(prev => ({
+      ...prev,
+      [messageId]: !prev[messageId]
+    }));
+  };
+  
+  const isExpanded = (messageId: string) => {
+    return expandedMessages[messageId] || false;
+  };
   
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-neutral-800">
           Feed
-          {unreadCount > 0 && (
-            <span className="ml-3 px-2 py-1 text-sm bg-primary-600 text-white rounded-full">
-              {unreadCount} new
-            </span>
-          )}
         </h1>
         <button
           onClick={handleRefresh}
@@ -101,53 +97,66 @@ const Messages: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {messages.map((message) => (
+          {messages
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+            .map((message) => (
             <div 
-              key={message.id}
-              className={`bg-white p-6 rounded-md shadow-md border ${
-                message.is_read ? 'border-neutral-100' : 'border-primary-300 border-l-4'
-              }`}
+              key={message.message_id}
+              className="bg-white p-6 rounded-md shadow-md border border-neutral-100"
             >
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex items-center">
-                  {message.is_read ? (
-                    <MailOpen size={18} className="text-neutral-400 mr-2" />
-                  ) : (
-                    <Mail size={18} className="text-primary-500 mr-2" />
-                  )}
-                  <h3 className="text-lg font-medium text-neutral-800">
-                    {message.subject}
-                  </h3>
-                </div>
-                <div className="flex space-x-2">
-                  {!message.is_read && (
-                    <button
-                      onClick={() => handleMarkAsRead(message.id)}
-                      className="p-1 text-neutral-500 hover:text-primary-600 transition-colors"
-                      title="Mark as read"
-                    >
-                      <MailOpen size={16} />
-                    </button>
-                  )}
+              <div 
+                className="flex justify-between items-start cursor-pointer"
+                onClick={() => toggleExpand(message.message_id)}
+              >
+                <h3 className="text-lg font-medium text-neutral-800">
+                  {message.ticker} Earnings Report
+                </h3>
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center bg-primary-50 px-3 py-1 rounded-md text-sm">
+                    <span className="font-medium text-primary-700">{message.ticker}</span>
+                    <span className="mx-1 text-neutral-400">|</span>
+                    <span className="text-neutral-600">Q{message.quarter} {message.year}</span>
+                  </div>
                   <button
-                    onClick={() => handleDelete(message.id)}
-                    className="p-1 text-neutral-500 hover:text-error-500 transition-colors"
-                    title="Delete message"
+                    className="p-1 text-neutral-500 hover:text-primary-600 transition-colors"
+                    title={isExpanded(message.message_id) ? "Collapse" : "Expand"}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent triggering the parent onClick
+                      toggleExpand(message.message_id);
+                    }}
                   >
-                    <Trash2 size={16} />
+                    {isExpanded(message.message_id) ? (
+                      <ChevronUp size={16} />
+                    ) : (
+                      <ChevronDown size={16} />
+                    )}
                   </button>
                 </div>
               </div>
-              <div className="flex items-center text-sm text-neutral-500 mb-3">
-                <span className="mr-3">{new Date(message.timestamp).toLocaleString()}</span>
-                <div className="flex items-center bg-neutral-100 px-2 py-1 rounded-md">
-                  <Tag size={14} className="mr-1 text-neutral-400" />
-                  <span>{message.source}</span>
-                </div>
-              </div>
-              <div className="text-neutral-700 whitespace-pre-wrap">
-                {message.content}
-              </div>
+              
+              {isExpanded(message.message_id) && (
+                <>
+                  <div className="flex items-center text-sm text-neutral-500 mt-3 mb-3">
+                    <span>{new Date(message.timestamp).toLocaleString()}</span>
+                  </div>
+                  <div className="text-neutral-700 whitespace-pre-wrap markdown-content">
+                    {message.discord_message}
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-neutral-100">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent triggering the parent onClick
+                        handleDelete(message.message_id);
+                      }}
+                      className="flex items-center px-3 py-2 bg-error-50 text-error-600 rounded-md hover:bg-error-100 transition-colors"
+                      title="Delete message"
+                    >
+                      <Trash2 size={16} className="mr-2" />
+                      Delete this message
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ))}
         </div>
