@@ -137,7 +137,8 @@ const CompanyConfig: React.FC = () => {
         requires_quarter: false,
         requires_year: false
       },
-      browser_type: 'chromium'
+      browser_type: 'chromium',
+      page_content_selector: 'body'
     }
   });
   
@@ -297,7 +298,8 @@ const CompanyConfig: React.FC = () => {
         requires_quarter: false,
         requires_year: false
       },
-      browser_type: 'chromium'
+      browser_type: 'chromium',
+      page_content_selector: 'body'
     });
     setShowAddForm(true);
   };
@@ -460,104 +462,7 @@ const CompanyConfig: React.FC = () => {
                 </div>
               </div>
             </div>
-            
-            {/* Polling Configuration */}
-            <div className="border-b border-gray-200 pb-4">
-              <h3 className="text-lg font-medium mb-4">Polling Configuration</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="polling_config.interval" className="block text-sm font-medium text-gray-700">
-                    Interval (seconds)
-                  </label>
-                  <input
-                    id="polling_config.interval"
-                    type="number"
-                    {...register('polling_config.interval', { 
-                      required: 'Interval is required',
-                      valueAsNumber: true,
-                      min: { value: 1, message: 'Interval must be at least 1 second' }
-                    })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  />
-                  {errors.polling_config?.interval && (
-                    <p className="mt-1 text-sm text-red-600">{errors.polling_config.interval.message}</p>
-                  )}
-                </div>
-                
-                <div>
-                  <label htmlFor="polling_config.max_attempts" className="block text-sm font-medium text-gray-700">
-                    Max Attempts
-                  </label>
-                  <input
-                    id="polling_config.max_attempts"
-                    type="number"
-                    {...register('polling_config.max_attempts', { 
-                      required: 'Max attempts is required',
-                      valueAsNumber: true,
-                      min: { value: 1, message: 'Max attempts must be at least 1' }
-                    })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  />
-                  {errors.polling_config?.max_attempts && (
-                    <p className="mt-1 text-sm text-red-600">{errors.polling_config.max_attempts.message}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            {/* LLM Instructions */}
-            <div className="border-b border-gray-200 pb-4">
-              <h3 className="text-lg font-medium mb-4">LLM Instructions</h3>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <label htmlFor="llm_instructions.system" className="block text-sm font-medium text-gray-700">
-                      System Prompt
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleResetToDefaultPrompt}
-                      className="text-xs text-blue-600 hover:text-blue-800"
-                    >
-                      Reset to Default
-                    </button>
-                  </div>
-                  <textarea
-                    id="llm_instructions.system"
-                    rows={20}
-                    {...register('llm_instructions.system', { required: 'System prompt is required' })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm font-mono min-h-[500px]"
-                  />
-                  {errors.llm_instructions?.system && (
-                    <p className="mt-1 text-sm text-red-600">{errors.llm_instructions.system.message}</p>
-                  )}
-                </div>
-                
-                <div>
-                  <label htmlFor="llm_instructions.temperature" className="block text-sm font-medium text-gray-700">
-                    Temperature
-                  </label>
-                  <input
-                    id="llm_instructions.temperature"
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="2"
-                    {...register('llm_instructions.temperature', { 
-                      required: 'Temperature is required',
-                      valueAsNumber: true,
-                      min: { value: 0, message: 'Temperature must be at least 0' },
-                      max: { value: 2, message: 'Temperature must be at most 2' }
-                    })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  />
-                  {errors.llm_instructions?.temperature && (
-                    <p className="mt-1 text-sm text-red-600">{errors.llm_instructions.temperature.message}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-            
+
             {/* Verify Keywords */}
             <div className="border-b border-gray-200 pb-4">
               <h3 className="text-lg font-medium mb-4">Verify Keywords</h3>
@@ -654,10 +559,10 @@ const CompanyConfig: React.FC = () => {
                 </div>
               </div>
             </div>
-            
-            {/* Selectors */}
+
+            {/* URL Selectors */}
             <div className="border-b border-gray-200 pb-4">
-              <h3 className="text-lg font-medium mb-4">Selectors</h3>
+              <h3 className="text-lg font-medium mb-4">Earnings URL Selectors</h3>
               <div className="space-y-2">
                 {selectorFields.map((field, index) => (
                   <div key={field.id} className="flex items-center">
@@ -684,6 +589,22 @@ const CompanyConfig: React.FC = () => {
                   Add Selector
                 </button>
               </div>
+            </div>
+
+            {/* Content Selector */}
+            <div className="border-b border-gray-200 pb-4">
+              <h3 className="text-lg font-medium mb-4">Page Content Selector</h3>
+              <div>
+                  <label htmlFor="page_content_selector" className="block text-sm font-medium text-gray-700">
+                    Content Selector
+                  </label>
+                  <input
+                    id="page_content_selector"
+                    type="text"
+                    {...register('page_content_selector')}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  />
+                </div>
             </div>
             
             {/* URL Ignore List */}
@@ -745,6 +666,103 @@ const CompanyConfig: React.FC = () => {
                   <Plus size={16} className="mr-1" />
                   Add HREF Ignore Word
                 </button>
+              </div>
+            </div>
+            
+            {/* LLM Instructions */}
+            <div className="border-b border-gray-200 pb-4">
+              <h3 className="text-lg font-medium mb-4">LLM Instructions</h3>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label htmlFor="llm_instructions.system" className="block text-sm font-medium text-gray-700">
+                      System Prompt
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleResetToDefaultPrompt}
+                      className="text-xs text-blue-600 hover:text-blue-800"
+                    >
+                      Reset to Default
+                    </button>
+                  </div>
+                  <textarea
+                    id="llm_instructions.system"
+                    rows={20}
+                    {...register('llm_instructions.system', { required: 'System prompt is required' })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm font-mono min-h-[500px]"
+                  />
+                  {errors.llm_instructions?.system && (
+                    <p className="mt-1 text-sm text-red-600">{errors.llm_instructions.system.message}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <label htmlFor="llm_instructions.temperature" className="block text-sm font-medium text-gray-700">
+                    Temperature
+                  </label>
+                  <input
+                    id="llm_instructions.temperature"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="2"
+                    {...register('llm_instructions.temperature', { 
+                      required: 'Temperature is required',
+                      valueAsNumber: true,
+                      min: { value: 0, message: 'Temperature must be at least 0' },
+                      max: { value: 2, message: 'Temperature must be at most 2' }
+                    })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  />
+                  {errors.llm_instructions?.temperature && (
+                    <p className="mt-1 text-sm text-red-600">{errors.llm_instructions.temperature.message}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Polling Configuration */}
+            <div className="border-b border-gray-200 pb-4">
+              <h3 className="text-lg font-medium mb-4">Polling Configuration</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="polling_config.interval" className="block text-sm font-medium text-gray-700">
+                    Interval (seconds)
+                  </label>
+                  <input
+                    id="polling_config.interval"
+                    type="number"
+                    {...register('polling_config.interval', { 
+                      required: 'Interval is required',
+                      valueAsNumber: true,
+                      min: { value: 1, message: 'Interval must be at least 1 second' }
+                    })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  />
+                  {errors.polling_config?.interval && (
+                    <p className="mt-1 text-sm text-red-600">{errors.polling_config.interval.message}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <label htmlFor="polling_config.max_attempts" className="block text-sm font-medium text-gray-700">
+                    Max Attempts
+                  </label>
+                  <input
+                    id="polling_config.max_attempts"
+                    type="number"
+                    {...register('polling_config.max_attempts', { 
+                      required: 'Max attempts is required',
+                      valueAsNumber: true,
+                      min: { value: 1, message: 'Max attempts must be at least 1' }
+                    })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  />
+                  {errors.polling_config?.max_attempts && (
+                    <p className="mt-1 text-sm text-red-600">{errors.polling_config.max_attempts.message}</p>
+                  )}
+                </div>
               </div>
             </div>
             

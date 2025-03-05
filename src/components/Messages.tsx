@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { getMessages } from '../services/api';
 import { Message } from '../types';
-import { RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { RefreshCw, ChevronDown, ChevronUp, Loader } from 'lucide-react';
 
 // Function to convert UTC to Eastern Time (EST/EDT)
 const convertToEasternTime = (utcTimestamp: string): string => {
@@ -40,6 +40,7 @@ const createMessagePreview = (content: string, maxLength: number = 150): string 
 const Messages: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [expandedMessages, setExpandedMessages] = useState<Record<string, boolean>>({});
   
   useEffect(() => {
@@ -54,14 +55,26 @@ const Messages: React.FC = () => {
   
   const fetchMessages = async (bypassCache: boolean = false) => {
     try {
-      setLoading(true);
+      if (!messages.length) {
+        // Only show full page loading on initial load
+        setLoading(true);
+      } else if (bypassCache) {
+        // Show refreshing indicator for subsequent loads
+        setRefreshing(true);
+      }
+      
       const fetchedMessages = await getMessages(bypassCache);
       setMessages(fetchedMessages);
       
       // Set all messages to be collapsed by default
       const expandedState: Record<string, boolean> = {};
       fetchedMessages.forEach(message => {
-        expandedState[message.message_id] = false;
+        // Preserve expanded state for existing messages
+        if (messages.some(m => m.message_id === message.message_id)) {
+          expandedState[message.message_id] = expandedMessages[message.message_id] || false;
+        } else {
+          expandedState[message.message_id] = false;
+        }
       });
       setExpandedMessages(expandedState);
     } catch (error) {
@@ -69,6 +82,7 @@ const Messages: React.FC = () => {
       toast.error('Failed to fetch messages');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
   
@@ -94,13 +108,22 @@ const Messages: React.FC = () => {
         <h1 className="text-2xl font-bold text-neutral-800">
           Feed
         </h1>
-        <button
-          onClick={handleRefresh}
-          className="flex items-center px-4 py-2 bg-neutral-100 text-neutral-700 rounded-md hover:bg-neutral-200 transition-colors duration-150 ease-in-out shadow-sm"
-        >
-          <RefreshCw size={16} className="mr-2" />
-          Refresh
-        </button>
+        <div className="flex items-center">
+          {refreshing && (
+            <div className="flex items-center mr-4 text-primary-600">
+              <Loader size={16} className="animate-spin mr-2" />
+              <span className="text-sm">Refreshing...</span>
+            </div>
+          )}
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className={`flex items-center px-4 py-2 bg-neutral-100 text-neutral-700 rounded-md hover:bg-neutral-200 transition-colors duration-150 ease-in-out shadow-sm ${refreshing ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <RefreshCw size={16} className={`mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
       </div>
       
       {loading ? (

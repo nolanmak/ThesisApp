@@ -64,4 +64,5 @@ export interface CompanyConfig {
   url_ignore_list?: string[];
   verify_keywords: VerifyKeywords;
   browser_type?: BrowserType;
+  page_content_selector?: string;
 }
