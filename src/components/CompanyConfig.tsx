@@ -126,7 +126,7 @@ const CompanyConfig: React.FC = () => {
         interval: 2,
         max_attempts: 30
       },
-      refine_link_list: false,
+      refine_link_list: true,
       selectors: [],
       url_ignore_list: [],
       verify_keywords: {
@@ -287,7 +287,7 @@ const CompanyConfig: React.FC = () => {
         interval: 2,
         max_attempts: 30
       },
-      refine_link_list: false,
+      refine_link_list: true,
       selectors: [],
       url_ignore_list: [],
       verify_keywords: {
