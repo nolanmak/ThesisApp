@@ -462,6 +462,37 @@ const CompanyConfig: React.FC = () => {
                 </div>
               </div>
             </div>
+            
+            {/* URL Selectors */}
+            <div className="border-b border-gray-200 pb-4">
+              <h3 className="text-lg font-medium mb-4">Earnings URL Selectors</h3>
+              <div className="space-y-2">
+                {selectorFields.map((field, index) => (
+                  <div key={field.id} className="flex items-center">
+                    <input
+                      {...register(`selectors.${index}`)}
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      placeholder="CSS Selector"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeSelector(index)}
+                      className="ml-2 p-1 text-red-600 hover:text-red-800"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => appendSelector('')}
+                  className="flex items-center text-sm text-blue-600 hover:text-blue-800"
+                >
+                  <Plus size={16} className="mr-1" />
+                  Add Selector
+                </button>
+              </div>
+            </div>
 
             {/* Verify Keywords */}
             <div className="border-b border-gray-200 pb-4">
@@ -557,37 +588,6 @@ const CompanyConfig: React.FC = () => {
                     Add Fixed Term
                   </button>
                 </div>
-              </div>
-            </div>
-
-            {/* URL Selectors */}
-            <div className="border-b border-gray-200 pb-4">
-              <h3 className="text-lg font-medium mb-4">Earnings URL Selectors</h3>
-              <div className="space-y-2">
-                {selectorFields.map((field, index) => (
-                  <div key={field.id} className="flex items-center">
-                    <input
-                      {...register(`selectors.${index}`)}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      placeholder="CSS Selector"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeSelector(index)}
-                      className="ml-2 p-1 text-red-600 hover:text-red-800"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => appendSelector('')}
-                  className="flex items-center text-sm text-blue-600 hover:text-blue-800"
-                >
-                  <Plus size={16} className="mr-1" />
-                  Add Selector
-                </button>
               </div>
             </div>
 
