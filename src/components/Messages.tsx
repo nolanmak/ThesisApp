@@ -1,14 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { getMessages } from '../services/api';
 import { Message } from '../types';
-import { RefreshCw, ChevronDown, ChevronUp, Loader } from 'lucide-react';
+import { RefreshCw, ChevronDown, ChevronUp, Loader, Wifi, WifiOff } from 'lucide-react';
+import useWebSocket from '../hooks/useWebSocket';
 
-// Function to convert UTC to Eastern Time (EST/EDT)
+// Function to convert UTC to Eastern Time (EST/EDT) with automatic daylight savings time handling
 const convertToEasternTime = (utcTimestamp: string): string => {
+  // Create a date object from the UTC timestamp
   const date = new Date(utcTimestamp);
   
-  // Format the date to Eastern Time
+  // Format the date to Eastern Time (automatically handles EST/EDT transitions)
+  // The America/New_York timezone will automatically adjust for daylight savings time
   return date.toLocaleString('en-US', {
     timeZone: 'America/New_York',
     year: 'numeric',
@@ -43,14 +46,83 @@ const Messages: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [expandedMessages, setExpandedMessages] = useState<Record<string, boolean>>({});
   
+  // Handle new WebSocket messages
+  const handleNewMessage = useCallback((newMessage: Message) => {
+    console.log('New message received via WebSocket:', newMessage);
+    
+    setMessages(prevMessages => {
+      // Check if message already exists
+      const existingMessageIndex = prevMessages.findIndex(msg => msg.message_id === newMessage.message_id);
+      
+      if (existingMessageIndex !== -1) {
+        // Only update if the message content has changed
+        const existingMessage = prevMessages[existingMessageIndex];
+        if (JSON.stringify(existingMessage) === JSON.stringify(newMessage)) {
+          // Message is identical, no need to update
+          return prevMessages;
+        }
+        
+        // Update existing message
+        const updatedMessages = [...prevMessages];
+        updatedMessages[existingMessageIndex] = newMessage;
+        
+        // Sort messages by timestamp (newest first)
+        return updatedMessages.sort((a, b) => 
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+      } else {
+        // Add new message
+        toast.info(`New message received: ${newMessage.ticker} Q${newMessage.quarter} ${newMessage.year}`);
+        
+        // Add new message and sort by timestamp (newest first)
+        const updatedMessages = [newMessage, ...prevMessages];
+        return updatedMessages.sort((a, b) => 
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+      }
+    });
+    
+    // Ensure the new message is collapsed by default unless it already has a state
+    setExpandedMessages(prev => ({
+      ...prev,
+      [newMessage.message_id]: prev[newMessage.message_id] || false
+    }));
+  }, []);
+  
+  // Handle WebSocket connection changes
+  const handleConnectionChange = useCallback((connected: boolean) => {
+    // Remove the toast notification to prevent multiple notifications
+    // if (connected) {
+    //   toast.success('Real-time connection established');
+    // }
+  }, []);
+  
+  // Use the WebSocket hook
+  const { 
+    connected: wsConnected, 
+    reconnecting: wsReconnecting,
+    enabled: wsEnabled,
+    enable: enableWebSocket,
+    disable: disableWebSocket
+  } = useWebSocket({
+    onMessage: handleNewMessage,
+    onConnectionChange: handleConnectionChange,
+    persistConnection: true // Keep connection alive when component unmounts
+  });
+  
+  // Toggle WebSocket functionality
+  const toggleWebSocket = useCallback(() => {
+    if (wsEnabled) {
+      disableWebSocket();
+      toast.info('Real-time updates disabled');
+    } else {
+      enableWebSocket();
+      toast.info('Real-time updates enabled');
+    }
+  }, [wsEnabled, enableWebSocket, disableWebSocket]);
+
   useEffect(() => {
     fetchMessages();
-    
-    // Set up polling to check for new messages every 30 seconds
-    const intervalId = setInterval(() => fetchMessages(true), 30000);
-    
-    // Clean up interval on component unmount
-    return () => clearInterval(intervalId);
   }, []);
   
   const fetchMessages = async (bypassCache: boolean = false) => {
@@ -64,11 +136,17 @@ const Messages: React.FC = () => {
       }
       
       const fetchedMessages = await getMessages(bypassCache);
-      setMessages(fetchedMessages);
+      
+      // Sort messages by timestamp (newest first)
+      const sortedMessages = fetchedMessages.sort((a, b) => 
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+      
+      setMessages(sortedMessages);
       
       // Set all messages to be collapsed by default
       const expandedState: Record<string, boolean> = {};
-      fetchedMessages.forEach(message => {
+      sortedMessages.forEach(message => {
         // Preserve expanded state for existing messages
         if (messages.some(m => m.message_id === message.message_id)) {
           expandedState[message.message_id] = expandedMessages[message.message_id] || false;
@@ -78,7 +156,7 @@ const Messages: React.FC = () => {
       });
       setExpandedMessages(expandedState);
     } catch (error) {
-      console.error('Failed to fetch messages:', error);
+      console.error('Error fetching messages:', error);
       toast.error('Failed to fetch messages');
     } finally {
       setLoading(false);
@@ -86,8 +164,13 @@ const Messages: React.FC = () => {
     }
   };
   
-  const handleRefresh = () => {
+  // Handle manual refresh
+  const handleRefresh = useCallback(() => {
     fetchMessages(true); // Bypass cache to get fresh data
+  }, []);
+
+  const handleRefreshWithToast = () => {
+    handleRefresh();
     toast.info('Feed refreshed');
   };
   
@@ -115,8 +198,38 @@ const Messages: React.FC = () => {
               <span className="text-sm">Refreshing...</span>
             </div>
           )}
+          <div className="flex items-center mr-4">
+            {!wsEnabled ? (
+              <div className="flex items-center text-neutral-400" title="Real-time updates disabled">
+                <WifiOff size={16} className="mr-1" />
+                <span className="text-xs">Disabled</span>
+              </div>
+            ) : wsConnected ? (
+              <div className="flex items-center text-green-600" title="Real-time updates active">
+                <Wifi size={16} className="mr-1" />
+                <span className="text-xs">Live</span>
+              </div>
+            ) : wsReconnecting ? (
+              <div className="flex items-center text-amber-500" title="Attempting to reconnect">
+                <Loader size={16} className="animate-spin mr-1" />
+                <span className="text-xs">Reconnecting...</span>
+              </div>
+            ) : (
+              <div className="flex items-center text-neutral-400" title="Real-time updates inactive">
+                <WifiOff size={16} className="mr-1" />
+                <span className="text-xs">Offline</span>
+              </div>
+            )}
+            <button
+              onClick={toggleWebSocket}
+              className="ml-2 text-xs text-neutral-500 hover:text-primary-600 underline"
+              title={wsEnabled ? "Disable real-time updates" : "Enable real-time updates"}
+            >
+              {wsEnabled ? "Disable" : "Enable"}
+            </button>
+          </div>
           <button
-            onClick={handleRefresh}
+            onClick={handleRefreshWithToast}
             disabled={refreshing}
             className={`flex items-center px-4 py-2 bg-neutral-100 text-neutral-700 rounded-md hover:bg-neutral-200 transition-colors duration-150 ease-in-out shadow-sm ${refreshing ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
