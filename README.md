@@ -35,7 +35,6 @@ Earnings Manager is an internal tool designed to streamline the process of track
   - `/components`: React components
   - `/services`: API and cache services
   - `/types`: TypeScript type definitions
-- `/server`: Backend services
 - `/public`: Static assets
 
 ## Development

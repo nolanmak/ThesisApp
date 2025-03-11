@@ -17,7 +17,7 @@ Key features:
 - Automatic reconnection with exponential backoff
 - Event subscription system for messages and connection status
 - Message parsing for different API Gateway WebSocket message formats
-- Ability to send messages to the WebSocket server
+- Ability to send messages to the AWS API Gateway WebSocket service
 - Enable/disable functionality
 - Ping/pong mechanism to detect stale connections
 
@@ -156,5 +156,5 @@ If you experience issues with the WebSocket connection:
 1. Check the browser console for error messages
 2. Try disabling and re-enabling the WebSocket functionality using the toggle in the UI
 3. Refresh the page to reset the WebSocket connection
-4. Ensure the WebSocket server is running and accessible
+4. Ensure the AWS API Gateway WebSocket service is accessible
 5. Check for network issues or firewalls that might be blocking WebSocket connections

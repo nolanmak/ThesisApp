@@ -115,18 +115,12 @@ const CompanyConfig: React.FC = () => {
     defaultValues: {
       ticker: '',
       base_url: '',
-      key_phrase: '',
       extraction_method: '',
       href_ignore_words: [],
       llm_instructions: {
         system: encodeBase64(DEFAULT_PROMPT),
         temperature: 0
       },
-      polling_config: {
-        interval: 2,
-        max_attempts: 30
-      },
-      refine_link_list: true,
       selector: '',
       url_ignore_list: [],
       verify_keywords: {
@@ -270,18 +264,12 @@ const CompanyConfig: React.FC = () => {
     reset({
       ticker: '',
       base_url: '',
-      key_phrase: '',
       extraction_method: '',
       href_ignore_words: [],
       llm_instructions: {
         system: DEFAULT_PROMPT, // Use the default prompt (not encoded)
         temperature: 0
       },
-      polling_config: {
-        interval: 2,
-        max_attempts: 30
-      },
-      refine_link_list: true,
       selector: '',
       url_ignore_list: [],
       verify_keywords: {
@@ -672,50 +660,6 @@ const CompanyConfig: React.FC = () => {
                   />
                   {errors.llm_instructions?.temperature && (
                     <p className="mt-1 text-sm text-red-600">{errors.llm_instructions.temperature.message}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Polling Configuration */}
-            <div className="border-b border-gray-200 pb-4">
-              <h3 className="text-lg font-medium mb-4">Polling Configuration</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="polling_config.interval" className="block text-sm font-medium text-gray-700">
-                    Interval (seconds)
-                  </label>
-                  <input
-                    id="polling_config.interval"
-                    type="number"
-                    {...register('polling_config.interval', { 
-                      required: 'Interval is required',
-                      valueAsNumber: true,
-                      min: { value: 1, message: 'Interval must be at least 1 second' }
-                    })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  />
-                  {errors.polling_config?.interval && (
-                    <p className="mt-1 text-sm text-red-600">{errors.polling_config.interval.message}</p>
-                  )}
-                </div>
-                
-                <div>
-                  <label htmlFor="polling_config.max_attempts" className="block text-sm font-medium text-gray-700">
-                    Max Attempts
-                  </label>
-                  <input
-                    id="polling_config.max_attempts"
-                    type="number"
-                    {...register('polling_config.max_attempts', { 
-                      required: 'Max attempts is required',
-                      valueAsNumber: true,
-                      min: { value: 1, message: 'Max attempts must be at least 1' }
-                    })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  />
-                  {errors.polling_config?.max_attempts && (
-                    <p className="mt-1 text-sm text-red-600">{errors.polling_config.max_attempts.message}</p>
                   )}
                 </div>
               </div>
