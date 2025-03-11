@@ -30,11 +30,6 @@ export interface Message {
   source?: string;
 }
 
-export interface PollingConfig {
-  interval: number;
-  max_attempts: number;
-}
-
 export interface VerifyKeywords {
   fixed_terms?: string[];
   quarter_as_string?: boolean;
@@ -54,13 +49,10 @@ export type BrowserType = 'chromium' | 'firefox';
 export interface CompanyConfig {
   ticker: string;
   base_url: string;
-  key_phrase?: string;
   extraction_method?: string;
   href_ignore_words?: string[];
   llm_instructions: LLMInstructions;
-  polling_config: PollingConfig;
-  refine_link_list?: boolean;
-  selectors?: string[];
+  selector?: string;
   url_ignore_list?: string[];
   verify_keywords: VerifyKeywords;
   browser_type?: BrowserType;

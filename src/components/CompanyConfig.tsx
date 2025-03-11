@@ -127,7 +127,7 @@ const CompanyConfig: React.FC = () => {
         max_attempts: 30
       },
       refine_link_list: true,
-      selectors: [],
+      selector: '',
       url_ignore_list: [],
       verify_keywords: {
         fixed_terms: [],
@@ -140,11 +140,6 @@ const CompanyConfig: React.FC = () => {
       browser_type: 'chromium',
       page_content_selector: 'body'
     }
-  });
-  
-  const { fields: selectorFields, append: appendSelector, remove: removeSelector } = useFieldArray({
-    control,
-    name: 'selectors'
   });
   
   const { fields: urlIgnoreFields, append: appendUrlIgnore, remove: removeUrlIgnore } = useFieldArray({
@@ -202,7 +197,6 @@ const CompanyConfig: React.FC = () => {
       const cleanedData = {
         ...data,
         href_ignore_words: data.href_ignore_words?.filter(word => word !== ''),
-        selectors: data.selectors?.filter(selector => selector !== ''),
         url_ignore_list: data.url_ignore_list?.filter(url => url !== ''),
         verify_keywords: {
           ...data.verify_keywords,
@@ -288,7 +282,7 @@ const CompanyConfig: React.FC = () => {
         max_attempts: 30
       },
       refine_link_list: true,
-      selectors: [],
+      selector: '',
       url_ignore_list: [],
       verify_keywords: {
         fixed_terms: [],
@@ -409,19 +403,6 @@ const CompanyConfig: React.FC = () => {
                     <p className="mt-1 text-sm text-red-600">{errors.base_url.message}</p>
                   )}
                 </div>
-                
-                <div>
-                  <label htmlFor="key_phrase" className="block text-sm font-medium text-gray-700">
-                    Key Phrase
-                  </label>
-                  <input
-                    id="key_phrase"
-                    type="text"
-                    {...register('key_phrase')}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  />
-                </div>
-                
                 <div>
                   <label htmlFor="extraction_method" className="block text-sm font-medium text-gray-700">
                     Extraction Method
@@ -448,50 +429,24 @@ const CompanyConfig: React.FC = () => {
                     <option value="firefox">Firefox</option>
                   </select>
                 </div>
-                
-                <div className="flex items-center h-full pt-6">
-                  <input
-                    id="refine_link_list"
-                    type="checkbox"
-                    {...register('refine_link_list')}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <label htmlFor="refine_link_list" className="ml-2 block text-sm text-gray-700">
-                    Refine Link List
-                  </label>
-                </div>
               </div>
             </div>
             
-            {/* URL Selectors */}
+            {/* URL Selector */}
             <div className="border-b border-gray-200 pb-4">
-              <h3 className="text-lg font-medium mb-4">Earnings URL Selectors</h3>
-              <div className="space-y-2">
-                {selectorFields.map((field, index) => (
-                  <div key={field.id} className="flex items-center">
-                    <input
-                      {...register(`selectors.${index}`)}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      placeholder="CSS Selector"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeSelector(index)}
-                      className="ml-2 p-1 text-red-600 hover:text-red-800"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => appendSelector('')}
-                  className="flex items-center text-sm text-blue-600 hover:text-blue-800"
-                >
-                  <Plus size={16} className="mr-1" />
-                  Add Selector
-                </button>
-              </div>
+              <h3 className="text-lg font-medium mb-4">Earnings URL Selector</h3>
+              <div>
+                  <label htmlFor="url_selector" className="block text-sm font-medium text-gray-700">
+                    URL Selector
+                  </label>
+                  <input
+                    id="url_selector"
+                    type="text"
+                    {...register('selector')}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    placeholder="e.g., a.<class name>"
+                  />
+                </div>
             </div>
 
             {/* Verify Keywords */}
@@ -814,7 +769,7 @@ const CompanyConfig: React.FC = () => {
                     Browser
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Selectors
+                    Selector
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -838,18 +793,8 @@ const CompanyConfig: React.FC = () => {
                         (config.browser_type === 'chromium' ? 'Chromium' : 'Firefox') : 
                         'Chromium (Default)'}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {config.selectors && config.selectors.length > 0 ? (
-                        <ul className="list-disc pl-5">
-                          {config.selectors.map((selector, index) => (
-                            <li key={index} className="truncate max-w-xs">
-                              {selector}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        'No selectors'
-                      )}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {config.selector || 'No selector'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <button
