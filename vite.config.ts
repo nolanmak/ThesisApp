@@ -13,12 +13,33 @@ export default defineConfig({
     // Handle client-side routing
     historyApiFallback: true,
     // Proxy API requests to avoid CORS issues during development
+  },
+  proxy: {
     proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
+      '/historical': {
+        target: process.env.VITE_HISTORICAL_API_BASE_URL,
         changeOrigin: true,
-        secure: false
-      }
+        secure: false,
+        rewrite: (path) => path.replace(/^\/historical/, '')
+      },
+      '/earnings': {
+        target: process.env.VITE_EARNINGS_API_BASE_URL,
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/earnings/, '')
+      },
+      '/config': {
+        target: process.env.VITE_CONFIG_API_BASE_URL,
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/config/, '')
+      },
+      '/messages': {
+        target: process.env.VITE_MESSAGES_API_BASE_URL,
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/messages/, '')
+      },
     }
   },
   build: {
