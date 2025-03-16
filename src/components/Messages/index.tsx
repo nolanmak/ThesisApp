@@ -30,8 +30,7 @@ const Messages: React.FC = () => {
     loading: earningsLoading,
     addEarningsItem,
     handleToggleActive,
-    updateSearchTicker: setEarningsSearchTicker,
-    updateFilters: setEarningsFilterActive,
+    updateFilters,
     fetchEarningsItems: refreshEarningsData
   } = useEarningsData(searchTicker, filterActive);
 
@@ -96,17 +95,17 @@ const Messages: React.FC = () => {
   // Handlers for search and filter
   const handleSearchChange = (value: string) => {
     setSearchTicker(value);
-    setEarningsSearchTicker(value);
+    updateFilters(value, undefined, undefined);
   };
 
   const handleDateChange = (value: string) => {
     setSelectedDate(value);
-    setEarningsFilterActive(undefined, undefined, value);
+    updateFilters(undefined, undefined, value);
   };
 
   const handleFilterChange = (value: boolean | null) => {
     setFilterActive(value);
-    setEarningsFilterActive(undefined, value, undefined);
+    updateFilters(undefined, value, undefined);
   };
 
   const handleMessageSearchChange = (value: string) => {

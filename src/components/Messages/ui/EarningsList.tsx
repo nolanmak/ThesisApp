@@ -40,7 +40,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4 overflow-auto scrollbar-hide">
       {items.map((item) => (
         <div 
           key={`${item.ticker}-${item.date}`} 
