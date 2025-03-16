@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import WaveBackground from './WaveBackground';
 import './LandingPage.css';
+import { Blend } from 'lucide-react';
 
 const LandingPage: React.FC = () => {
   const [betaPassword, setBetaPassword] = useState('');
@@ -73,7 +74,10 @@ const LandingPage: React.FC = () => {
       <div className="relative z-10 min-h-screen flex items-center justify-center">
         <div className="max-w-xl w-full px-6 py-12">
           <div className="text-center mb-12 fade-in">
-              <h1 className="bg-[#f9fafb]/80 backdrop-blur-sm text-5xl font-bold mb-3 tracking-tight text-neutral-800 w-fit mx-auto">Thesis</h1>
+              <h1 className="bg-[#f9fafb]/80 backdrop-blur-sm text-5xl font-bold mb-3 tracking-tight text-neutral-800 w-fit mx-auto flex items-center">
+            <Blend className="mr-2 text-primary-400" size={48} />
+              Thesis
+            </h1>
               <p className="bg-[#f9fafb]/80 backdrop-blur-sm text-lg text-neutral-600 w-fit mx-auto">
                 Financial intelligence at the speed of information
               </p>
