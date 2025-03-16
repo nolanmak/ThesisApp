@@ -1,12 +1,22 @@
 import React from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Blend, BarChart2, Settings, MessageSquare } from 'lucide-react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Blend, MessageSquare, LogOut } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 const Layout: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   
   const isActive = (path: string) => {
     return location.pathname === path ? 'text-blue-500' : 'text-neutral-500 hover:text-blue-400';
+  };
+  
+  const handleLogout = () => {
+    // Clear the beta access from local storage
+    localStorage.removeItem('beta_access');
+    toast.info('You have been logged out');
+    // Redirect to landing page
+    navigate('/');
   };
   
   return (
@@ -21,15 +31,24 @@ const Layout: React.FC = () => {
           
           {/* Horizontal Navigation */}
           <nav>
-            <ul className="flex space-x-3">
+            <ul className="flex space-x-3 items-center">
               <li>
                 <Link
-                  to="/"
-                  className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/')}`}
+                  to="/dashboard"
+                  className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard')}`}
                 >
                   <MessageSquare className="mr-1" size={14} />
                   <span>Feed</span>
                 </Link>
+              </li>
+              <li>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out text-neutral-500 hover:text-red-500"
+                >
+                  <LogOut className="mr-1" size={14} />
+                  <span>Logout</span>
+                </button>
               </li>
             </ul>
           </nav>

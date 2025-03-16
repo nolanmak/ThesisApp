@@ -41,6 +41,16 @@ export default {
           700: '#b91c1c',
         },
       },
+      animation: {
+        'float-slow': 'float 15s ease-in-out infinite',
+        'float-slower': 'float 20s ease-in-out infinite reverse',
+      },
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'perspective(1000px) rotateX(60deg) translateY(0)' },
+          '50%': { transform: 'perspective(1000px) rotateX(60deg) translateY(-10px)' },
+        },
+      },
       borderRadius: {
         'sm': '0.25rem',
         DEFAULT: '0.375rem',
