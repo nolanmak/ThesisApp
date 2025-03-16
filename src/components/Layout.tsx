@@ -1,69 +1,44 @@
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Database, BarChart2, Settings, Calendar, MessageSquare } from 'lucide-react';
+import { Blend, BarChart2, Settings, MessageSquare } from 'lucide-react';
 
 const Layout: React.FC = () => {
   const location = useLocation();
   
   const isActive = (path: string) => {
-    return location.pathname === path ? 'bg-primary-600 text-white' : 'text-neutral-300 hover:bg-primary-700/20 hover:text-white';
+    return location.pathname === path ? 'text-blue-500' : 'text-neutral-500 hover:text-blue-400';
   };
   
   return (
-    <div className="flex h-screen bg-neutral-50">
-      {/* Sidebar */}
-      <div className="w-64 bg-neutral-900 text-neutral-100 shadow-lg">
-        <div className="p-4 border-b border-neutral-800">
-          <h1 className="text-xl font-light flex items-center">
-            <Database className="mr-3 text-primary-400" />
-            Earnings Manager
-          </h1>
+    <div className="flex flex-col h-screen bg-neutral-50">
+      {/* Top Navigation Bar */}
+      <div className="text-neutral-100">
+        <div className="max-w-7xl mx-auto px-4 py-4 pb-2 flex justify-between items-center">
+          <h1 className="text-lg font-light flex items-center text-neutral-900">
+            <Blend className="mr-2 text-primary-400" size={18} />
+              Thesis
+            </h1>
+          
+          {/* Horizontal Navigation */}
+          <nav>
+            <ul className="flex space-x-3">
+              <li>
+                <Link
+                  to="/"
+                  className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/')}`}
+                >
+                  <MessageSquare className="mr-1" size={14} />
+                  <span>Feed</span>
+                </Link>
+              </li>
+            </ul>
+          </nav>
         </div>
-        <nav className="mt-6 px-2">
-          <ul className="space-y-1">
-          <li>
-              <Link
-                to="/"
-                className={`flex items-center px-4 py-3 rounded-md transition-colors duration-150 ease-in-out ${isActive('/')}`}
-              >
-                <MessageSquare className="mr-3" size={18} />
-                <span>Feed</span>
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/calendar"
-                className={`flex items-center px-4 py-3 rounded-md transition-colors duration-150 ease-in-out ${isActive('/calendar')}`}
-              >
-                <Calendar className="mr-3" size={18} />
-                <span>Calendar</span>
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/historical-metrics"
-                className={`flex items-center px-4 py-3 rounded-md transition-colors duration-150 ease-in-out ${isActive('/historical-metrics')}`}
-              >
-                <BarChart2 className="mr-3" size={18} />
-                <span>Metrics</span>
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/company-config"
-                className={`flex items-center px-4 py-3 rounded-md transition-colors duration-150 ease-in-out ${isActive('/company-config')}`}
-              >
-                <Settings className="mr-3" size={18} />
-                <span>Configurations</span>
-              </Link>
-            </li>
-          </ul>
-        </nav>
       </div>
       
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
-        <div className="p-8 max-w-7xl mx-auto">
+        <div className="p-4 max-w-7xl mx-auto">
           <Outlet />
         </div>
       </div>
