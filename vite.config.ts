@@ -74,6 +74,22 @@ export default defineConfig({
         changeOrigin: true,
         secure: true,
         rewrite: (path) => path.replace(/^\/api\/config/, ''),
+      },
+      // Add waitlist API proxy with a fallback URL to prevent errors
+      '/api/waitlist': {
+        target: process.env.VITE_WAITLIST_API_URL || process.env.VITE_WAITLIST_API_BASE_URL || 'https://gqnlet2yol.execute-api.us-east-1.amazonaws.com/prod/waitlist',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => {
+          const newPath = path.replace(/^\/api\/waitlist/, '');
+          console.log(`Rewriting waitlist path ${path} to ${newPath}`);
+          return newPath;
+        },
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('waitlist proxy error', err);
+          });
+        }
       }
     }
   },

@@ -38,9 +38,17 @@ const MESSAGES_API_URL = getEnvUrl(
   'https://kk0z1vq9tf.execute-api.us-east-1.amazonaws.com/prod'
 );
 
+const WAITLIST_API_URL = getEnvUrl(
+  'WAITLIST_API_BASE_URL',
+  'VITE_WAITLIST_API_URL',
+  'VITE_WAITLIST_API_BASE_URL',
+  ''
+);
+
 // Use proxies for APIs that have CORS issues during development
 const HISTORICAL_API_BASE_URL = isDev ? '/api/historical' : HISTORICAL_API_URL;
 const EARNINGS_API_BASE_URL = isDev ? '/api/earnings' : EARNINGS_API_URL;
+const WAITLIST_API_BASE_URL = isDev ? '/api/waitlist' : WAITLIST_API_URL;
 
 // For other APIs, use direct URLs
 const CONFIG_API_BASE_URL = CONFIG_API_URL;
@@ -51,6 +59,7 @@ const HISTORICAL_API_KEY = import.meta.env.VITE_HISTORICAL_API_KEY || 'MqlOKVZsa
 const EARNINGS_API_KEY = import.meta.env.VITE_EARNINGS_API_KEY || 'MqlOKVZsao1KGFiznoT6o5x1asqQZXx91qtL4KwI';
 const CONFIG_API_KEY = import.meta.env.VITE_CONFIG_API_KEY || 'MqlOKVZsao1KGFiznoT6o5x1asqQZXx91qtL4KwI';
 const MESSAGES_API_KEY = import.meta.env.VITE_MESSAGES_API_KEY || 'MqlOKVZsao1KGFiznoT6o5x1asqQZXx91qtL4KwI';
+const WAITLIST_API_KEY = import.meta.env.VITE_WAITLIST_API_KEY || '';
 
 // Cache expiry times (in milliseconds)
 const CACHE_EXPIRY = {
@@ -107,6 +116,39 @@ const fetchWithAuth = async (
   } catch (error) {
     console.error(`Fetch error for ${url}:`, error);
     throw error;
+  }
+};
+
+// Waitlist API
+export const submitWaitlistEmail = async (email: string): Promise<{ success: boolean; message?: string }> => {
+  try {
+    if (!email || !email.includes('@')) {
+      throw new Error('Invalid email address');
+    }
+    
+    if (!WAITLIST_API_BASE_URL) {
+      throw new Error('Waitlist API URL not configured');
+    }
+    
+    await fetchWithAuth(
+      `${WAITLIST_API_BASE_URL}`, 
+      WAITLIST_API_KEY, 
+      {
+        method: 'POST',
+        body: JSON.stringify({ email })
+      }
+    );
+    
+    return { 
+      success: true, 
+      message: 'Successfully added to waitlist' 
+    };
+  } catch (error) {
+    console.error('Error submitting waitlist email:', error);
+    return { 
+      success: false, 
+      message: error instanceof Error ? error.message : 'Failed to join waitlist' 
+    };
   }
 };
 
