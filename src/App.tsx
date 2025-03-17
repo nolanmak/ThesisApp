@@ -32,7 +32,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
-      <ToastContainer position="bottom-right" />
+      <ToastContainer position="top-right" />
     </>
   );
 }

@@ -62,26 +62,28 @@ const EarningsList: React.FC<EarningsListProps> = ({
                   <BarChart size={14} />
                 </button>
               )}
-              <button
-                onClick={() => {
-                  console.log('Config button clicked for item:', item);
-                  console.log('onOpenConfigModal is defined:', !!onOpenConfigModal);
-                  try {
-                    onOpenConfigModal(item);
-                    console.log('onOpenConfigModal called successfully');
-                  } catch (error) {
-                    console.error('Error calling onOpenConfigModal:', error);
-                  }
-                }}
-                className={`p-1.5 rounded-full ${
-                  configExists(item.ticker) 
-                    ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                    : 'bg-neutral-100 text-neutral-400 hover:bg-neutral-200'
-                }`}
-                title={configExists(item.ticker) ? "Edit Config" : "Add Config"}
-              >
-                <Settings size={14} />
-              </button>
+              {item.is_active && (
+                <button
+                  onClick={() => {
+                    console.log('Config button clicked for item:', item);
+                    console.log('onOpenConfigModal is defined:', !!onOpenConfigModal);
+                    try {
+                      onOpenConfigModal(item);
+                      console.log('onOpenConfigModal called successfully');
+                    } catch (error) {
+                      console.error('Error calling onOpenConfigModal:', error);
+                    }
+                  }}
+                  className={`p-1.5 rounded-full ${
+                    configExists(item.ticker) 
+                      ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                      : 'bg-neutral-100 text-neutral-400 hover:bg-neutral-200'
+                  }`}
+                  title={configExists(item.ticker) ? "Edit Config" : "Add Config"}
+                >
+                  <Settings size={14} />
+                </button>
+              )}
               <div 
                 className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer ${
                   item.is_active 

@@ -77,17 +77,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
                   : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
               } transition-colors duration-150 ease-in-out flex-1`}
             >
-              Active
-            </button>
-            <button
-              onClick={() => onFilterChange(false)}
-              className={`px-2 py-1 text-xs rounded-md ${
-                filterActive === false 
-                  ? 'bg-error-500 text-white' 
-                  : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-              } transition-colors duration-150 ease-in-out flex-1`}
-            >
-              Inactive
+              Watchlist
             </button>
           </div>
         </div>
