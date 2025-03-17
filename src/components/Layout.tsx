@@ -14,7 +14,6 @@ const Layout: React.FC = () => {
   const handleLogout = () => {
     // Clear the beta access from local storage
     localStorage.removeItem('beta_access');
-    toast.info('You have been logged out');
     // Redirect to landing page
     navigate('/');
   };

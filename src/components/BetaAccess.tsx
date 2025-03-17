@@ -33,7 +33,6 @@ const BetaAccess: React.FC = () => {
     if (passwordHash === envPasswordHash) {
       // Store access in localStorage
       localStorage.setItem('beta_access', 'granted');
-      toast.success('Welcome to Thesis Beta!');
       navigate('/dashboard');
     } else {
       toast.error('Invalid beta access code');
