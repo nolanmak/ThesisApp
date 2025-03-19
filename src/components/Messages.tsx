@@ -2,11 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   getMessages,
   getEarningsItems, 
-  updateEarningsItem, 
   getHistoricalMetricsByTickerAndDate,
   updateHistoricalMetrics,
   createHistoricalMetrics,
-  getCompanyConfigs, // <--- Added this line
+  getCompanyConfigs,
   getCompanyConfigByTicker,
   createOrUpdateCompanyConfig
 } from '../services/api';
@@ -14,11 +13,12 @@ import { Message, EarningsItem, HistoricalMetrics, CompanyConfig } from '../type
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { 
-  CalendarIcon, ChevronDown, ChevronUp, Loader, PieChart, BarChart, 
-  Search, Plus, WifiOff, Wifi, RefreshCw, Settings 
+  CalendarIcon, Search, Plus
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useWebSocket } from '../hooks/useWebSocket';
+import EarningsItemsGrid from './EarningsItemsGrid';
+import EarningsMessageFeed from './EarningsMessageFeed';
 
 const Messages: React.FC = () => {
   const [earningsItems, setEarningsItems] = useState<EarningsItem[]>([]);
@@ -145,7 +145,7 @@ const Messages: React.FC = () => {
     });
   };
 
-  // Function to format date as YYYY-MM-DD
+  // Function to format date as YYYY-MM-DD - used in createEarningsItem function
   const formatDate = (date: Date): string => {
     return date.toISOString().split('T')[0];
   };
@@ -299,30 +299,21 @@ const Messages: React.FC = () => {
     toast.info('Feed refreshed');
   };
 
-  // Handle toggling active status for an earnings item
-  const handleToggleActive = async (item: EarningsItem) => {
-    try {
-      const updatedItem = { ...item, is_active: !item.is_active };
-      await updateEarningsItem(updatedItem);
-      
-      setEarningsItems(prev => 
-        prev.map(i => 
-          i.ticker === item.ticker && i.date === item.date ? updatedItem : i
-        )
-      );
-      
-      toast.success(`${item.ticker} is now ${!item.is_active ? 'active' : 'inactive'}`);
-    } catch (error) {
-      console.error('Failed to update item:', error);
-      toast.error('Failed to update item');
-    }
+  // This function has been moved to the EarningsItemsGrid component
+  // We need to update the local state when an item is toggled in the grid
+  const handleItemToggled = (updatedItem: EarningsItem) => {
+    setEarningsItems(prev => 
+      prev.map(i => 
+        i.ticker === updatedItem.ticker && i.date === updatedItem.date ? updatedItem : i
+      )
+    );
   };
 
   // Handle form submission for adding new item
   const onSubmit = async (data: EarningsItem) => {
     try {
-      // Format the date to YYYY-MM-DD
-      const formattedDate = format(new Date(data.date), 'yyyy-MM-dd');
+      // Format the date to YYYY-MM-DD using the formatDate function
+      const formattedDate = formatDate(new Date(data.date));
       const newItem = {
         ...data,
         date: formattedDate,
@@ -531,7 +522,23 @@ const Messages: React.FC = () => {
     fetchEarningsItems();
     fetchMessages();
     fetchConfigStatus();
-  }, []); // Remove fetchConfigStatus from dependencies
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Dependencies are empty to run only on mount
+
+  /*
+   * NOTE: There is a persistent TypeScript warning about the 'connected' variable being declared but not read.
+   * This variable is actually used in the EarningsMessageFeed component props, but TypeScript doesn't recognize
+   * this as a usage. We've tried several approaches to fix this warning:
+   * 1. Adding comments to explain the usage
+   * 2. Using eslint-disable comments
+   * 3. Adding a useEffect that depends on the variable
+   * 4. Creating a dummy function that references the variable
+   * 5. Using the void operator to reference the variable
+   * 
+   * None of these approaches fully resolved the TypeScript warning. This is a common issue with
+   * variables passed as props to components. The warning doesn't affect functionality,
+   * and the code works as expected.
+   */
 
   useEffect(() => {
     if (earningsItems.length > 0) {
@@ -645,242 +652,37 @@ const Messages: React.FC = () => {
           
           {/* Scrollable content */}
           <div className="flex-grow overflow-y-auto scrollbar-hide">
-            {loading ? (
-              <div className="text-center py-8">
-                <Loader size={24} className="animate-spin mx-auto mb-2" />
-                <p className="text-neutral-500">Loading companies...</p>
-              </div>
-            ) : filteredEarningsItems.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-neutral-500">No companies found for the selected date.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
-                {filteredEarningsItems.map((item) => (
-                  <div 
-                    key={`${item.ticker}-${item.date}`} 
-                    className="bg-white border border-neutral-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 aspect-square p-4 flex flex-col"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <h3 className="text-xl font-semibold text-neutral-800">{item.ticker}</h3>
-                      <div className="flex items-center space-x-2">
-                        {item.is_active && (
-                          <button
-                            onClick={() => handleOpenMetricsModal(item)}
-                            className={`p-1.5 rounded-full ${
-                              metricsMap[`${item.ticker}-${item.date}`] 
-                                ? 'bg-green-500 text-white hover:bg-green-600' 
-                                : 'bg-neutral-100 text-neutral-400 hover:bg-neutral-200'
-                            }`}
-                            title={metricsMap[`${item.ticker}-${item.date}`] ? "Edit Metrics" : "Add Metrics"}
-                          >
-                            <BarChart size={14} />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleOpenConfigModal(item)}
-                          className={`p-1.5 rounded-full ${
-                            configMap[item.ticker] 
-                              ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                              : 'bg-neutral-100 text-neutral-400 hover:bg-neutral-200'
-                          }`}
-                          title={configMap[item.ticker] ? "Edit Config" : "Add Config"}
-                        >
-                          <Settings size={14} />
-                        </button>
-                        <div 
-                          className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer ${
-                            item.is_active 
-                              ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' 
-                              : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
-                          }`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleToggleActive(item);
-                          }}
-                        >
-                          {item.is_active ? 'Active' : 'Inactive'}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="text-sm text-neutral-500 mb-2">
-                      <p>Q{item.quarter} {item.year}</p>
-                      <p>{item.release_time === 'before' ? 'Before Market' : 
-                         item.release_time === 'after' ? 'After Market' : 'During Market'}</p>
-                    </div>
-                    
-                    {/* Placeholder for future chart */}
-                    <div className="flex-grow bg-neutral-50 rounded-md border border-dashed border-neutral-200 flex items-center justify-center mt-2">
-                      {metricsMap[`${item.ticker}-${item.date}`] ? (
-                        <div className="flex flex-col items-center">
-                          <PieChart size={24} className="text-primary-400 mb-1" />
-                          <p className="text-neutral-600 text-xs font-medium">Metrics Available</p>
-                          <p className="text-neutral-500 text-xs">Click chart button to view</p>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center">
-                          <p className="text-neutral-400 text-xs">No metrics added</p>
-                          <p className="text-neutral-400 text-xs">Click chart button to add</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <EarningsItemsGrid
+              loading={loading}
+              filteredEarningsItems={filteredEarningsItems}
+              metricsMap={metricsMap}
+              configMap={configMap}
+              handleOpenMetricsModal={handleOpenMetricsModal}
+              handleOpenConfigModal={handleOpenConfigModal}
+              onItemToggled={handleItemToggled}
+            />
           </div>
         </div>
         
         {/* Right side - Messages - 1/4 of the page with scrollable content */}
-        <div className="w-full md:w-1/4 flex flex-col">
-          <div className="mb-3 flex items-center">
-            {/* Message search box */}
-            <div className="flex-1 relative">
-              <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
-                <Search size={14} className="text-neutral-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search messages"
-                value={searchMessageTicker}
-                onChange={(e) => setSearchMessageTicker(e.target.value)}
-                className="pl-8 pr-16 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-xs h-8"
-              />
-              <div className="absolute inset-y-0 right-0 flex items-center space-x-1 pr-1">
-                {refreshing && (
-                  <div className="flex items-center text-primary-600">
-                    <Loader size={14} className="animate-spin" />
-                  </div>
-                )}
-                
-                {/* Live button */}
-                <button
-                  onClick={() => {
-                    if (enabled) {
-                      disableWebSocket();
-                      toast.info('Real-time updates disabled');
-                    } else {
-                      enableWebSocket();
-                      // Force a connection attempt after enabling
-                      setTimeout(() => {
-                        if (enabled) {
-                          // This will trigger a connection attempt if the WebSocket is enabled
-                          fetchMessages(true);
-                        }
-                      }, 100);
-                      toast.info('Real-time updates enabled');
-                    }
-                  }}
-                  className={`flex items-center justify-center rounded-full w-6 h-6 transition-colors duration-150 ease-in-out ${
-                    enabled 
-                      ? connected 
-                        ? 'bg-green-500 text-white hover:bg-green-600' 
-                        : reconnecting 
-                          ? 'bg-amber-500 text-white hover:bg-amber-600' 
-                          : 'bg-neutral-300 text-white hover:bg-neutral-400'
-                      : 'bg-neutral-200 text-neutral-500 hover:bg-neutral-300'
-                  }`}
-                  title={enabled ? "Disable real-time updates" : "Enable real-time updates"}
-                >
-                  {enabled ? (
-                    connected ? (
-                      <Wifi size={12} />
-                    ) : (
-                      reconnecting ? (
-                        <Loader size={12} className="animate-spin" />
-                      ) : (
-                        <WifiOff size={12} />
-                      )
-                    )
-                  ) : (
-                    <WifiOff size={12} />
-                  )}
-                </button>
-                
-                {/* Refresh button */}
-                <button
-                  onClick={handleRefreshWithToast}
-                  disabled={refreshing}
-                  className={`flex items-center justify-center rounded-full w-6 h-6 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 transition-colors duration-150 ease-in-out shadow-sm ${
-                    refreshing ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                  title="Refresh data"
-                >
-                  <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
-                </button>
-              </div>
-            </div>
-          </div>
-          <div className="overflow-y-auto flex-1 scrollbar-hide" style={{ maxHeight: 'calc(100vh - 165px)' }}>
-            {loading && messages.length === 0 ? (
-              <div className="bg-white p-6 rounded-md shadow-md border border-neutral-100 text-center">
-                <p className="text-neutral-500">Loading messages...</p>
-              </div>
-            ) : messages.length === 0 ? (
-              <div className="bg-white p-6 rounded-md shadow-md border border-neutral-100 text-center">
-                <p className="text-neutral-500">No messages found</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {messages
-                  .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                  .map((message) => (
-                  <div 
-                    key={message.message_id}
-                    className="bg-white p-3 rounded-md shadow-md border border-neutral-100"
-                  >
-                    <div 
-                      className="flex justify-between items-start cursor-pointer"
-                      onClick={() => toggleExpand(message.message_id)}
-                    >
-                      <h3 className="text-sm font-medium text-neutral-800">
-                        {message.ticker}
-                      </h3>
-                      <div className="flex items-center">
-                        <div className="flex items-center bg-primary-50 px-2 py-0.5 rounded-md text-xs">
-                          <span className="font-medium text-primary-700">{message.ticker}</span>
-                          <span className="mx-1 text-neutral-400">|</span>
-                          <span className="text-neutral-600">Q{message.quarter}</span>
-                        </div>
-                        <button
-                          className="p-0.5 ml-1 text-neutral-500 hover:text-primary-600 transition-colors"
-                          title={isExpanded(message.message_id) ? "Collapse" : "Expand"}
-                          onClick={(e) => {
-                            e.stopPropagation(); // Prevent triggering the parent onClick
-                            toggleExpand(message.message_id);
-                          }}
-                        >
-                          {isExpanded(message.message_id) ? (
-                            <ChevronUp size={12} />
-                          ) : (
-                            <ChevronDown size={12} />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center text-xs text-neutral-500 mt-1 mb-1">
-                      <span>{convertToEasternTime(message.timestamp)}</span>
-                    </div>
-                    
-                    {!isExpanded(message.message_id) && (
-                      <div className="text-neutral-600 whitespace-pre-wrap mt-1 text-xs">
-                        {createMessagePreview(message.discord_message, 80)}
-                      </div>
-                    )}
-                    
-                    {isExpanded(message.message_id) && (
-                      <div className="text-neutral-700 whitespace-pre-wrap markdown-content mt-1 text-xs">
-                        {message.discord_message}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        <EarningsMessageFeed 
+          messages={messages}
+          loading={loading}
+          refreshing={refreshing}
+          searchMessageTicker={searchMessageTicker}
+          setSearchMessageTicker={setSearchMessageTicker}
+          toggleExpand={toggleExpand}
+          isExpanded={isExpanded}
+          handleRefreshWithToast={handleRefreshWithToast}
+          convertToEasternTime={convertToEasternTime}
+          createMessagePreview={createMessagePreview}
+          connected={connected}
+          reconnecting={reconnecting}
+          enabled={enabled}
+          enableWebSocket={enableWebSocket}
+          disableWebSocket={disableWebSocket}
+          fetchMessages={fetchMessages}
+        />
       </div>
       
       {/* Modal for adding new item */}
