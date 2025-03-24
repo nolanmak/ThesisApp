@@ -83,12 +83,36 @@ const MessagesList: React.FC<MessagesListProps> = ({
           {!isExpanded(message.message_id) && (
             <div className="text-neutral-600 whitespace-pre-wrap mt-1 text-xs">
               {createMessagePreview(message.discord_message, 80)}
+              {message.link && (
+                <div className="mt-2">
+                  <a 
+                    href={message.link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary-600 hover:text-primary-800 hover:underline"
+                  >
+                    {message.ticker}
+                  </a>
+                </div>
+              )}
             </div>
           )}
           
           {isExpanded(message.message_id) && (
             <div className="text-neutral-700 whitespace-pre-wrap markdown-content mt-1 text-xs">
               {message.discord_message}
+              {message.link && (
+                <div className="mt-2">
+                  <a 
+                    href={message.link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary-600 hover:text-primary-800 hover:underline"
+                  >
+                    {message.ticker}
+                  </a>
+                </div>
+              )}
             </div>
           )}
         </div>
