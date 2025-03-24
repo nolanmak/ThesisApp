@@ -28,6 +28,7 @@ export interface Message {
   is_read?: boolean;
   subject?: string;
   source?: string;
+  link?: string;
 }
 
 export interface VerifyKeywords {
