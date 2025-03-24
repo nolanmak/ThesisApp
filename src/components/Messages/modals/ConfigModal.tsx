@@ -167,9 +167,8 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                   {...register("extraction_method")}
                   className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
-                  <option value="javascript">JavaScript</option>
-                  <option value="playwright">Playwright</option>
-                  <option value="python">Python</option>
+                  <option value="pdf">PDF</option>
+                  <option value="web">Web</option>
                 </select>
               </div>
               
@@ -227,11 +226,22 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                 </label>
                 <textarea
                   {...register("href_ignore_words")}
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 h-20"
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 h-30"
                   placeholder="archive&#10;old&#10;history"
                 />
               </div>
-              
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  LLM System Prompt
+                </label>
+                <textarea
+                  {...register("llm_instructions.system")}
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 h-32"
+                  placeholder="You are an AI assistant that helps extract earnings release dates..."
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">
                   LLM Temperature
@@ -243,17 +253,6 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                   max="2"
                   {...register("llm_instructions.temperature", { min: 0, max: 2 })}
                   className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  LLM System Prompt
-                </label>
-                <textarea
-                  {...register("llm_instructions.system")}
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 h-32"
-                  placeholder="You are an AI assistant that helps extract earnings release dates..."
                 />
               </div>
               
@@ -331,6 +330,54 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                       <label htmlFor="requires_year" className="ml-2 block text-sm text-gray-700">
                         Requires Year
                       </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Key Element Selectors Section */}
+              <div className="p-4 bg-white rounded-lg shadow">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Key Element Selectors</h3>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label htmlFor="key_element_selector" className="block text-sm font-medium text-gray-700">
+                        Key Element Selector
+                      </label>
+                      <input
+                        type="text"
+                        id="key_element_selector"
+                        {...register("key_element_selector")}
+                        defaultValue="body"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">CSS selector for the key element (default: body)</p>
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="key_element_id" className="block text-sm font-medium text-gray-700">
+                        Key Element ID
+                      </label>
+                      <input
+                        type="text"
+                        id="key_element_id"
+                        {...register("key_element_id")}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">ID of the key element (leave empty if not applicable)</p>
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="key_element_class" className="block text-sm font-medium text-gray-700">
+                        Key Element Class
+                      </label>
+                      <input
+                        type="text"
+                        id="key_element_class"
+                        {...register("key_element_class")}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">Class of the key element (leave empty if not applicable)</p>
                     </div>
                   </div>
                 </div>

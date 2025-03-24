@@ -7,7 +7,7 @@ import {
 import { EarningsItem, HistoricalMetrics } from '../../../types';
 import { toast } from 'react-toastify';
 
-const useMetricsData = (earningsItems: EarningsItem[] = []) => {
+const useMetricsData = (earningsItems: EarningsItem[] = [], selectedDate?: string) => {
   const [metricsMap, setMetricsMap] = useState<Record<string, boolean>>({});
   const [currentItem, setCurrentItem] = useState<EarningsItem | null>(null);
   const [showMetricsModal, setShowMetricsModal] = useState(false);
@@ -28,18 +28,19 @@ const useMetricsData = (earningsItems: EarningsItem[] = []) => {
   }, []);
 
   // Fetch metrics status for all active items
-  const fetchMetricsStatus = useCallback(async (items: EarningsItem[]) => {
+  const fetchMetricsStatus = useCallback(async (items: EarningsItem[], dateToCheck?: string) => {
     const metricsStatusMap: Record<string, boolean> = {};
+    const dateFilter = dateToCheck || selectedDate;
     
     for (const item of items) {
-      if (item.is_active) {
+      if (item.is_active && (!dateFilter || item.date === dateFilter)) {
         const key = `${item.ticker}-${item.date}`;
         metricsStatusMap[key] = await checkMetricsExist(item.ticker, item.date);
       }
     }
     
     setMetricsMap(metricsStatusMap);
-  }, [checkMetricsExist]);
+  }, [checkMetricsExist, selectedDate]);
 
   // Handle opening metrics modal
   const handleOpenMetricsModal = useCallback(async (item: EarningsItem) => {
@@ -93,9 +94,9 @@ const useMetricsData = (earningsItems: EarningsItem[] = []) => {
   // Load metrics status when earnings items change
   useEffect(() => {
     if (earningsItems.length > 0) {
-      fetchMetricsStatus(earningsItems);
+      fetchMetricsStatus(earningsItems, selectedDate);
     }
-  }, [earningsItems, fetchMetricsStatus]);
+  }, [earningsItems, fetchMetricsStatus, selectedDate]);
 
   return {
     metricsMap,

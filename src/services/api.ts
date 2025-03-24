@@ -241,7 +241,7 @@ export const updateEarningsItem = async (updates: Partial<EarningsItem>): Promis
   try {
     // Use our CORS-safe function for POST requests
     const response = await fetchWithAuth(`${EARNINGS_API_BASE_URL}/earnings`, EARNINGS_API_KEY, {
-      method: 'POST',
+      method: 'PUT',
       body: JSON.stringify(updates)
     });
     
@@ -256,7 +256,7 @@ export const updateEarningsItem = async (updates: Partial<EarningsItem>): Promis
     
     return updatedItem;
   } catch (error) {
-    console.error(`Error updating earnings item ${id}:`, error);
+    console.error(`Error updating earnings item ${updates.ticker}:`, error);
     throw error;
   }
 };

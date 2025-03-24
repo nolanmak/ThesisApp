@@ -36,7 +36,6 @@ const Messages: React.FC = () => {
 
   const {
     messages,
-    filteredMessages,
     loading: messagesLoading,
     expandedMessages,
     refreshing,
@@ -60,11 +59,10 @@ const Messages: React.FC = () => {
     setShowMetricsModal,
     submitMetrics,
     metricsExist
-  } = useMetricsData(earningsItems);
+  } = useMetricsData(earningsItems, selectedDate);
 
   const {
-    configMap,
-    currentConfigItem: selectedConfigItem,  // Keep the alias for clarity
+    currentConfigItem: selectedConfigItem,
     showConfigModal,
     getDefaultConfig,
     handleOpenConfigModal,

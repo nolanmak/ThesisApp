@@ -57,4 +57,7 @@ export interface CompanyConfig {
   verify_keywords: VerifyKeywords;
   browser_type?: BrowserType;
   page_content_selector?: string;
+  key_element_selector?: string;
+  key_element_id?: string;
+  key_element_class?: string;
 }
