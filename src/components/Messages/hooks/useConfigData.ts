@@ -151,6 +151,7 @@ const useConfigData = () => {
         #   Adjusted Ebitda -> adj_ebitda_billion
         #   Non Gaap Net Income -> non_gaap_net_income_billion
         #   Free Cash Flow -> free_cash_flow_billion
+        #   quarter_eps_mean -> quarter_eps_mean
         #
         # All numerical values provided in millions should be converted to billions by dividing by 1000 and formatted to two decimal places.
 
@@ -167,11 +168,7 @@ const useConfigData = () => {
         - **Important:** When outputting any range values (such as forward guidance ranges), output a valid JSON object with two keys: "low" and "high", each mapped to the respective numeric value.
         - Convert large metric values (provided in millions) to billions format.
 
-        2. **Compare Metrics:**
-        - When historical data is available, compare each current quarter and full year metric with its corresponding historical metric.
-        - Ensure that the keys match exactly. For example, if the report metric is "revenue_billion" under "current_quarter", compare it with the historical metric "current_revenue_billion".
-
-        3. **Classify Sentiment:**
+        2. **Classify Sentiment:**
         - Identify any forward guidance statements or excerpts that may impact future performance.
         - Classify these excerpts as:
             - "Bullish" if they suggest growth, expansion, or an optimistic outlook.
@@ -179,7 +176,7 @@ const useConfigData = () => {
             - "Neutral" if they are ambiguous or lack clear directional sentiment.
         - Include the exact text excerpts (snippets) that support each sentiment classification.
 
-        4. **Output Structure:**
+        3. **Output Structure:**
         - Produce the output as a JSON object with the following structure. For any metrics representing ranges (e.g., forward guidance), if only a single value is provided, output that value twice in a dictionary with keys "low" and "high".
         {
             "metrics": {
@@ -217,7 +214,7 @@ const useConfigData = () => {
             ]
         }
 
-        5. **Highlight Context:**
+        4. **Highlight Context:**
         - Include the exact text excerpts as "snippets" from the report that support each sentiment classification.
         - Ignore standard legal language.
 
