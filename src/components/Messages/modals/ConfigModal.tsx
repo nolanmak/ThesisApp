@@ -1,8 +1,17 @@
 import React, { useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { EarningsItem, CompanyConfig } from '../../../types';
+import { EarningsItem, CompanyConfig, VerifyKeywords } from '../../../types';
 import { getCompanyConfigByTicker } from '../../../services/api';
 import { toast } from 'react-toastify';
+
+// Form-specific interface to handle string inputs for arrays
+interface ConfigFormData extends Omit<CompanyConfig, 'href_ignore_words' | 'url_ignore_list' | 'verify_keywords'> {
+  href_ignore_words?: string | string[];
+  url_ignore_list?: string | string[];
+  verify_keywords: Omit<VerifyKeywords, 'fixed_terms'> & {
+    fixed_terms?: string | string[];
+  };
+}
 
 interface ConfigModalProps {
   show: boolean;
@@ -59,7 +68,9 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
     handleSubmit, 
     reset, 
     formState: { errors } 
-  } = useForm<CompanyConfig>();
+  } = useForm<ConfigFormData>({
+    shouldUnregister: false
+  });
 
   // Fetch existing config data if available
   useEffect(() => {
@@ -80,7 +91,25 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                 // If decoding fails, use as is
               }
             }
-            reset(existingConfig);
+            
+            // Convert array fields to strings for textarea
+            const formData: ConfigFormData = {
+              ...existingConfig,
+              href_ignore_words: Array.isArray(existingConfig.href_ignore_words) 
+                ? existingConfig.href_ignore_words.join('\n') 
+                : existingConfig.href_ignore_words,
+              url_ignore_list: Array.isArray(existingConfig.url_ignore_list) 
+                ? existingConfig.url_ignore_list.join('\n') 
+                : existingConfig.url_ignore_list,
+              verify_keywords: {
+                ...existingConfig.verify_keywords,
+                fixed_terms: Array.isArray(existingConfig.verify_keywords?.fixed_terms) 
+                  ? existingConfig.verify_keywords.fixed_terms.join('\n') 
+                  : existingConfig.verify_keywords?.fixed_terms
+              }
+            };
+            
+            reset(formData);
           } else {
             // Reset form with default values
             reset(defaultConfig);
@@ -117,8 +146,31 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
     return null;
   }
 
-  const handleFormSubmit: SubmitHandler<CompanyConfig> = async (data) => {
-    const success = await onSubmit(data);
+  const handleFormSubmit: SubmitHandler<ConfigFormData> = async (formData) => {
+    // Process textarea inputs that should be arrays
+    const processedData: CompanyConfig = {
+      ...formData as unknown as CompanyConfig,
+      href_ignore_words: typeof formData.href_ignore_words === 'string' 
+        ? formData.href_ignore_words.split('\n').filter(line => line.trim() !== '')
+        : Array.isArray(formData.href_ignore_words) 
+          ? formData.href_ignore_words 
+          : [],
+      url_ignore_list: typeof formData.url_ignore_list === 'string'
+        ? formData.url_ignore_list.split('\n').filter(line => line.trim() !== '')
+        : Array.isArray(formData.url_ignore_list) 
+          ? formData.url_ignore_list 
+          : [],
+      verify_keywords: {
+        ...formData.verify_keywords,
+        fixed_terms: typeof formData.verify_keywords?.fixed_terms === 'string'
+          ? formData.verify_keywords.fixed_terms.split('\n').filter(line => line.trim() !== '')
+          : Array.isArray(formData.verify_keywords?.fixed_terms) 
+            ? formData.verify_keywords.fixed_terms 
+            : []
+      }
+    };
+    
+    const success = await onSubmit(processedData);
     if (success) {
       onClose(); // Close the modal on success
     }
@@ -128,7 +180,7 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
     <div className="fixed inset-0 z-50 overflow-hidden">
       <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose}></div>
       <div className="flex items-center justify-center min-h-screen p-4">
-        <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto relative z-50">
+        <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto relative z-50">
           <div className="p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-neutral-800">
@@ -231,7 +283,7 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                 />
               </div>
 
-              <div>
+              <div className="hidden">
                 <label className="block text-sm font-medium text-neutral-700 mb-1">
                   LLM System Prompt
                 </label>
@@ -242,7 +294,7 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                 />
               </div>
 
-              <div>
+              <div className="hidden">
                 <label className="block text-sm font-medium text-neutral-700 mb-1">
                   LLM Temperature
                 </label>
