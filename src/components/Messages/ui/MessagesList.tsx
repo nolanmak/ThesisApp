@@ -7,14 +7,12 @@ interface MessagesListProps {
   messages: Message[];
   loading: boolean;
   convertToEasternTime: (utcTimestamp: string) => string;
-  createMessagePreview: (content: string, maxLength?: number) => string;
 }
 
 const MessagesList: React.FC<MessagesListProps> = ({
   messages = [],
   loading,
-  convertToEasternTime,
-  createMessagePreview
+  convertToEasternTime
 }) => {
   // State for the analysis modal
   const [showAnalysisModal, setShowAnalysisModal] = useState<boolean>(false);
@@ -110,91 +108,33 @@ const MessagesList: React.FC<MessagesListProps> = ({
             className="bg-white p-3 rounded-md shadow-md border border-neutral-100 hover:border-primary-200 transition-colors"
           >
             {message.link ? (
-              /* Link message - show full content */
-              <>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-start space-x-2">
-                    <a 
-                      href={message.link} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
-                    >
-                      {message.ticker}
-                    </a>
-                    <span className="text-xs text-neutral-600 mt-0.5">Q{message.quarter}</span>
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <div className="flex items-center bg-primary-50 px-2 py-0.5 rounded-md text-xs">
-                      <a 
-                        href={message.link} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
-                      >
-                        {message.ticker}
-                      </a>
-                      <span className="mx-1 text-neutral-400">|</span>
-                      <span className="text-neutral-600">Q{message.quarter}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center text-xs text-neutral-500 mt-1 mb-1">
-                  <span>{convertToEasternTime(message.timestamp)}</span>
-                </div>
-                
-                <div className="text-neutral-600 whitespace-pre-wrap mt-1 text-xs">
-                  {
-                    // Parse the message content to make the ticker with $ sign clickable
-                    (() => {
-                      const content = createMessagePreview(message.discord_message, 80);
-                      // Look for patterns like $TICKER or $INN
-                      const tickerRegex = /\$(\w+)/g;
-                      
-                      // Split by ticker matches
-                      const parts = content.split(tickerRegex);
-                      
-                      // Find all ticker matches
-                      const matches = content.match(tickerRegex) || [];
-                      
-                      // Combine parts and ticker matches
-                      return parts.map((part, index) => {
-                        // Even indices are regular text
-                        if (index % 2 === 0) {
-                          return part;
-                        }
-                        // Odd indices are tickers without the $ (due to capture group)
-                        // We need to add the $ back when displaying
-                        return (
-                          <a 
-                            key={index}
-                            href={message.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 hover:underline"
-                          >
-                            ${part}
-                          </a>
-                        );
-                      });
-                    })()
-                  }
-                </div>
-
-                <div className="flex justify-end items-center mt-3 pt-2 border-t border-neutral-100">
+              /* Link message - show on a single line like analysis messages */
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-2">
                   <a 
                     href={message.link} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="inline-flex items-center text-xs text-primary-600 hover:text-primary-800 transition-colors"
+                    className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
                   >
-                    <ExternalLink size={12} className="mr-1" />
-                    <span>View Report</span>
+                    {message.ticker}
                   </a>
+                  <span className="text-xs text-neutral-600">Q{message.quarter}</span>
+                  <span className="text-xs text-neutral-500">
+                    {convertToEasternTime(message.timestamp)}
+                  </span>
                 </div>
-              </>
+                
+                <a 
+                  href={message.link} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center text-xs px-2 py-1 bg-primary-50 text-primary-600 rounded hover:bg-primary-100 transition-colors"
+                >
+                  <ExternalLink size={12} className="mr-1" />
+                  <span>View Report</span>
+                </a>
+              </div>
             ) : (
               /* Analysis message - simplified with just header and analysis button */
               <div className="flex justify-between items-center">
