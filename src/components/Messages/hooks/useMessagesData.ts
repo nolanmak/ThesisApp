@@ -6,7 +6,6 @@ import { useWebSocket } from '../../../hooks/useWebSocket';
 
 interface MessagesDataState {
   messages: Message[];
-  expandedMessages: Record<string, boolean>;
   loading: boolean;
   refreshing: boolean;
   searchTicker: string;
@@ -15,7 +14,6 @@ interface MessagesDataState {
 const useMessagesData = (initialSearchTicker: string = '') => {
   const [state, setState] = useState<MessagesDataState>({
     messages: [],
-    expandedMessages: {},
     loading: true,
     refreshing: false,
     searchTicker: initialSearchTicker
@@ -72,25 +70,18 @@ const useMessagesData = (initialSearchTicker: string = '') => {
       const updatedMessages = [...prev.messages, newMessage]
         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       
-      // Initialize as not expanded
-      const updatedExpandedMessages = {
-        ...prev.expandedMessages,
-        [newMessage.message_id]: prev.expandedMessages[newMessage.message_id] || false
-      };
-      
       // Show a toast notification for the new message
       toast.info(`New message received for ${newMessage.ticker}`);
       
       return {
         ...prev,
-        messages: updatedMessages,
-        expandedMessages: updatedExpandedMessages
+        messages: updatedMessages
       };
     });
   }, []);
 
   // Handle WebSocket connection changes
-  const handleConnectionChange = useCallback((connected: boolean) => {
+  const handleConnectionChange = useCallback(() => {
     // Optional callback for connection status changes
   }, []);
 
@@ -119,13 +110,12 @@ const useMessagesData = (initialSearchTicker: string = '') => {
   // Fetch messages
   const fetchMessages = useCallback(async (bypassCache: boolean = false) => {
     try {
-      if (!state.messages.length) {
-        // Only show full page loading on initial load
-        setState(prev => ({ ...prev, loading: true }));
-      } else if (bypassCache) {
-        // Show refreshing indicator for subsequent loads
-        setState(prev => ({ ...prev, refreshing: true }));
-      }
+      // Set appropriate loading state
+      setState(prev => ({
+        ...prev,
+        loading: !prev.messages.length, // Only show full page loading on initial load
+        refreshing: bypassCache && prev.messages.length > 0 // Show refreshing indicator for subsequent loads
+      }));
       
       const fetchedMessages = await getMessages(bypassCache);
       
@@ -134,43 +124,20 @@ const useMessagesData = (initialSearchTicker: string = '') => {
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
       
-      setState(prev => {
-        // Set all messages to be collapsed by default
-        const expandedState: Record<string, boolean> = {};
-        sortedMessages.forEach(message => {
-          // Preserve expanded state for existing messages
-          if (prev.messages.some(m => m.message_id === message.message_id)) {
-            expandedState[message.message_id] = prev.expandedMessages[message.message_id] || false;
-          } else {
-            expandedState[message.message_id] = false;
-          }
-        });
-
-        return {
-          ...prev,
-          messages: sortedMessages,
-          expandedMessages: expandedState,
-          loading: false,
-          refreshing: false
-        };
-      });
+      setState(prev => ({
+        ...prev,
+        messages: sortedMessages,
+        loading: false,
+        refreshing: false
+      }));
     } catch (error) {
       console.error('Error fetching messages:', error);
       toast.error('Failed to fetch messages');
       setState(prev => ({ ...prev, loading: false, refreshing: false }));
     }
-  }, [state.messages.length]);
-
-  // Toggle expanded state of a message
-  const toggleExpand = useCallback((messageId: string) => {
-    setState(prev => ({
-      ...prev,
-      expandedMessages: {
-        ...prev.expandedMessages,
-        [messageId]: !prev.expandedMessages[messageId]
-      }
-    }));
   }, []);
+
+
 
   // Update search term for messages
   const updateSearchTicker = useCallback((searchTerm: string) => {
@@ -183,19 +150,30 @@ const useMessagesData = (initialSearchTicker: string = '') => {
     toast.info('Feed refreshed');
   }, [fetchMessages]);
 
+  // Track original unfiltered messages
+  const [originalMessages, setOriginalMessages] = useState<Message[]>([]);
+
+  // Store original messages when fetched
+  useEffect(() => {
+    if (state.messages.length > 0 && state.searchTicker === '') {
+      setOriginalMessages(state.messages);
+    }
+  }, [state.messages, state.searchTicker]);
+
   // Apply filters when search ticker changes
   useEffect(() => {
     if (state.searchTicker !== '') {
-      const filteredMessages = state.messages.filter(message => 
+      // Filter from original messages to avoid filtering already filtered results
+      const filteredMessages = originalMessages.filter(message => 
         message.ticker.toLowerCase().includes(state.searchTicker.toLowerCase())
       );
       
       setState(prev => ({ ...prev, messages: filteredMessages }));
-    } else {
-      // If search is cleared, fetch all messages again
-      fetchMessages();
+    } else if (originalMessages.length > 0) {
+      // If search is cleared, restore original messages
+      setState(prev => ({ ...prev, messages: originalMessages }));
     }
-  }, [state.searchTicker, fetchMessages]);
+  }, [state.searchTicker, originalMessages]);
 
   // Fetch messages on initial load
   useEffect(() => {
@@ -204,7 +182,6 @@ const useMessagesData = (initialSearchTicker: string = '') => {
 
   return {
     messages: state.messages || [],
-    expandedMessages: state.expandedMessages,
     loading: state.loading,
     refreshing: state.refreshing,
     searchTicker: state.searchTicker,
@@ -215,11 +192,8 @@ const useMessagesData = (initialSearchTicker: string = '') => {
     disableWebSocket,
     convertToEasternTime,
     createMessagePreview,
-    fetchMessages,
-    toggleExpand,
+    fetchMessages: handleRefreshWithToast,
     updateSearchTicker,
-    handleRefreshWithToast,
-    isExpanded: (messageId: string): boolean => Boolean(state.expandedMessages[messageId]),
     toggleEnabled
   };
 };

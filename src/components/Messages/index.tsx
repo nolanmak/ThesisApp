@@ -37,15 +37,12 @@ const Messages: React.FC = () => {
   const {
     messages,
     loading: messagesLoading,
-    expandedMessages,
     refreshing,
     connected: webSocketConnected,
     reconnecting: webSocketReconnecting,
     enabled: webSocketEnabled,
-    toggleExpand,
     fetchMessages: refreshMessages,
     toggleEnabled,
-    isExpanded,
     updateSearchTicker: setMessagesSearchTicker,
     convertToEasternTime,
     createMessagePreview
@@ -165,11 +162,8 @@ const Messages: React.FC = () => {
           <MessagesList
             messages={messages}
             loading={messagesLoading}
-            expandedMessages={expandedMessages}
-            onToggleExpand={toggleExpand}
             convertToEasternTime={convertToEasternTime}
             createMessagePreview={createMessagePreview}
-            isExpanded={isExpanded}
           />
         </div>
       </div>

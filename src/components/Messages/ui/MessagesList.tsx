@@ -1,26 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Message } from '../../../types';
-import { ChevronUp, ChevronDown, Loader } from 'lucide-react';
+import { ExternalLink, BarChart2 } from 'lucide-react';
+import MessageAnalysisModal from '../modals/MessageAnalysisModal';
 
 interface MessagesListProps {
   messages: Message[];
   loading: boolean;
-  expandedMessages: Record<string, boolean>;
-  onToggleExpand: (messageId: string) => void;
   convertToEasternTime: (utcTimestamp: string) => string;
   createMessagePreview: (content: string, maxLength?: number) => string;
-  isExpanded: (messageId: string) => boolean;
 }
 
 const MessagesList: React.FC<MessagesListProps> = ({
   messages = [],
   loading,
-  expandedMessages,
-  onToggleExpand,
   convertToEasternTime,
-  createMessagePreview,
-  isExpanded
+  createMessagePreview
 }) => {
+  // State for the analysis modal
+  const [showAnalysisModal, setShowAnalysisModal] = useState<boolean>(false);
+  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   // State to hold the deduplicated messages
   const [deduplicatedMessages, setDeduplicatedMessages] = useState<Message[]>([]);
 
@@ -90,85 +88,154 @@ const MessagesList: React.FC<MessagesListProps> = ({
     );
   }
 
+  // Function to open the analysis modal
+  const openAnalysisModal = (message: Message) => {
+    console.log('Opening analysis modal for message:', message);
+    setSelectedMessage(message);
+    setShowAnalysisModal(true);
+  };
+
+  // Function to close the analysis modal
+  const closeAnalysisModal = () => {
+    setShowAnalysisModal(false);
+    setSelectedMessage(null);
+  };
+
   return (
-    <div className="space-y-3 max-h-[calc(100vh-120px)] overflow-auto scrollbar-hide">
-      {deduplicatedMessages.map((message) => (
-        <div 
-          key={message.message_id}
-          className="bg-white p-3 rounded-md shadow-md border border-neutral-100"
-        >
+    <>
+      <div className="space-y-3 max-h-[calc(100vh-120px)] overflow-auto scrollbar-hide">
+        {deduplicatedMessages.map((message) => (
           <div 
-            className="flex justify-between items-start cursor-pointer"
-            onClick={() => onToggleExpand(message.message_id)}
+            key={message.message_id}
+            className="bg-white p-3 rounded-md shadow-md border border-neutral-100 hover:border-primary-200 transition-colors"
           >
-            <h3 className="text-sm font-medium text-neutral-800">
-              {message.ticker}
-            </h3>
-            <div className="flex items-center">
-              <div className="flex items-center bg-primary-50 px-2 py-0.5 rounded-md text-xs">
-                <span className="font-medium text-primary-700">{message.ticker}</span>
-                <span className="mx-1 text-neutral-400">|</span>
-                <span className="text-neutral-600">Q{message.quarter}</span>
+            {message.link ? (
+              /* Link message - show full content */
+              <>
+                <div className="flex justify-between items-start">
+                  <div className="flex items-start space-x-2">
+                    <a 
+                      href={message.link} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                    >
+                      {message.ticker}
+                    </a>
+                    <span className="text-xs text-neutral-600 mt-0.5">Q{message.quarter}</span>
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <div className="flex items-center bg-primary-50 px-2 py-0.5 rounded-md text-xs">
+                      <a 
+                        href={message.link} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        {message.ticker}
+                      </a>
+                      <span className="mx-1 text-neutral-400">|</span>
+                      <span className="text-neutral-600">Q{message.quarter}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center text-xs text-neutral-500 mt-1 mb-1">
+                  <span>{convertToEasternTime(message.timestamp)}</span>
+                </div>
+                
+                <div className="text-neutral-600 whitespace-pre-wrap mt-1 text-xs">
+                  {
+                    // Parse the message content to make the ticker with $ sign clickable
+                    (() => {
+                      const content = createMessagePreview(message.discord_message, 80);
+                      // Look for patterns like $TICKER or $INN
+                      const tickerRegex = /\$(\w+)/g;
+                      
+                      // Split by ticker matches
+                      const parts = content.split(tickerRegex);
+                      
+                      // Find all ticker matches
+                      const matches = content.match(tickerRegex) || [];
+                      
+                      // Combine parts and ticker matches
+                      return parts.map((part, index) => {
+                        // Even indices are regular text
+                        if (index % 2 === 0) {
+                          return part;
+                        }
+                        // Odd indices are tickers without the $ (due to capture group)
+                        // We need to add the $ back when displaying
+                        return (
+                          <a 
+                            key={index}
+                            href={message.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 hover:underline"
+                          >
+                            ${part}
+                          </a>
+                        );
+                      });
+                    })()
+                  }
+                </div>
+
+                <div className="flex justify-end items-center mt-3 pt-2 border-t border-neutral-100">
+                  <a 
+                    href={message.link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-xs text-primary-600 hover:text-primary-800 transition-colors"
+                  >
+                    <ExternalLink size={12} className="mr-1" />
+                    <span>View Report</span>
+                  </a>
+                </div>
+              </>
+            ) : (
+              /* Analysis message - simplified with just header and analysis button */
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-2">
+                  <h3 className="text-sm font-medium text-neutral-800">
+                    {message.ticker}
+                  </h3>
+                  <div className="flex items-center bg-primary-50 px-2 py-0.5 rounded-md text-xs">
+                    <span className="font-medium text-primary-700">{message.ticker}</span>
+                    <span className="mx-1 text-neutral-400">|</span>
+                    <span className="text-neutral-600">Q{message.quarter}</span>
+                  </div>
+                  <span className="text-xs text-neutral-500">
+                    {convertToEasternTime(message.timestamp)}
+                  </span>
+                </div>
+                
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openAnalysisModal(message);
+                  }}
+                  className="inline-flex items-center text-xs px-2 py-1 bg-primary-50 text-primary-700 rounded hover:bg-primary-100 transition-colors"
+                >
+                  <BarChart2 size={12} className="mr-1" />
+                  <span>Analysis</span>
+                </button>
               </div>
-              <button
-                className="p-0.5 ml-1 text-neutral-500 hover:text-primary-600 transition-colors"
-                title={isExpanded(message.message_id) ? "Collapse" : "Expand"}
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent triggering the parent onClick
-                  onToggleExpand(message.message_id);
-                }}
-              >
-                {isExpanded(message.message_id) ? (
-                  <ChevronUp size={12} />
-                ) : (
-                  <ChevronDown size={12} />
-                )}
-              </button>
-            </div>
+            )}
           </div>
-          
-          <div className="flex items-center text-xs text-neutral-500 mt-1 mb-1">
-            <span>{convertToEasternTime(message.timestamp)}</span>
-          </div>
-          
-          {!isExpanded(message.message_id) && (
-            <div className="text-neutral-600 whitespace-pre-wrap mt-1 text-xs">
-              {createMessagePreview(message.discord_message, 80)}
-              {message.link && (
-                <div className="mt-2">
-                  <a 
-                    href={message.link} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-primary-600 hover:text-primary-800 hover:underline"
-                  >
-                    {message.ticker}
-                  </a>
-                </div>
-              )}
-            </div>
-          )}
-          
-          {isExpanded(message.message_id) && (
-            <div className="text-neutral-700 whitespace-pre-wrap markdown-content mt-1 text-xs">
-              {message.discord_message}
-              {message.link && (
-                <div className="mt-2">
-                  <a 
-                    href={message.link} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-primary-600 hover:text-primary-800 hover:underline"
-                  >
-                    {message.ticker}
-                  </a>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+
+      {/* Analysis Modal */}
+      <MessageAnalysisModal
+        show={showAnalysisModal}
+        onClose={closeAnalysisModal}
+        message={selectedMessage}
+        convertToEasternTime={convertToEasternTime}
+      />
+    </>
   );
 };
 
