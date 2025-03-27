@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Blend, MessageSquare, LogOut } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { Blend, LogOut, BarChart, MessageCircle } from 'lucide-react';
 
 const Layout: React.FC = () => {
   const location = useLocation();
@@ -33,11 +32,20 @@ const Layout: React.FC = () => {
             <ul className="flex space-x-3 items-center">
               <li>
                 <Link
-                  to="/dashboard"
-                  className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard')}`}
+                  to="/dashboard/earnings"
+                  className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/earnings')}`}
                 >
-                  <MessageSquare className="mr-1" size={14} />
-                  <span>Feed</span>
+                  <BarChart className="mr-1" size={14} />
+                  <span>Dashboard</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/dashboard/messages"
+                  className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/messages')}`}
+                >
+                  <MessageCircle className="mr-1" size={14} />
+                  <span>Earnings</span>
                 </Link>
               </li>
               <li>

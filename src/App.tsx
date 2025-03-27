@@ -5,7 +5,8 @@ import 'react-toastify/dist/ReactToastify.css';
 
 import Layout from './components/Layout';
 import CompanyConfig from './components/CompanyConfig';
-import Messages from './components/Messages/index';
+import EarningsPage from './components/EarningsPage';
+import MessagesPage from './components/MessagesPage';
 import LandingPage from './components/LandingPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import EmailSignUp from './components/EmailSignUp';
@@ -23,7 +24,9 @@ function App() {
           {/* Protected routes - require beta access */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Layout />}>
-              <Route index element={<Messages />} />
+              <Route index element={<Navigate to="/dashboard/earnings" replace />} />
+              <Route path="earnings" element={<EarningsPage />} />
+              <Route path="messages" element={<MessagesPage />} />
               <Route path="company-config" element={<CompanyConfig />} />
             </Route>
           </Route>
