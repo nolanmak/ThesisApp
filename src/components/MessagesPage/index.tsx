@@ -70,8 +70,8 @@ const MessagesPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-row h-[calc(100vh-120px)]">
-        {/* Messages - 40% width, left aligned */}
-        <div className="w-2/5 flex flex-col bg-white p-6 rounded-md shadow-md border border-neutral-100 mr-4">
+        {/* Messages - 50% width, left aligned */}
+        <div className="w-[50%] flex flex-col bg-white p-6 rounded-md shadow-md border border-neutral-100 mr-4">
           <WebSocketStatus
             searchMessageTicker={searchMessageTicker}
             refreshing={refreshing}
@@ -91,8 +91,8 @@ const MessagesPage: React.FC = () => {
           />
         </div>
         
-        {/* Right side content area - 60% width */}
-        <div className="w-3/5 flex flex-col bg-white p-6 rounded-md shadow-md border border-neutral-100">
+        {/* Right side content area - 50% width */}
+        <div className="w-[50%] flex flex-col bg-white p-6 rounded-md shadow-md border border-neutral-100">
           {selectedMessage ? (
             <div className="h-full flex flex-col">
               {/* Header */}

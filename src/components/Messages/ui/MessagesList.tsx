@@ -9,6 +9,80 @@ interface MessagesListProps {
   onSelectMessage?: (message: Message) => void;
 }
 
+// Component for the scrolling ticker animation
+const ScrollingPreview: React.FC<{ content: string }> = ({ content }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [animationDuration, setAnimationDuration] = useState(20); // Default duration in seconds
+  
+  useEffect(() => {
+    if (containerRef.current && contentRef.current) {
+      // Calculate animation duration based on content length
+      // Longer content should scroll slower to ensure readability
+      const contentWidth = contentRef.current.scrollWidth;
+      const containerWidth = containerRef.current.clientWidth;
+      
+      // Only animate if content is wider than container
+      if (contentWidth > containerWidth) {
+        // Calculate duration: longer text = longer duration
+        // Base duration of 15 seconds for a standard length text
+        const calculatedDuration = Math.max(15, (contentWidth / containerWidth) * 15);
+        setAnimationDuration(calculatedDuration);
+      } else {
+        // No animation needed if content fits
+        setAnimationDuration(0);
+      }
+    }
+  }, [content]);
+
+  // If no animation is needed, just show the static content
+  if (animationDuration === 0) {
+    return (
+      <div className="text-xs text-neutral-700 font-medium bg-neutral-50 p-2 rounded">
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <div 
+      ref={containerRef}
+      className="overflow-hidden w-full bg-neutral-50 p-1 rounded border border-neutral-100"
+      style={{ 
+        height: '1.75rem',
+        position: 'relative'
+      }}
+    >
+      <div
+        ref={contentRef}
+        className="ticker-content"
+        style={{
+          display: 'inline-block',
+          whiteSpace: 'nowrap',
+          position: 'absolute',
+          left: '0',
+          paddingLeft: '100%', // Start off-screen
+        }}
+      >
+        <span className="text-xs text-neutral-700 font-medium">{content}</span>
+      </div>
+      <style>{`
+        .ticker-content {
+          animation: scrollText ${animationDuration}s linear infinite;
+        }
+        @keyframes scrollText {
+          from {
+            transform: translateX(0);
+          }
+          to {
+            transform: translateX(-100%);
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
+
 const MessagesList: React.FC<MessagesListProps> = ({
   messages = [],
   loading,
@@ -23,6 +97,27 @@ const MessagesList: React.FC<MessagesListProps> = ({
   const prevMessagesRef = useRef<Message[]>([]);
   // Flag to track if initial load has completed
   const initialLoadCompletedRef = useRef<boolean>(false);
+
+  // Helper function to create a preview of the message content
+  const createMessagePreview = (message: Message): string => {
+    if (!message.discord_message) return '';
+    
+    // Remove any markdown formatting
+    const plainText = message.discord_message
+      .replace(/\*\*/g, '') // Remove bold
+      .replace(/\*/g, '')   // Remove italic
+      .replace(/```[\s\S]*?```/g, '') // Remove code blocks
+      .replace(/`.*?`/g, '') // Remove inline code
+      .replace(/\[.*?\]\(.*?\)/g, '') // Remove links
+      .replace(/#/g, '') // Remove headings
+      .replace(/\n/g, ' ') // Replace newlines with spaces
+      .replace(/\s+/g, ' ') // Replace multiple spaces with a single space
+      .trim();
+    
+    // For scrolling ticker, we want to use more of the content
+    // but still keep it reasonable
+    return plainText.length > 500 ? plainText.substring(0, 500) + '...' : plainText;
+  };
 
   // Use useEffect to filter out duplicate messages for the same ticker
   useEffect(() => {
@@ -174,32 +269,40 @@ const MessagesList: React.FC<MessagesListProps> = ({
               </a>
             </div>
           ) : (
-            /* Analysis message - simplified with just header and analysis button */
-            <div className="flex justify-between items-center">
-              <div className="flex items-center space-x-2">
-                {/* Removed redundant ticker display */}
-                <div className="flex items-center bg-primary-50 px-2 py-0.5 rounded-md text-xs">
-                  <span className="font-medium text-primary-700">{message.ticker}</span>
-                  <span className="mx-1 text-neutral-400">|</span>
-                  <span className="text-neutral-600">Q{message.quarter}</span>
+            /* Analysis message with scrolling preview */
+            <div className="flex flex-col">
+              {/* Header with ticker and timestamp */}
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center space-x-2">
+                  {/* Removed redundant ticker display */}
+                  <div className="flex items-center bg-primary-50 px-2 py-0.5 rounded-md text-xs">
+                    <span className="font-medium text-primary-700">{message.ticker}</span>
+                    <span className="mx-1 text-neutral-400">|</span>
+                    <span className="text-neutral-600">Q{message.quarter}</span>
+                  </div>
+                  <span className="text-xs text-neutral-500">
+                    {convertToEasternTime(message.timestamp)}
+                  </span>
                 </div>
-                <span className="text-xs text-neutral-500">
-                  {convertToEasternTime(message.timestamp)}
-                </span>
+                
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onSelectMessage) {
+                      onSelectMessage(message);
+                    }
+                  }}
+                  className="inline-flex items-center text-xs px-2 py-1 bg-primary-50 text-primary-700 rounded hover:bg-primary-100 transition-colors"
+                >
+                  <BarChart2 size={12} className="mr-1" />
+                  <span>Analysis</span>
+                </button>
               </div>
               
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onSelectMessage) {
-                    onSelectMessage(message);
-                  }
-                }}
-                className="inline-flex items-center text-xs px-2 py-1 bg-primary-50 text-primary-700 rounded hover:bg-primary-100 transition-colors"
-              >
-                <BarChart2 size={12} className="mr-1" />
-                <span>Analysis</span>
-              </button>
+              {/* Scrolling preview of the message content */}
+              {message.discord_message && (
+                <ScrollingPreview content={createMessagePreview(message)} />
+              )}
             </div>
           )}
         </div>
