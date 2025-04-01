@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Message } from '../../../types';
 import { ExternalLink, BarChart2 } from 'lucide-react';
 

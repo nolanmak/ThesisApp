@@ -14,18 +14,14 @@ const MessagesPage: React.FC = () => {
   const {
     messages,
     loading: messagesLoading,
-    expandedMessages,
     refreshing,
     connected: webSocketConnected,
     reconnecting: webSocketReconnecting,
     enabled: webSocketEnabled,
-    toggleExpand,
     fetchMessages: refreshMessages,
     toggleEnabled,
-    isExpanded,
     updateSearchTicker: setMessagesSearchTicker,
-    convertToEasternTime,
-    createMessagePreview
+    convertToEasternTime
   } = useMessagesData(searchMessageTicker);
 
   // Handlers for search
@@ -58,11 +54,7 @@ const MessagesPage: React.FC = () => {
           <MessagesList
             messages={messages}
             loading={messagesLoading}
-            expandedMessages={expandedMessages}
-            onToggleExpand={toggleExpand}
             convertToEasternTime={convertToEasternTime}
-            createMessagePreview={createMessagePreview}
-            isExpanded={isExpanded}
             onSelectMessage={handleMessageSelect}
           />
         </div>
