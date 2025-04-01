@@ -11,74 +11,99 @@ interface MessagesListProps {
 
 // Component for the scrolling ticker animation
 const ScrollingPreview: React.FC<{ content: string }> = ({ content }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
-  const [animationDuration, setAnimationDuration] = useState(20); // Default duration in seconds
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [contentWidth, setContentWidth] = useState(0);
+  const [duplicatedContent, setDuplicatedContent] = useState(`${content} • ${content}`);
   
+  // Set up the animation using JavaScript
+  useEffect(() => {
+    // Update content when it changes
+    setDuplicatedContent(`${content} • ${content}`);
+    
+    // Reset position
+    setPosition(0);
+  }, [content]);
+  
+  // Measure the container and content widths
   useEffect(() => {
     if (containerRef.current && contentRef.current) {
-      // Calculate animation duration based on content length
-      // Longer content should scroll slower to ensure readability
-      const contentWidth = contentRef.current.scrollWidth;
-      const containerWidth = containerRef.current.clientWidth;
-      
-      // Only animate if content is wider than container
-      if (contentWidth > containerWidth) {
-        // Calculate duration: longer text = longer duration
-        // Base duration of 15 seconds for a standard length text
-        const calculatedDuration = Math.max(15, (contentWidth / containerWidth) * 15);
-        setAnimationDuration(calculatedDuration);
-      } else {
-        // No animation needed if content fits
-        setAnimationDuration(0);
-      }
+      setContainerWidth(containerRef.current.clientWidth);
+      setContentWidth(contentRef.current.clientWidth);
     }
-  }, [content]);
-
-  // If no animation is needed, just show the static content
-  if (animationDuration === 0) {
-    return (
-      <div className="text-xs text-neutral-700 font-medium bg-neutral-50 p-2 rounded">
-        {content}
-      </div>
-    );
-  }
-
+  }, [duplicatedContent]);
+  
+  // Animation loop using requestAnimationFrame
+  useEffect(() => {
+    if (contentWidth === 0 || containerWidth === 0) return;
+    
+    // Calculate the total distance to scroll (half the content width)
+    const totalDistance = contentWidth / 2;
+    
+    // Increase speed by 20% - from 15 to 18 pixels per second
+    const pixelsPerSecond = 18; // 20% faster than before
+    
+    let lastTimestamp: number;
+    let animationFrameId: number;
+    
+    const animate = (timestamp: number) => {
+      if (!lastTimestamp) lastTimestamp = timestamp;
+      
+      // Calculate time elapsed in seconds
+      const elapsed = (timestamp - lastTimestamp) / 1000;
+      
+      // Calculate new position
+      const newPosition = position + (pixelsPerSecond * elapsed);
+      
+      // Reset position if we've scrolled through half the content
+      if (newPosition >= totalDistance) {
+        setPosition(0);
+      } else {
+        setPosition(newPosition);
+      }
+      
+      lastTimestamp = timestamp;
+      animationFrameId = requestAnimationFrame(animate);
+    };
+    
+    animationFrameId = requestAnimationFrame(animate);
+    
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [position, contentWidth, containerWidth]);
+  
   return (
     <div 
       ref={containerRef}
-      className="overflow-hidden w-full bg-neutral-50 p-1 rounded border border-neutral-100"
-      style={{ 
-        height: '1.75rem',
+      style={{
+        backgroundColor: '#f0f9ff', // Light blue background
+        border: '1px solid #bfdbfe', // Light blue border
+        borderRadius: '4px',
+        padding: '6px',
+        margin: '4px 0',
+        height: '24px',
+        overflow: 'hidden',
         position: 'relative'
       }}
     >
       <div
         ref={contentRef}
-        className="ticker-content"
         style={{
-          display: 'inline-block',
-          whiteSpace: 'nowrap',
           position: 'absolute',
-          left: '0',
-          paddingLeft: '100%', // Start off-screen
+          whiteSpace: 'nowrap',
+          color: '#1e40af', // Darker blue text
+          fontWeight: '500',
+          fontSize: '0.875rem',
+          left: `${-position}px`, // Move based on JavaScript animation
         }}
       >
-        <span className="text-xs text-neutral-700 font-medium">{content}</span>
+        {duplicatedContent}
       </div>
-      <style>{`
-        .ticker-content {
-          animation: scrollText ${animationDuration}s linear infinite;
-        }
-        @keyframes scrollText {
-          from {
-            transform: translateX(0);
-          }
-          to {
-            transform: translateX(-100%);
-          }
-        }
-      `}</style>
     </div>
   );
 };
@@ -114,9 +139,8 @@ const MessagesList: React.FC<MessagesListProps> = ({
       .replace(/\s+/g, ' ') // Replace multiple spaces with a single space
       .trim();
     
-    // For scrolling ticker, we want to use more of the content
-    // but still keep it reasonable
-    return plainText.length > 500 ? plainText.substring(0, 500) + '...' : plainText;
+    // For static preview, we want to show as much content as possible
+    return plainText;
   };
 
   // Use useEffect to filter out duplicate messages for the same ticker
@@ -269,7 +293,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
               </a>
             </div>
           ) : (
-            /* Analysis message with scrolling preview */
+            /* Analysis message with static preview */
             <div className="flex flex-col">
               {/* Header with ticker and timestamp */}
               <div className="flex justify-between items-center mb-2">
@@ -299,7 +323,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                 </button>
               </div>
               
-              {/* Scrolling preview of the message content */}
+              {/* Static preview of the message content */}
               {message.discord_message && (
                 <ScrollingPreview content={createMessagePreview(message)} />
               )}
