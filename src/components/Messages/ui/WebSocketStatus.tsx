@@ -1,6 +1,6 @@
 import React from 'react';
 import { Search, Wifi, WifiOff, Loader, RefreshCw } from 'lucide-react';
-import { toast } from 'react-toastify';
+
 
 interface WebSocketStatusProps {
   searchMessageTicker: string;

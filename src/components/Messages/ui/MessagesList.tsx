@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Message } from '../../../types';
 import { ExternalLink, BarChart2 } from 'lucide-react';
 
@@ -17,6 +17,12 @@ const MessagesList: React.FC<MessagesListProps> = ({
 }) => {
   // State to hold the deduplicated messages
   const [deduplicatedMessages, setDeduplicatedMessages] = useState<Message[]>([]);
+  // State to track new messages for highlighting
+  const [newMessageIds, setNewMessageIds] = useState<Set<string>>(new Set());
+  // Ref to track previous messages for comparison
+  const prevMessagesRef = useRef<Message[]>([]);
+  // Flag to track if initial load has completed
+  const initialLoadCompletedRef = useRef<boolean>(false);
 
   // Use useEffect to filter out duplicate messages for the same ticker
   useEffect(() => {
@@ -68,6 +74,50 @@ const MessagesList: React.FC<MessagesListProps> = ({
     setDeduplicatedMessages(deduplicated);
   }, [messages]);
 
+  // Set initial messages after first load
+  useEffect(() => {
+    if (!loading && messages.length > 0 && !initialLoadCompletedRef.current) {
+      // Set the initial messages as the baseline - these won't be highlighted
+      prevMessagesRef.current = [...messages];
+      initialLoadCompletedRef.current = true;
+    }
+  }, [loading, messages]);
+
+  // Detect new messages and highlight them for 1 minute
+  useEffect(() => {
+    // Skip this effect until initial load is completed
+    if (!initialLoadCompletedRef.current || !messages || messages.length === 0) return;
+    
+    // Find new messages by comparing with previous messages
+    const prevMessageIds = new Set(prevMessagesRef.current.map(msg => msg.message_id));
+    const currentNewMessageIds = messages
+      .filter(msg => !prevMessageIds.has(msg.message_id))
+      .map(msg => msg.message_id);
+    
+    // If we have new messages, add them to the set and set a timer to remove them
+    if (currentNewMessageIds.length > 0) {
+      setNewMessageIds(prev => {
+        const updatedSet = new Set(prev);
+        currentNewMessageIds.forEach(id => updatedSet.add(id));
+        return updatedSet;
+      });
+      
+      // For each new message, set a timeout to remove the highlight after 1 minute
+      currentNewMessageIds.forEach(id => {
+        setTimeout(() => {
+          setNewMessageIds(prev => {
+            const updatedSet = new Set(prev);
+            updatedSet.delete(id);
+            return updatedSet;
+          });
+        }, 60000); // 1 minute = 60000 milliseconds
+      });
+    }
+    
+    // Update the previous messages ref
+    prevMessagesRef.current = messages;
+  }, [messages]);
+
   if (loading && (!messages || messages.length === 0)) {
     return (
       <div className="bg-white p-6 rounded-md shadow-md border border-neutral-100 text-center">
@@ -89,7 +139,11 @@ const MessagesList: React.FC<MessagesListProps> = ({
       {deduplicatedMessages.map((message) => (
         <div 
           key={message.message_id}
-          className="bg-white p-3 rounded-md shadow-md border border-neutral-100 hover:border-primary-200 transition-colors"
+          className={`bg-white p-3 rounded-md shadow-md hover:border-primary-200 transition-colors ${
+            newMessageIds.has(message.message_id) 
+              ? 'border-2 border-green-500' 
+              : 'border border-neutral-100'
+          }`}
         >
           {message.link ? (
             /* Link message - show on a single line like analysis messages */
