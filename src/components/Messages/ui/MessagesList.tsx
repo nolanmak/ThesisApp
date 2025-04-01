@@ -1,22 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Message } from '../../../types';
 import { ExternalLink, BarChart2 } from 'lucide-react';
-import MessageAnalysisModal from '../modals/MessageAnalysisModal';
 
 interface MessagesListProps {
   messages: Message[];
   loading: boolean;
   convertToEasternTime: (utcTimestamp: string) => string;
+  onSelectMessage?: (message: Message) => void;
 }
 
 const MessagesList: React.FC<MessagesListProps> = ({
   messages = [],
   loading,
-  convertToEasternTime
+  convertToEasternTime,
+  onSelectMessage
 }) => {
-  // State for the analysis modal
-  const [showAnalysisModal, setShowAnalysisModal] = useState<boolean>(false);
-  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   // State to hold the deduplicated messages
   const [deduplicatedMessages, setDeduplicatedMessages] = useState<Message[]>([]);
 
@@ -86,96 +84,73 @@ const MessagesList: React.FC<MessagesListProps> = ({
     );
   }
 
-  // Function to open the analysis modal
-  const openAnalysisModal = (message: Message) => {
-    console.log('Opening analysis modal for message:', message);
-    setSelectedMessage(message);
-    setShowAnalysisModal(true);
-  };
-
-  // Function to close the analysis modal
-  const closeAnalysisModal = () => {
-    setShowAnalysisModal(false);
-    setSelectedMessage(null);
-  };
-
   return (
-    <>
-      <div className="space-y-3 max-h-[calc(100vh-120px)] overflow-auto scrollbar-hide">
-        {deduplicatedMessages.map((message) => (
-          <div 
-            key={message.message_id}
-            className="bg-white p-3 rounded-md shadow-md border border-neutral-100 hover:border-primary-200 transition-colors"
-          >
-            {message.link ? (
-              /* Link message - show on a single line like analysis messages */
-              <div className="flex justify-between items-center">
-                <div className="flex items-center space-x-2">
-                  <a 
-                    href={message.link} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
-                  >
-                    {message.ticker}
-                  </a>
-                  <span className="text-xs text-neutral-600">Q{message.quarter}</span>
-                  <span className="text-xs text-neutral-500">
-                    {convertToEasternTime(message.timestamp)}
-                  </span>
-                </div>
-                
+    <div className="space-y-3 max-h-[calc(100vh-120px)] overflow-auto scrollbar-hide">
+      {deduplicatedMessages.map((message) => (
+        <div 
+          key={message.message_id}
+          className="bg-white p-3 rounded-md shadow-md border border-neutral-100 hover:border-primary-200 transition-colors"
+        >
+          {message.link ? (
+            /* Link message - show on a single line like analysis messages */
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-2">
                 <a 
                   href={message.link} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="inline-flex items-center text-xs px-2 py-1 bg-primary-50 text-primary-600 rounded hover:bg-primary-100 transition-colors"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
                 >
-                  <ExternalLink size={12} className="mr-1" />
-                  <span>View Report</span>
+                  {message.ticker}
                 </a>
+                <span className="text-xs text-neutral-600">Q{message.quarter}</span>
+                <span className="text-xs text-neutral-500">
+                  {convertToEasternTime(message.timestamp)}
+                </span>
               </div>
-            ) : (
-              /* Analysis message - simplified with just header and analysis button */
-              <div className="flex justify-between items-center">
-                <div className="flex items-center space-x-2">
-                  <h3 className="text-sm font-medium text-neutral-800">
-                    {message.ticker}
-                  </h3>
-                  <div className="flex items-center bg-primary-50 px-2 py-0.5 rounded-md text-xs">
-                    <span className="font-medium text-primary-700">{message.ticker}</span>
-                    <span className="mx-1 text-neutral-400">|</span>
-                    <span className="text-neutral-600">Q{message.quarter}</span>
-                  </div>
-                  <span className="text-xs text-neutral-500">
-                    {convertToEasternTime(message.timestamp)}
-                  </span>
+              
+              <a 
+                href={message.link} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center text-xs px-2 py-1 bg-primary-50 text-primary-600 rounded hover:bg-primary-100 transition-colors"
+              >
+                <ExternalLink size={12} className="mr-1" />
+                <span>View Report</span>
+              </a>
+            </div>
+          ) : (
+            /* Analysis message - simplified with just header and analysis button */
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-2">
+                {/* Removed redundant ticker display */}
+                <div className="flex items-center bg-primary-50 px-2 py-0.5 rounded-md text-xs">
+                  <span className="font-medium text-primary-700">{message.ticker}</span>
+                  <span className="mx-1 text-neutral-400">|</span>
+                  <span className="text-neutral-600">Q{message.quarter}</span>
                 </div>
-                
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openAnalysisModal(message);
-                  }}
-                  className="inline-flex items-center text-xs px-2 py-1 bg-primary-50 text-primary-700 rounded hover:bg-primary-100 transition-colors"
-                >
-                  <BarChart2 size={12} className="mr-1" />
-                  <span>Analysis</span>
-                </button>
+                <span className="text-xs text-neutral-500">
+                  {convertToEasternTime(message.timestamp)}
+                </span>
               </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Analysis Modal */}
-      <MessageAnalysisModal
-        show={showAnalysisModal}
-        onClose={closeAnalysisModal}
-        message={selectedMessage}
-        convertToEasternTime={convertToEasternTime}
-      />
-    </>
+              
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onSelectMessage) {
+                    onSelectMessage(message);
+                  }
+                }}
+                className="inline-flex items-center text-xs px-2 py-1 bg-primary-50 text-primary-700 rounded hover:bg-primary-100 transition-colors"
+              >
+                <BarChart2 size={12} className="mr-1" />
+                <span>Analysis</span>
+              </button>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
   );
 };
 
