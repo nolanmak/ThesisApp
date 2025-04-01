@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import useMessagesData from '../Messages/hooks/useMessagesData';
 import MessagesList from '../Messages/ui/MessagesList';
 import WebSocketStatus from '../Messages/ui/WebSocketStatus';
@@ -9,6 +9,8 @@ const MessagesPage: React.FC = () => {
   const [searchMessageTicker, setSearchMessageTicker] = useState<string>('');
   // Selected message for analysis
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  // Flag to track if initial message has been set
+  const [initialMessageSet, setInitialMessageSet] = useState<boolean>(false);
 
   // Custom hooks
   const {
@@ -23,6 +25,36 @@ const MessagesPage: React.FC = () => {
     updateSearchTicker: setMessagesSearchTicker,
     convertToEasternTime
   } = useMessagesData(searchMessageTicker);
+
+  // Set the initial message on first load when messages are available
+  useEffect(() => {
+    // Only run this effect if we haven't set the initial message yet
+    // and if we have messages and they're not loading
+    if (!initialMessageSet && messages.length > 0 && !messagesLoading) {
+      // Find the most recent analysis message (without a link)
+      const analysisMessages = messages.filter(msg => !msg.link);
+      
+      if (analysisMessages.length > 0) {
+        // Sort by timestamp (newest first)
+        const sortedAnalysisMessages = [...analysisMessages].sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+        
+        // Set the most recent analysis message
+        setSelectedMessage(sortedAnalysisMessages[0]);
+      } else if (messages.length > 0) {
+        // If no analysis messages, just use the most recent message
+        const sortedMessages = [...messages].sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+        
+        setSelectedMessage(sortedMessages[0]);
+      }
+      
+      // Mark that we've set the initial message
+      setInitialMessageSet(true);
+    }
+  }, [messages, messagesLoading, initialMessageSet]);
 
   // Handlers for search
   const handleMessageSearchChange = (value: string) => {
