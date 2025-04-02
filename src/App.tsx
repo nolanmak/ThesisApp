@@ -24,7 +24,7 @@ function App() {
           {/* Protected routes - require beta access */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Layout />}>
-              <Route index element={<Navigate to="/dashboard/earnings" replace />} />
+              <Route index element={<Navigate to="/dashboard/messages" replace />} />
               <Route path="earnings" element={<EarningsPage />} />
               <Route path="messages" element={<MessagesPage />} />
               <Route path="company-config" element={<CompanyConfig />} />
