@@ -84,11 +84,13 @@ const ScrollingPreview: React.FC<{ content: string }> = ({ content }) => {
         backgroundColor: '#f0f9ff', // Light blue background
         border: '1px solid #bfdbfe', // Light blue border
         borderRadius: '4px',
-        padding: '6px',
+        padding: '0 12px', // Remove vertical padding, keep horizontal
         margin: '4px 0',
-        height: '24px',
+        height: '30px', // Maintain increased height for emoji
         overflow: 'hidden',
-        position: 'relative'
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center' // Center content vertically
       }}
     >
       <div
@@ -100,6 +102,10 @@ const ScrollingPreview: React.FC<{ content: string }> = ({ content }) => {
           fontWeight: '500',
           fontSize: '0.875rem',
           left: `${-position}px`, // Move based on JavaScript animation
+          lineHeight: '1',
+          display: 'flex',
+          alignItems: 'center',
+          height: '100%' // Take full height of parent
         }}
       >
         {duplicatedContent}

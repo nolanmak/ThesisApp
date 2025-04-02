@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Blend, LogOut, BarChart, MessageCircle } from 'lucide-react';
+import { Blend, LogOut, Calendar, MessageCircle } from 'lucide-react';
 
 const Layout: React.FC = () => {
   const location = useLocation();
@@ -32,20 +32,20 @@ const Layout: React.FC = () => {
             <ul className="flex space-x-3 items-center">
               <li>
                 <Link
-                  to="/dashboard/earnings"
-                  className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/earnings')}`}
-                >
-                  <BarChart className="mr-1" size={14} />
-                  <span>Dashboard</span>
-                </Link>
-              </li>
-              <li>
-                <Link
                   to="/dashboard/messages"
                   className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/messages')}`}
                 >
                   <MessageCircle className="mr-1" size={14} />
                   <span>Earnings</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/dashboard/earnings"
+                  className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/earnings')}`}
+                >
+                  <Calendar className="mr-1" size={14} />
+                  <span>Calendar</span>
                 </Link>
               </li>
               <li>
