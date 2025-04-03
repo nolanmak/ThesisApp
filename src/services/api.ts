@@ -1,4 +1,4 @@
-import { EarningsItem, HistoricalMetrics, CompanyConfig, Message } from '../types';
+import { EarningsItem, CompanyConfig, Message } from '../types';
 import { cache, CACHE_KEYS } from './cache';
 
 // Base URLs - Use local proxy in development mode
@@ -281,107 +281,6 @@ export const createEarningsItem = async (item: Omit<EarningsItem, 'id'>): Promis
     return newItem;
   } catch (error) {
     console.error('Error creating earnings item:', error);
-    throw error;
-  }
-};
-
-// Historical Metrics API
-export const getHistoricalMetrics = async (): Promise<HistoricalMetrics[]> => {
-  try {
-    // Check cache first
-    const cachedData = cache.get<HistoricalMetrics[]>(CACHE_KEYS.HISTORICAL_METRICS);
-    if (cachedData) {
-      console.log('Using cached historical metrics');
-      return cachedData;
-    }
-
-    // If not in cache, fetch from API using our CORS-safe function
-    const data = await fetchWithAuth(
-      `${HISTORICAL_API_BASE_URL}/historical`,
-      HISTORICAL_API_KEY
-    );
-    
-    // Store in cache
-    cache.set(CACHE_KEYS.HISTORICAL_METRICS, data, CACHE_EXPIRY.MEDIUM);
-    
-    return data;
-  } catch (error) {
-    console.error('Error fetching historical metrics:', error);
-    return [];
-  }
-};
-
-export const getHistoricalMetricsByTickerAndDate = async (ticker: string, date: string): Promise<HistoricalMetrics | null> => {
-  try {
-    const cacheKey = CACHE_KEYS.HISTORICAL_METRICS_BY_TICKER_DATE(ticker, date);
-    
-    // Check cache first
-    const cachedData = cache.get<HistoricalMetrics>(cacheKey);
-    if (cachedData) {
-      console.log(`Using cached historical metrics for ${ticker} on ${date}`);
-      return cachedData;
-    }
-
-    // If not in cache, fetch from API using our CORS-safe function
-    const data = await fetchWithAuth(
-      `${HISTORICAL_API_BASE_URL}/historical/${ticker}/${date}`,
-      HISTORICAL_API_KEY
-    );
-    
-    // Store in cache if data exists
-    if (data) {
-      cache.set(cacheKey, data, CACHE_EXPIRY.LONG);
-    }
-    
-    return data;
-  } catch (error) {
-    console.error('Error fetching historical metrics by ticker and date:', error);
-    return null;
-  }
-};
-
-export const createHistoricalMetrics = async (metrics: HistoricalMetrics): Promise<HistoricalMetrics> => {
-  try {
-    // Use our CORS-safe function for POST requests
-    const data = await fetchWithAuth(
-      `${HISTORICAL_API_BASE_URL}/historical`,
-      HISTORICAL_API_KEY,
-      {
-        method: 'POST',
-        body: JSON.stringify(metrics)
-      }
-    );
-    
-    // Invalidate caches
-    cache.remove(CACHE_KEYS.HISTORICAL_METRICS);
-    cache.remove(CACHE_KEYS.HISTORICAL_METRICS_BY_TICKER_DATE(metrics.ticker, metrics.date));
-    
-    return data;
-  } catch (error) {
-    console.error('Error creating historical metrics:', error);
-    throw error;
-  }
-};
-
-export const updateHistoricalMetrics = async (metrics: HistoricalMetrics): Promise<HistoricalMetrics> => {
-  try {
-    // Use our CORS-safe function for POST requests (API expects POST for updates too)
-    const data = await fetchWithAuth(
-      `${HISTORICAL_API_BASE_URL}/historical`,
-      HISTORICAL_API_KEY,
-      {
-        method: 'POST',
-        body: JSON.stringify(metrics)
-      }
-    );
-    
-    // Invalidate caches
-    cache.remove(CACHE_KEYS.HISTORICAL_METRICS);
-    cache.remove(CACHE_KEYS.HISTORICAL_METRICS_BY_TICKER_DATE(metrics.ticker, metrics.date));
-    
-    return data;
-  } catch (error) {
-    console.error('Error updating historical metrics:', error);
     throw error;
   }
 };
