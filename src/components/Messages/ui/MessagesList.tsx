@@ -84,6 +84,34 @@ const StaticPreview: React.FC<{
                   </div>
                 </>
               )}
+              
+              {/* Current Year Section - Only show if there are populated metrics */}
+              {content.metrics.slice(4).some(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') && (
+                <>
+                  <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.875rem', marginTop: '4px' }}>Fiscal Year:</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {content.metrics.slice(4)
+                      .filter(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') // Only show populated metrics
+                      .map((metric, index) => (
+                        <div key={index} style={{ 
+                          flex: '1 1 calc(50% - 4px)', 
+                          minWidth: '120px',
+                          backgroundColor: '#e0f2fe',
+                          padding: '4px 8px',
+                          borderRadius: '4px'
+                        }}>
+                          <div style={{ fontWeight: '500', fontSize: '0.75rem', color: '#64748b' }}>{metric.label}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ fontWeight: '600', color: '#1e40af' }}>{metric.value}</span>
+                            <span style={{ color: '#64748b', fontSize: '0.75rem' }}>vs</span>
+                            <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{metric.expected}</span>
+                          </div>
+                        </div>
+                      ))
+                    }
+                  </div>
+                </>
+              )}
             </>
           ) : (
             <div style={{ padding: '8px', color: '#64748b', fontSize: '0.875rem', textAlign: 'center' }}>
@@ -235,15 +263,84 @@ const MessagesList: React.FC<MessagesListProps> = ({
       
       // Check if it has the specific earnings data format we're looking for
       if (jsonData.current_quarter_vs_expected && jsonData.next_quarter_vs_expected) {
-        // Extract the metrics data
-        const currentSales = jsonData.current_quarter_vs_expected.sales || {};
-        const currentEPS = jsonData.current_quarter_vs_expected.eps || {};
-        const nextSales = jsonData.next_quarter_vs_expected.sales || {};
-        const nextEPS = jsonData.next_quarter_vs_expected.eps || {};
+        // Handle both formats - the new format with string values and the old format with object values
+        let metricsData;
         
-        // Format the data as structured metrics
-        const metricsData = {
-          metrics: [
+        // Check if we have the new format (string values)
+        if (typeof jsonData.current_quarter_vs_expected.sales === 'string') {
+          // Extract values from formatted strings
+          const extractValues = (str: string) => {
+            // This regex extracts values like "739M" and "86.68B" from strings like "Sales (Actual vs Expected): 739M vs 86.68B"
+            const matches = str.match(/:\s*([\d.]+[A-Za-z%]*)\s*vs\s*([\d.]+[A-Za-z%]*)/i);
+            return matches ? { value: matches[1], expected: matches[2] } : { value: 'N/A', expected: 'N/A' };
+          };
+          
+          // Parse the string values to extract the actual numbers
+          const currentSalesValues = extractValues(jsonData.current_quarter_vs_expected.sales);
+          const currentEPSValues = extractValues(jsonData.current_quarter_vs_expected.eps);
+          const nextSalesValues = extractValues(jsonData.next_quarter_vs_expected.sales);
+          const nextEPSValues = extractValues(jsonData.next_quarter_vs_expected.eps);
+          
+          // Initialize metrics array with current and next quarter data
+          const metrics = [
+            {
+              label: 'Sales',
+              value: currentSalesValues.value,
+              expected: currentSalesValues.expected
+            },
+            {
+              label: 'EPS',
+              value: currentEPSValues.value,
+              expected: currentEPSValues.expected
+            },
+            {
+              label: 'Sales',
+              value: nextSalesValues.value,
+              expected: nextSalesValues.expected
+            },
+            {
+              label: 'EPS',
+              value: nextEPSValues.value,
+              expected: nextEPSValues.expected
+            }
+          ];
+          
+          // Add current year metrics if available
+          if (jsonData.current_year_vs_expected) {
+            const currentYearSalesValues = jsonData.current_year_vs_expected.sales ? 
+              extractValues(jsonData.current_year_vs_expected.sales) : 
+              { value: 'N/A', expected: 'N/A' };
+              
+            const currentYearEPSValues = jsonData.current_year_vs_expected.eps ? 
+              extractValues(jsonData.current_year_vs_expected.eps) : 
+              { value: 'N/A', expected: 'N/A' };
+            
+            // Add current year metrics to the array
+            metrics.push(
+              {
+                label: 'FY Sales',
+                value: currentYearSalesValues.value,
+                expected: currentYearSalesValues.expected
+              },
+              {
+                label: 'FY EPS',
+                value: currentYearEPSValues.value,
+                expected: currentYearEPSValues.expected
+              }
+            );
+          }
+          
+          // Format the data as structured metrics
+          metricsData = { metrics };
+        } else {
+          // Original format with nested objects
+          const currentSales = jsonData.current_quarter_vs_expected.sales || {};
+          const currentEPS = jsonData.current_quarter_vs_expected.eps || {};
+          const nextSales = jsonData.next_quarter_vs_expected.sales || {};
+          const nextEPS = jsonData.next_quarter_vs_expected.eps || {};
+          
+          // Initialize metrics array with current and next quarter data
+          const metrics = [
             {
               label: 'Sales',
               value: currentSales.actual || 'N/A',
@@ -264,8 +361,30 @@ const MessagesList: React.FC<MessagesListProps> = ({
               value: nextEPS.guidance || 'N/A',
               expected: nextEPS.expected || 'N/A'
             }
-          ]
-        };
+          ];
+          
+          // Add current year metrics if available
+          if (jsonData.current_year_vs_expected) {
+            const currentYearSales = jsonData.current_year_vs_expected.sales || {};
+            const currentYearEPS = jsonData.current_year_vs_expected.eps || {};
+            
+            // Add current year metrics to the array
+            metrics.push(
+              {
+                label: 'FY Sales',
+                value: currentYearSales.actual || 'N/A',
+                expected: currentYearSales.expected || 'N/A'
+              },
+              {
+                label: 'FY EPS',
+                value: currentYearEPS.actual || 'N/A',
+                expected: currentYearEPS.expected || 'N/A'
+              }
+            );
+          }
+          
+          metricsData = { metrics };
+        }
         
         return { content: metricsData, multiline: true, isMetrics: true };
       }
