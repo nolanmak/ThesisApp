@@ -5,6 +5,7 @@ export interface EarningsItem {
   quarter: number;
   release_time: string;
   year: number;
+  company_name?: string;
 }
 
 export interface Message {

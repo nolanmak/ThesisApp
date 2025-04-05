@@ -112,8 +112,12 @@ const useEarningsData = (initialSearchTicker: string = '', initialFilterActive: 
         
         // More robust string type check
         const searchTickerStr = typeof prev.searchTicker === 'string' ? prev.searchTicker : '';
+        const searchLower = searchTickerStr.toLowerCase();
+        
+        // Search in both ticker and company name
         const matchesSearch = searchTickerStr === '' || 
-          item.ticker.toLowerCase().startsWith(searchTickerStr.toLowerCase());
+          item.ticker.toLowerCase().includes(searchLower) || 
+          (item.company_name && item.company_name.toLowerCase().includes(searchLower));
           
         const matchesActive = prev.filterActive === null || 
           item.is_active === prev.filterActive;
