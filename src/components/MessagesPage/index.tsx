@@ -71,7 +71,7 @@ const MessagesPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-row h-[calc(100vh-120px)]">
         {/* Messages - 50% width, left aligned */}
-        <div className="w-[50%] flex flex-col bg-white p-6 rounded-md shadow-md border border-neutral-100 mr-4">
+        <div className="w-[50%] flex flex-col mr-4">
           <WebSocketStatus
             searchMessageTicker={searchMessageTicker}
             refreshing={refreshing}
