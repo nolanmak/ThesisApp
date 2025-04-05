@@ -249,35 +249,34 @@ const MessagesList: React.FC<MessagesListProps> = ({
         >
           {message.link ? (
             /* Link message - show on a single line like analysis messages */
-            <div className="flex justify-between items-center">
+            <a 
+              href={message.link} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex justify-between items-center cursor-pointer hover:bg-neutral-50 transition-colors"
+            >
               <div className="flex items-center space-x-2">
-                <a 
-                  href={message.link} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
-                >
-                  {message.ticker}
-                </a>
+                <span className="text-sm font-medium text-blue-600">{message.ticker}</span>
                 <span className="text-xs text-neutral-600">Q{message.quarter}</span>
                 <span className="text-xs text-neutral-500">
                   {convertToEasternTime(message.timestamp)}
                 </span>
               </div>
               
-              <a 
-                href={message.link} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="inline-flex items-center text-xs px-2 py-1 bg-primary-50 text-primary-600 rounded hover:bg-primary-100 transition-colors"
-              >
-                <ExternalLink size={12} className="mr-1" />
-                <span>View Report</span>
-              </a>
-            </div>
+              <div className="inline-flex items-center justify-center w-6 h-6 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors">
+                <ExternalLink size={14} />
+              </div>
+            </a>
           ) : (
             /* Analysis message with static preview */
-            <div className="flex flex-col">
+            <div 
+              className="flex flex-col cursor-pointer hover:bg-neutral-50 transition-colors"
+              onClick={() => {
+                if (onSelectMessage) {
+                  onSelectMessage(message);
+                }
+              }}
+            >
               {/* Header with ticker and timestamp */}
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center space-x-2">
@@ -292,18 +291,9 @@ const MessagesList: React.FC<MessagesListProps> = ({
                   </span>
                 </div>
                 
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (onSelectMessage) {
-                      onSelectMessage(message);
-                    }
-                  }}
-                  className="inline-flex items-center text-xs px-2 py-1 bg-primary-50 text-primary-700 rounded hover:bg-primary-100 transition-colors"
-                >
-                  <BarChart2 size={12} className="mr-1" />
-                  <span>Analysis</span>
-                </button>
+                <div className="inline-flex items-center justify-center w-6 h-6 bg-primary-50 text-primary-700 rounded-full hover:bg-primary-100 transition-colors">
+                  <BarChart2 size={14} />
+                </div>
               </div>
               
               {/* Static preview of the message content */}
