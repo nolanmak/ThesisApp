@@ -18,6 +18,7 @@ export interface Message {
   subject?: string;
   source?: string;
   link?: string;
+  EPSComparison?: string;
 }
 
 export interface VerifyKeywords {

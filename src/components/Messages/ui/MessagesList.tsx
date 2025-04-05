@@ -60,6 +60,12 @@ const MessagesList: React.FC<MessagesListProps> = ({
 
   // Helper function to create a preview of the message content
   const createMessagePreview = (message: Message): string => {
+    // If EPSComparison is available, use that for the preview
+    if (message.EPSComparison) {
+      return message.EPSComparison;
+    }
+    
+    // Otherwise fall back to discord_message
     if (!message.discord_message) return '';
     
     // Remove any markdown formatting
@@ -126,7 +132,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
     );
     
     setDeduplicatedMessages(deduplicated);
-  }, [messages]);
+  }, [messages, convertToEasternTime]);
 
   // Set initial messages after first load
   useEffect(() => {
