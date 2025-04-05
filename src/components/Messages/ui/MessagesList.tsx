@@ -9,106 +9,35 @@ interface MessagesListProps {
   onSelectMessage?: (message: Message) => void;
 }
 
-// Component for the scrolling ticker animation
-const ScrollingPreview: React.FC<{ content: string }> = ({ content }) => {
-  const [position, setPosition] = useState(0);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
-  const [contentWidth, setContentWidth] = useState(0);
-  const [duplicatedContent, setDuplicatedContent] = useState(`${content} • ${content}`);
-  
-  // Set up the animation using JavaScript
-  useEffect(() => {
-    // Update content when it changes
-    setDuplicatedContent(`${content} • ${content}`);
-    
-    // Reset position
-    setPosition(0);
-  }, [content]);
-  
-  // Measure the container and content widths
-  useEffect(() => {
-    if (containerRef.current && contentRef.current) {
-      setContainerWidth(containerRef.current.clientWidth);
-      setContentWidth(contentRef.current.clientWidth);
-    }
-  }, [duplicatedContent]);
-  
-  // Animation loop using requestAnimationFrame
-  useEffect(() => {
-    if (contentWidth === 0 || containerWidth === 0) return;
-    
-    // Calculate the total distance to scroll (half the content width)
-    const totalDistance = contentWidth / 2;
-    
-    // Increase speed by 20% - from 15 to 18 pixels per second
-    const pixelsPerSecond = 18; // 20% faster than before
-    
-    let lastTimestamp: number;
-    let animationFrameId: number;
-    
-    const animate = (timestamp: number) => {
-      if (!lastTimestamp) lastTimestamp = timestamp;
-      
-      // Calculate time elapsed in seconds
-      const elapsed = (timestamp - lastTimestamp) / 1000;
-      
-      // Calculate new position
-      const newPosition = position + (pixelsPerSecond * elapsed);
-      
-      // Reset position if we've scrolled through half the content
-      if (newPosition >= totalDistance) {
-        setPosition(0);
-      } else {
-        setPosition(newPosition);
-      }
-      
-      lastTimestamp = timestamp;
-      animationFrameId = requestAnimationFrame(animate);
-    };
-    
-    animationFrameId = requestAnimationFrame(animate);
-    
-    return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
-    };
-  }, [position, contentWidth, containerWidth]);
-  
+// Component for static message preview - single line with truncation
+const StaticPreview: React.FC<{ content: string }> = ({ content }) => {
   return (
     <div 
-      ref={containerRef}
       style={{
         backgroundColor: '#f0f9ff', // Light blue background
         border: '1px solid #bfdbfe', // Light blue border
         borderRadius: '4px',
-        padding: '0 12px', // Remove vertical padding, keep horizontal
+        padding: '0 12px',
         margin: '4px 0',
-        height: '30px', // Maintain increased height for emoji
+        height: '30px', // Fixed height for single line
         overflow: 'hidden',
-        position: 'relative',
         display: 'flex',
         alignItems: 'center' // Center content vertically
       }}
     >
       <div
-        ref={contentRef}
         style={{
-          position: 'absolute',
-          whiteSpace: 'nowrap',
           color: '#1e40af', // Darker blue text
           fontWeight: '500',
           fontSize: '0.875rem',
-          left: `${-position}px`, // Move based on JavaScript animation
           lineHeight: '1',
-          display: 'flex',
-          alignItems: 'center',
-          height: '100%' // Take full height of parent
+          width: '100%',
+          whiteSpace: 'nowrap', // Prevent wrapping
+          overflow: 'hidden',
+          textOverflow: 'ellipsis' // Add ellipsis for truncated text
         }}
       >
-        {duplicatedContent}
+        {content}
       </div>
     </div>
   );
@@ -331,7 +260,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
               
               {/* Static preview of the message content */}
               {message.discord_message && (
-                <ScrollingPreview content={createMessagePreview(message)} />
+                <StaticPreview content={createMessagePreview(message)} />
               )}
             </div>
           )}
