@@ -111,8 +111,8 @@ const MessagesPage: React.FC = () => {
               
               {/* Content */}
               <div className="flex-1 overflow-auto">
-                <div className="prose max-w-none">
-                  <div className="text-neutral-800 whitespace-pre-wrap markdown-content">
+                <div className="prose max-w-none overflow-x-hidden">
+                  <div className="text-neutral-800 whitespace-pre-wrap markdown-content break-words overflow-wrap-anywhere">
                     {selectedMessage.discord_message}
                   </div>
                   
