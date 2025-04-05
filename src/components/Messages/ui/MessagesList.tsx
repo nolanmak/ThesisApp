@@ -10,20 +10,105 @@ interface MessagesListProps {
   createMessagePreview?: (message: Message) => string;
 }
 
-// Component for static message preview - single line with truncation
-const StaticPreview: React.FC<{ content: string }> = ({ content }) => {
+// Component for message preview - supports both standard text and structured metrics display
+const StaticPreview: React.FC<{ 
+  content: string | { metrics: Array<{label: string, value: string, expected: string}> }; 
+  multiline?: boolean;
+  isMetrics?: boolean;
+}> = ({ content, multiline = false, isMetrics = false }) => {
+  // If it's metrics data, render a structured layout
+  if (isMetrics && typeof content !== 'string') {
+    return (
+      <div 
+        style={{
+          backgroundColor: '#f0f9ff', // Light blue background
+          border: '1px solid #bfdbfe', // Light blue border
+          borderRadius: '4px',
+          padding: '8px 12px',
+          margin: '4px 0',
+          overflow: 'hidden'
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {/* Only render if we have at least one populated metric */}
+          {content.metrics.some(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') ? (
+            <>
+              {/* Current Quarter Section */}
+              <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.875rem' }}>Current Quarter:</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {content.metrics.slice(0, 2)
+                  .filter(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') // Only show populated metrics
+                  .map((metric, index) => (
+                    <div key={index} style={{ 
+                      flex: '1 1 calc(50% - 4px)', 
+                      minWidth: '120px',
+                      backgroundColor: '#e0f2fe',
+                      padding: '4px 8px',
+                      borderRadius: '4px'
+                    }}>
+                      <div style={{ fontWeight: '500', fontSize: '0.75rem', color: '#64748b' }}>{metric.label}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ fontWeight: '600', color: '#1e40af' }}>{metric.value}</span>
+                        <span style={{ color: '#64748b', fontSize: '0.75rem' }}>vs</span>
+                        <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{metric.expected}</span>
+                      </div>
+                    </div>
+                  ))
+                }
+              </div>
+              
+              {/* Next Quarter Section - Only show if there are populated metrics */}
+              {content.metrics.slice(2, 4).some(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') && (
+                <>
+                  <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.875rem', marginTop: '4px' }}>Next Quarter:</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {content.metrics.slice(2, 4)
+                      .filter(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') // Only show populated metrics
+                      .map((metric, index) => (
+                        <div key={index} style={{ 
+                          flex: '1 1 calc(50% - 4px)', 
+                          minWidth: '120px',
+                          backgroundColor: '#e0f2fe',
+                          padding: '4px 8px',
+                          borderRadius: '4px'
+                        }}>
+                          <div style={{ fontWeight: '500', fontSize: '0.75rem', color: '#64748b' }}>{metric.label}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ fontWeight: '600', color: '#1e40af' }}>{metric.value}</span>
+                            <span style={{ color: '#64748b', fontSize: '0.75rem' }}>vs</span>
+                            <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{metric.expected}</span>
+                          </div>
+                        </div>
+                      ))
+                    }
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            <div style={{ padding: '8px', color: '#64748b', fontSize: '0.875rem', textAlign: 'center' }}>
+              No metrics available
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+  
+  // Standard text preview
   return (
     <div 
       style={{
         backgroundColor: '#f0f9ff', // Light blue background
         border: '1px solid #bfdbfe', // Light blue border
         borderRadius: '4px',
-        padding: '0 12px',
+        padding: '8px 12px',
         margin: '4px 0',
-        height: '30px', // Fixed height for single line
+        minHeight: '30px', // Minimum height
+        maxHeight: multiline ? '120px' : '30px', // Allow more height for multiline
         overflow: 'hidden',
         display: 'flex',
-        alignItems: 'center' // Center content vertically
+        alignItems: 'flex-start' // Align to top for multiline
       }}
     >
       <div
@@ -31,14 +116,14 @@ const StaticPreview: React.FC<{ content: string }> = ({ content }) => {
           color: '#1e40af', // Darker blue text
           fontWeight: '500',
           fontSize: '0.875rem',
-          lineHeight: '1',
+          lineHeight: '1.4',
           width: '100%',
-          whiteSpace: 'nowrap', // Prevent wrapping
+          whiteSpace: multiline ? 'pre-wrap' : 'nowrap', // Allow wrapping for multiline
           overflow: 'hidden',
-          textOverflow: 'ellipsis' // Add ellipsis for truncated text
+          textOverflow: multiline ? 'clip' : 'ellipsis' // Add ellipsis for single line only
         }}
       >
-        {content}
+        {typeof content === 'string' ? content : ''}
       </div>
     </div>
   );
@@ -125,33 +210,69 @@ const MessagesList: React.FC<MessagesListProps> = ({
     setDeduplicatedMessages(deduplicated);
   }, [messages]);
   // Helper function to create a preview of the message content
-  const createMessagePreview = (message: Message): string => {
+  const createMessagePreview = (message: Message): { 
+    content: string | { metrics: Array<{label: string, value: string, expected: string}> }; 
+    multiline: boolean;
+    isMetrics: boolean;
+  } => {
     // Use external preview function if provided
     if (externalCreateMessagePreview) {
-      return externalCreateMessagePreview(message);
+      return { content: externalCreateMessagePreview(message), multiline: false, isMetrics: false };
     }
     
     // If EPSComparison is available, use that for the preview
     if (message.EPSComparison) {
-      return message.EPSComparison;
+      return { content: message.EPSComparison, multiline: false, isMetrics: false };
     }
     
     // Otherwise fall back to discord_message
-    if (!message.discord_message) return '';
+    if (!message.discord_message) return { content: '', multiline: false, isMetrics: false };
     
     // Check if discord_message is a JSON string
     try {
       // Try to parse as JSON
       const jsonData = JSON.parse(message.discord_message);
       
-      // If it has a message property, return just that part
-      if (jsonData && jsonData.message) {
-        // Get the message content and format for preview
-        const messageContent = jsonData.message
-          .replace(/\n/g, ' ') // Replace newlines with spaces for preview
-          .replace(/\s+/g, ' ') // Replace multiple spaces with a single space
-          .trim();
-        return messageContent;
+      // Check if it has the specific earnings data format we're looking for
+      if (jsonData.current_quarter_vs_expected && jsonData.next_quarter_vs_expected) {
+        // Extract the metrics data
+        const currentSales = jsonData.current_quarter_vs_expected.sales || {};
+        const currentEPS = jsonData.current_quarter_vs_expected.eps || {};
+        const nextSales = jsonData.next_quarter_vs_expected.sales || {};
+        const nextEPS = jsonData.next_quarter_vs_expected.eps || {};
+        
+        // Format the data as structured metrics
+        const metricsData = {
+          metrics: [
+            {
+              label: 'Sales',
+              value: currentSales.actual || 'N/A',
+              expected: currentSales.expected || 'N/A'
+            },
+            {
+              label: 'EPS',
+              value: currentEPS.actual || 'N/A',
+              expected: currentEPS.expected || 'N/A'
+            },
+            {
+              label: 'Sales',
+              value: nextSales.guidance || 'N/A',
+              expected: nextSales.expected || 'N/A'
+            },
+            {
+              label: 'EPS',
+              value: nextEPS.guidance || 'N/A',
+              expected: nextEPS.expected || 'N/A'
+            }
+          ]
+        };
+        
+        return { content: metricsData, multiline: true, isMetrics: true };
+      }
+      
+      // If it has a message property but not the specific format, return just that part
+      if (jsonData.message) {
+        return { content: jsonData.message, multiline: false, isMetrics: false };
       }
     } catch {
       // Not JSON, continue with regular text processing
@@ -170,7 +291,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
       .trim();
     
     // For static preview, we want to show as much content as possible
-    return plainText;
+    return { content: plainText, multiline: false, isMetrics: false };
   };
 
   // Set initial messages after first load
@@ -316,7 +437,11 @@ const MessagesList: React.FC<MessagesListProps> = ({
               
               {/* Static preview of the message content */}
               {message.discord_message && (
-                <StaticPreview content={createMessagePreview(message)} />
+                <StaticPreview 
+                  content={createMessagePreview(message).content} 
+                  multiline={createMessagePreview(message).multiline}
+                  isMetrics={createMessagePreview(message).isMetrics}
+                />
               )}
             </div>
           )}
