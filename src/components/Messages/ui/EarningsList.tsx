@@ -18,6 +18,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
   onToggleActive,
   onOpenConfigModal
 }) => {
+
   if (loading) {
     return (
       <div className="text-center py-8">
@@ -43,16 +44,16 @@ const EarningsList: React.FC<EarningsListProps> = ({
           className="bg-white border border-neutral-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 aspect-square p-4 flex flex-col"
         >
           <div className="flex justify-between items-start mb-3">
-            <h3 className="text-xl font-semibold text-neutral-800">{item.ticker}</h3>
+            <div>
+              <h3 className="text-xl font-semibold text-neutral-800">{item.ticker}</h3>
+              <p className="text-sm text-neutral-500 truncate max-w-[200px]">{item.company_name}</p>
+            </div>
             <div className="flex items-center space-x-2">
               {item.is_active && (
                 <button
                   onClick={() => {
-                    console.log('Config button clicked for item:', item);
-                    console.log('onOpenConfigModal is defined:', !!onOpenConfigModal);
                     try {
                       onOpenConfigModal(item);
-                      console.log('onOpenConfigModal called successfully');
                     } catch (error) {
                       console.error('Error calling onOpenConfigModal:', error);
                     }
