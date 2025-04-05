@@ -139,6 +139,24 @@ const MessagesList: React.FC<MessagesListProps> = ({
     // Otherwise fall back to discord_message
     if (!message.discord_message) return '';
     
+    // Check if discord_message is a JSON string
+    try {
+      // Try to parse as JSON
+      const jsonData = JSON.parse(message.discord_message);
+      
+      // If it has a message property, return just that part
+      if (jsonData && jsonData.message) {
+        // Get the message content and format for preview
+        const messageContent = jsonData.message
+          .replace(/\n/g, ' ') // Replace newlines with spaces for preview
+          .replace(/\s+/g, ' ') // Replace multiple spaces with a single space
+          .trim();
+        return messageContent;
+      }
+    } catch {
+      // Not JSON, continue with regular text processing
+    }
+    
     // Remove any markdown formatting
     const plainText = message.discord_message
       .replace(/\*\*/g, '') // Remove bold

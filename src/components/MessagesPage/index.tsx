@@ -113,7 +113,21 @@ const MessagesPage: React.FC = () => {
               <div className="flex-1 overflow-auto">
                 <div className="prose max-w-none overflow-x-hidden">
                   <div className="text-neutral-800 whitespace-pre-wrap markdown-content break-words overflow-wrap-anywhere">
-                    {selectedMessage.discord_message}
+                    {(() => {
+                      // Try to parse the discord_message as JSON
+                      try {
+                        const jsonData = JSON.parse(selectedMessage.discord_message);
+                        // If it has a message property, return just that part
+                        if (jsonData && jsonData.message) {
+                          return jsonData.message;
+                        }
+                        // Otherwise, stringify the JSON with formatting for readability
+                        return JSON.stringify(jsonData, null, 2);
+                      } catch {
+                        // Not JSON, return as is
+                        return selectedMessage.discord_message;
+                      }
+                    })()}
                   </div>
                   
                   {selectedMessage.link && (
