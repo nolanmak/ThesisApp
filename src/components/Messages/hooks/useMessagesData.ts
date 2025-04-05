@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getMessages } from '../../../services/api';
 import { Message } from '../../../types';
 import { toast } from 'react-toastify';
@@ -63,6 +63,23 @@ const useMessagesData = (initialSearchTicker: string = '') => {
       const exists = prev.messages.some(msg => msg.message_id === newMessage.message_id);
       if (exists) {
         console.log('Message already exists, not adding duplicate');
+        return prev;
+      }
+      
+      // Add the new message to original messages as well
+      if (originalMessagesRef.current.length > 0) {
+        // Check if it exists in original messages
+        const existsInOriginal = originalMessagesRef.current.some((msg: Message) => msg.message_id === newMessage.message_id);
+        if (!existsInOriginal) {
+          originalMessagesRef.current = [...originalMessagesRef.current, newMessage]
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        }
+      }
+      
+      // If we're filtering, only add the message if it matches the filter
+      if (prev.searchTicker !== '' && !newMessage.ticker.toLowerCase().includes(prev.searchTicker.toLowerCase())) {
+        // Don't add to filtered view, but still show notification
+        toast.info(`New message received for ${newMessage.ticker}`);
         return prev;
       }
       
@@ -161,41 +178,51 @@ const useMessagesData = (initialSearchTicker: string = '') => {
 
 
 
-  // Update search term for messages
-  const updateSearchTicker = useCallback((searchTerm: string) => {
-    setState(prev => ({ ...prev, searchTicker: searchTerm }));
-  }, []);
+  // Store original messages when fetched
+  useEffect(() => {
+    if (state.messages.length > 0 && state.searchTicker === '' && originalMessagesRef.current.length === 0) {
+      originalMessagesRef.current = [...state.messages];
+    }
+  }, [state.messages, state.searchTicker]);
 
   // Handle manual refresh with toast notification
   const handleRefreshWithToast = useCallback(() => {
     fetchMessages(true); // Bypass cache to get fresh data
     toast.info('Feed refreshed');
-  }, [fetchMessages]);
+  }, [fetchMessages, convertToEasternTime]);
 
   // Track original unfiltered messages
-  const [originalMessages, setOriginalMessages] = useState<Message[]>([]);
+  const originalMessagesRef = useRef<Message[]>([]);
 
-  // Store original messages when fetched
-  useEffect(() => {
-    if (state.messages.length > 0 && state.searchTicker === '') {
-      setOriginalMessages(state.messages);
-    }
-  }, [state.messages, state.searchTicker]);
-
-  // Apply filters when search ticker changes
-  useEffect(() => {
-    if (state.searchTicker !== '') {
-      // Filter from original messages to avoid filtering already filtered results
-      const filteredMessages = originalMessages.filter(message => 
-        message.ticker.toLowerCase().includes(state.searchTicker.toLowerCase())
+  // Update search term for messages with better handling to prevent re-render loops
+  const updateSearchTicker = useCallback((searchTerm: string) => {
+    setState(prev => {
+      // If this is the first time we're setting a search term, store the original messages
+      if (originalMessagesRef.current.length === 0 && prev.messages.length > 0) {
+        originalMessagesRef.current = [...prev.messages];
+      }
+      
+      // If search term is empty, restore original messages
+      if (searchTerm === '') {
+        return {
+          ...prev,
+          searchTicker: '',
+          messages: originalMessagesRef.current
+        };
+      }
+      
+      // Otherwise filter the original messages
+      const filteredMessages = originalMessagesRef.current.filter((message: Message) => 
+        message.ticker.toLowerCase().includes(searchTerm.toLowerCase())
       );
       
-      setState(prev => ({ ...prev, messages: filteredMessages }));
-    } else if (originalMessages.length > 0) {
-      // If search is cleared, restore original messages
-      setState(prev => ({ ...prev, messages: originalMessages }));
-    }
-  }, [state.searchTicker, originalMessages]);
+      return {
+        ...prev,
+        searchTicker: searchTerm,
+        messages: filteredMessages
+      };
+    });
+  }, []);
 
   // Fetch messages on initial load
   useEffect(() => {

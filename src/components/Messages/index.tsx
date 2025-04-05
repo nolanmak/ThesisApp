@@ -144,7 +144,13 @@ const Messages: React.FC = () => {
             messages={messages}
             loading={messagesLoading}
             convertToEasternTime={convertToEasternTime}
-            createMessagePreview={createMessagePreview}
+            // Pass a wrapper function that matches the expected signature
+            createMessagePreview={(message) => {
+              if (message.discord_message) {
+                return createMessagePreview(message.discord_message);
+              }
+              return '';
+            }}
           />
         </div>
       </div>

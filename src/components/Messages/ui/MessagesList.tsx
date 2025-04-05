@@ -7,6 +7,7 @@ interface MessagesListProps {
   loading: boolean;
   convertToEasternTime: (utcTimestamp: string) => string;
   onSelectMessage?: (message: Message) => void;
+  createMessagePreview?: (message: Message) => string;
 }
 
 // Component for static message preview - single line with truncation
@@ -47,46 +48,36 @@ const MessagesList: React.FC<MessagesListProps> = ({
   messages = [],
   loading,
   convertToEasternTime,
-  onSelectMessage
+  onSelectMessage,
+  createMessagePreview: externalCreateMessagePreview
 }) => {
-  // State to hold the deduplicated messages
-  const [deduplicatedMessages, setDeduplicatedMessages] = useState<Message[]>([]);
   // State to track new messages for highlighting
   const [newMessageIds, setNewMessageIds] = useState<Set<string>>(new Set());
-  // Ref to track previous messages for comparison
+  // State to track search term
+  const [searchMessageTicker, setSearchMessageTicker] = useState<string>('');
+  // State to hold deduplicated messages
+  const [deduplicatedMessages, setDeduplicatedMessages] = useState<Message[]>([]);
+  
+  // Refs
+  const allSeenMessageIdsRef = useRef<Set<string>>(new Set());
   const prevMessagesRef = useRef<Message[]>([]);
-  // Flag to track if initial load has completed
   const initialLoadCompletedRef = useRef<boolean>(false);
-
-  // Helper function to create a preview of the message content
-  const createMessagePreview = (message: Message): string => {
-    // If EPSComparison is available, use that for the preview
-    if (message.EPSComparison) {
-      return message.EPSComparison;
-    }
-    
-    // Otherwise fall back to discord_message
-    if (!message.discord_message) return '';
-    
-    // Remove any markdown formatting
-    const plainText = message.discord_message
-      .replace(/\*\*/g, '') // Remove bold
-      .replace(/\*/g, '')   // Remove italic
-      .replace(/```[\s\S]*?```/g, '') // Remove code blocks
-      .replace(/`.*?`/g, '') // Remove inline code
-      .replace(/\[.*?\]\(.*?\)/g, '') // Remove links
-      .replace(/#/g, '') // Remove headings
-      .replace(/\n/g, ' ') // Replace newlines with spaces
-      .replace(/\s+/g, ' ') // Replace multiple spaces with a single space
-      .trim();
-    
-    // For static preview, we want to show as much content as possible
-    return plainText;
-  };
-
-  // Use useEffect to filter out duplicate messages for the same ticker
+  
+  // Update search term from props
   useEffect(() => {
-    if (!messages || messages.length === 0) return;
+    // Extract search term from WebSocketStatus component
+    const searchParam = new URLSearchParams(window.location.search).get('search');
+    if (searchParam) {
+      setSearchMessageTicker(searchParam);
+    }
+  }, []);
+  
+  // Process and deduplicate messages
+  useEffect(() => {
+    if (!messages || messages.length === 0) {
+      setDeduplicatedMessages([]);
+      return;
+    }
 
     // Create a map to track the first message for each ticker
     const tickerMessageMap = new Map<string, Message>();
@@ -132,38 +123,87 @@ const MessagesList: React.FC<MessagesListProps> = ({
     );
     
     setDeduplicatedMessages(deduplicated);
-  }, [messages, convertToEasternTime]);
+  }, [messages]);
+  // Helper function to create a preview of the message content
+  const createMessagePreview = (message: Message): string => {
+    // Use external preview function if provided
+    if (externalCreateMessagePreview) {
+      return externalCreateMessagePreview(message);
+    }
+    
+    // If EPSComparison is available, use that for the preview
+    if (message.EPSComparison) {
+      return message.EPSComparison;
+    }
+    
+    // Otherwise fall back to discord_message
+    if (!message.discord_message) return '';
+    
+    // Remove any markdown formatting
+    const plainText = message.discord_message
+      .replace(/\*\*/g, '') // Remove bold
+      .replace(/\*/g, '')   // Remove italic
+      .replace(/```[\s\S]*?```/g, '') // Remove code blocks
+      .replace(/`.*?`/g, '') // Remove inline code
+      .replace(/\[.*?\]\(.*?\)/g, '') // Remove links
+      .replace(/#/g, '') // Remove headings
+      .replace(/\n/g, ' ') // Replace newlines with spaces
+      .replace(/\s+/g, ' ') // Replace multiple spaces with a single space
+      .trim();
+    
+    // For static preview, we want to show as much content as possible
+    return plainText;
+  };
 
   // Set initial messages after first load
   useEffect(() => {
     if (!loading && messages.length > 0 && !initialLoadCompletedRef.current) {
       // Set the initial messages as the baseline - these won't be highlighted
       prevMessagesRef.current = [...messages];
+      
+      // Add all initial message IDs to the seen set
+      const initialMessageIds = new Set(messages.map(msg => msg.message_id));
+      allSeenMessageIdsRef.current = initialMessageIds;
+      
       initialLoadCompletedRef.current = true;
     }
   }, [loading, messages]);
+  
+  // Update search term from props
+  useEffect(() => {
+    // Extract search term from WebSocketStatus component
+    const searchParam = new URLSearchParams(window.location.search).get('search');
+    if (searchParam) {
+      setSearchMessageTicker(searchParam);
+    }
+  }, []);
 
   // Detect new messages and highlight them for 1 minute
   useEffect(() => {
     // Skip this effect until initial load is completed
     if (!initialLoadCompletedRef.current || !messages || messages.length === 0) return;
     
-    // Find new messages by comparing with previous messages
-    const prevMessageIds = new Set(prevMessagesRef.current.map(msg => msg.message_id));
-    const currentNewMessageIds = messages
-      .filter(msg => !prevMessageIds.has(msg.message_id))
-      .map(msg => msg.message_id);
+    // Find truly new messages - ones we've never seen before in any state
+    const genuinelyNewMessages = messages.filter(msg => !allSeenMessageIdsRef.current.has(msg.message_id));
+    
+    // Update our record of all seen message IDs
+    messages.forEach(msg => {
+      allSeenMessageIdsRef.current.add(msg.message_id);
+    });
+    
+    // Get IDs of genuinely new messages
+    const genuinelyNewMessageIds = genuinelyNewMessages.map(msg => msg.message_id);
     
     // If we have new messages, add them to the set and set a timer to remove them
-    if (currentNewMessageIds.length > 0) {
+    if (genuinelyNewMessageIds.length > 0) {
       setNewMessageIds(prev => {
         const updatedSet = new Set(prev);
-        currentNewMessageIds.forEach(id => updatedSet.add(id));
+        genuinelyNewMessageIds.forEach(id => updatedSet.add(id));
         return updatedSet;
       });
       
       // For each new message, set a timeout to remove the highlight after 1 minute
-      currentNewMessageIds.forEach(id => {
+      genuinelyNewMessageIds.forEach(id => {
         setTimeout(() => {
           setNewMessageIds(prev => {
             const updatedSet = new Set(prev);
@@ -189,7 +229,9 @@ const MessagesList: React.FC<MessagesListProps> = ({
   if ((!deduplicatedMessages || deduplicatedMessages.length === 0)) {
     return (
       <div className="bg-white p-6 rounded-md shadow-md border border-neutral-100 text-center">
-        <p className="text-neutral-500">No messages found</p>
+        <p className="text-neutral-500">
+          {searchMessageTicker ? `No messages found for "${searchMessageTicker}"` : "No messages found"}
+        </p>
       </div>
     );
   }
