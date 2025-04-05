@@ -7,17 +7,6 @@ export interface EarningsItem {
   year: number;
 }
 
-export interface HistoricalMetrics {
-  ticker: string;
-  date: string;
-  current_fiscal_year_eps_mean: number;
-  current_fiscal_year_sales_mean_millions: number;
-  current_quarter_eps_mean: number;
-  current_quarter_sales_estimate_millions: number;
-  next_quarter_eps_mean: number;
-  next_quarter_sales_estimate_millions: number;
-}
-
 export interface Message {
   message_id: string;
   discord_message: string;

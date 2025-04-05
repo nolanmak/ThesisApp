@@ -6,20 +6,16 @@ import { Loader } from 'lucide-react';
 interface EarningsListProps {
   items: EarningsItem[];
   loading: boolean;
-  metricsExist: (ticker: string, date: string) => boolean;
   configExists: (ticker: string) => boolean;
   onToggleActive: (item: EarningsItem) => void;
-  onOpenMetricsModal: (item: EarningsItem) => void;
   onOpenConfigModal: (item: EarningsItem) => void;
 }
 
 const EarningsList: React.FC<EarningsListProps> = ({
   items,
   loading,
-  metricsExist,
   configExists,
   onToggleActive,
-  onOpenMetricsModal,
   onOpenConfigModal
 }) => {
   if (loading) {
@@ -49,19 +45,6 @@ const EarningsList: React.FC<EarningsListProps> = ({
           <div className="flex justify-between items-start mb-3">
             <h3 className="text-xl font-semibold text-neutral-800">{item.ticker}</h3>
             <div className="flex items-center space-x-2">
-              {item.is_active && (
-                <button
-                  onClick={() => onOpenMetricsModal(item)}
-                  className={`p-1.5 rounded-full ${
-                    metricsExist(item.ticker, item.date) 
-                      ? 'bg-green-500 text-white hover:bg-green-600' 
-                      : 'bg-neutral-100 text-neutral-400 hover:bg-neutral-200'
-                  }`}
-                  title={metricsExist(item.ticker, item.date) ? "Edit Metrics" : "Add Metrics"}
-                >
-                  <BarChart size={14} />
-                </button>
-              )}
               {item.is_active && (
                 <button
                   onClick={() => {
@@ -108,18 +91,10 @@ const EarningsList: React.FC<EarningsListProps> = ({
           
           {/* Placeholder for future chart */}
           <div className="flex-grow bg-neutral-50 rounded-md border border-dashed border-neutral-200 flex items-center justify-center mt-2">
-            {metricsExist(item.ticker, item.date) ? (
-              <div className="flex flex-col items-center">
-                <PieChart size={24} className="text-primary-400 mb-1" />
-                <p className="text-neutral-600 text-xs font-medium">Metrics Available</p>
-                <p className="text-neutral-500 text-xs">Click chart button to view</p>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center">
-                <p className="text-neutral-400 text-xs">No metrics added</p>
-                <p className="text-neutral-400 text-xs">Click chart button to add</p>
-              </div>
-            )}
+            <div className="flex flex-col items-center">
+              <p className="text-neutral-400 text-xs">No metrics added</p>
+              <p className="text-neutral-400 text-xs">Click chart button to add</p>
+            </div>
           </div>
         </div>
       ))}

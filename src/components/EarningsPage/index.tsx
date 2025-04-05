@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { EarningsItem } from '../../types';
 import useEarningsData from '../Messages/hooks/useEarningsData';
-import useMetricsData from '../Messages/hooks/useMetricsData';
 import useConfigData from '../Messages/hooks/useConfigData';
 import EarningsList from '../Messages/ui/EarningsList';
 import SearchFilters from '../Messages/ui/SearchFilters';
 import EarningsModal from '../Messages/modals/EarningsModal';
-import MetricsModal from '../Messages/modals/MetricsModal';
 import ConfigModal from '../Messages/modals/ConfigModal';
 
 const EarningsPage: React.FC = () => {
@@ -29,24 +27,7 @@ const EarningsPage: React.FC = () => {
     updateFilters
     // Removed refreshEarningsData as it's no longer needed
   } = useEarningsData(searchTicker, filterActive);
-
-  const {
-    metricsMap,
-    currentItem: selectedMetricsItem,
-    showMetricsModal,
-    handleOpenMetricsModal,
-    setShowMetricsModal,
-    submitMetrics,
-    metricsExist
-  } = useMetricsData(earningsItems, selectedDate);
   
-  // Use metricsMap in a useEffect to suppress the unused variable warning
-  useEffect(() => {
-    if (metricsMap) {
-      console.log('Metrics map updated');
-    }
-  }, [metricsMap]);
-
   const {
     currentConfigItem: selectedConfigItem,
     showConfigModal,
@@ -92,11 +73,6 @@ const EarningsPage: React.FC = () => {
     updateFilters(undefined, value, undefined);
   };
 
-  // Create proper close handlers for modals
-  const handleCloseMetricsModal = () => {
-    setShowMetricsModal(false);
-  };
-
   const handleCloseConfigModal = () => {
     console.log('Closing config modal');
     closeConfigModal();
@@ -122,9 +98,7 @@ const EarningsPage: React.FC = () => {
             items={filteredEarningsItems}
             loading={earningsLoading}
             onToggleActive={handleToggleActive}
-            onOpenMetricsModal={handleOpenMetricsModal}
             onOpenConfigModal={handleOpenConfigModal}
-            metricsExist={metricsExist}
             configExists={configExists}
           />
         </div>
@@ -136,13 +110,6 @@ const EarningsPage: React.FC = () => {
         onClose={() => setShowEarningsModal(false)}
         onSubmit={handleEarningsModalSubmit}
         currentItem={currentEarningsItem}
-      />
-      
-      <MetricsModal
-        show={showMetricsModal}
-        onClose={handleCloseMetricsModal}
-        onSubmit={submitMetrics}
-        currentItem={selectedMetricsItem}
       />
       
       <ConfigModal

@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { EarningsItem, HistoricalMetrics, CompanyConfig } from '../../types';
+import { EarningsItem, CompanyConfig } from '../../types';
 import useEarningsData from './hooks/useEarningsData';
 import useMessagesData from './hooks/useMessagesData';
-import useMetricsData from './hooks/useMetricsData';
 import useConfigData from './hooks/useConfigData';
 import EarningsList from './ui/EarningsList';
 import MessagesList from './ui/MessagesList';
 import SearchFilters from './ui/SearchFilters';
 import WebSocketStatus from './ui/WebSocketStatus';
 import EarningsModal from './modals/EarningsModal';
-import MetricsModal from './modals/MetricsModal';
 import ConfigModal from './modals/ConfigModal';
 
 const Messages: React.FC = () => {
@@ -47,16 +45,6 @@ const Messages: React.FC = () => {
     convertToEasternTime,
     createMessagePreview
   } = useMessagesData(searchMessageTicker);
-
-  const {
-    metricsMap,
-    currentItem: selectedMetricsItem,
-    showMetricsModal,
-    handleOpenMetricsModal,
-    setShowMetricsModal,
-    submitMetrics,
-    metricsExist
-  } = useMetricsData(earningsItems, selectedDate);
 
   const {
     currentConfigItem: selectedConfigItem,
@@ -108,11 +96,6 @@ const Messages: React.FC = () => {
     setMessagesSearchTicker(value);
   };
 
-  // Create proper close handlers for modals
-  const handleCloseMetricsModal = () => {
-    setShowMetricsModal(false);
-  };
-
   const handleCloseConfigModal = () => {
     console.log('Closing config modal');
     closeConfigModal();
@@ -138,9 +121,7 @@ const Messages: React.FC = () => {
             items={filteredEarningsItems}
             loading={earningsLoading}
             onToggleActive={handleToggleActive}
-            onOpenMetricsModal={handleOpenMetricsModal}
             onOpenConfigModal={handleOpenConfigModal}
-            metricsExist={metricsExist}
             configExists={configExists}
           />
         </div>
@@ -174,13 +155,6 @@ const Messages: React.FC = () => {
         onClose={() => setShowEarningsModal(false)}
         onSubmit={handleEarningsModalSubmit}
         currentItem={currentEarningsItem}
-      />
-      
-      <MetricsModal
-        show={showMetricsModal}
-        onClose={handleCloseMetricsModal}
-        onSubmit={submitMetrics}
-        currentItem={selectedMetricsItem}
       />
       
       <ConfigModal
