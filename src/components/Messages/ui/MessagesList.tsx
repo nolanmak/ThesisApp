@@ -12,7 +12,7 @@ interface MessagesListProps {
 
 // Component for message preview - supports both standard text and structured metrics display
 const StaticPreview: React.FC<{ 
-  content: string | { metrics: Array<{label: string, value: string, expected: string}> }; 
+  content: string | { metrics: Array<{label: string, value: string, expected: string, emoji?: string}> }; 
   multiline?: boolean;
   isMetrics?: boolean;
 }> = ({ content, multiline = false, isMetrics = false }) => {
@@ -51,6 +51,7 @@ const StaticPreview: React.FC<{
                         <span style={{ fontWeight: '600', color: '#1e40af' }}>{metric.value}</span>
                         <span style={{ color: '#64748b', fontSize: '0.75rem' }}>vs</span>
                         <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{metric.expected}</span>
+                        {metric.emoji && <span style={{ marginLeft: '4px' }}>{metric.emoji}</span>}
                       </div>
                     </div>
                   ))
@@ -77,6 +78,7 @@ const StaticPreview: React.FC<{
                             <span style={{ fontWeight: '600', color: '#1e40af' }}>{metric.value}</span>
                             <span style={{ color: '#64748b', fontSize: '0.75rem' }}>vs</span>
                             <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{metric.expected}</span>
+                            {metric.emoji && <span style={{ marginLeft: '4px' }}>{metric.emoji}</span>}
                           </div>
                         </div>
                       ))
@@ -105,6 +107,7 @@ const StaticPreview: React.FC<{
                             <span style={{ fontWeight: '600', color: '#1e40af' }}>{metric.value}</span>
                             <span style={{ color: '#64748b', fontSize: '0.75rem' }}>vs</span>
                             <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{metric.expected}</span>
+                            {metric.emoji && <span style={{ marginLeft: '4px' }}>{metric.emoji}</span>}
                           </div>
                         </div>
                       ))
@@ -237,9 +240,17 @@ const MessagesList: React.FC<MessagesListProps> = ({
     
     setDeduplicatedMessages(deduplicated);
   }, [messages]);
+  // Define a type for metric items to ensure consistency
+  type MetricItem = {
+    label: string;
+    value: string;
+    expected: string;
+    emoji: string;
+  };
+
   // Helper function to create a preview of the message content
   const createMessagePreview = (message: Message): { 
-    content: string | { metrics: Array<{label: string, value: string, expected: string}> }; 
+    content: string | { metrics: Array<MetricItem> }; 
     multiline: boolean;
     isMetrics: boolean;
   } => {
@@ -269,10 +280,26 @@ const MessagesList: React.FC<MessagesListProps> = ({
         // Check if we have the new format (string values)
         if (typeof jsonData.current_quarter_vs_expected.sales === 'string') {
           // Extract values from formatted strings
-          const extractValues = (str: string) => {
-            // This regex extracts values like "739M" and "86.68B" from strings like "Sales (Actual vs Expected): 739M vs 86.68B"
-            const matches = str.match(/:\s*([\d.]+[A-Za-z%]*)\s*vs\s*([\d.]+[A-Za-z%]*)/i);
-            return matches ? { value: matches[1], expected: matches[2] } : { value: 'N/A', expected: 'N/A' };
+          // Define the return type for extractValues to ensure consistency
+          type MetricValues = {
+            value: string;
+            expected: string;
+            emoji: string;
+          };
+          
+          const extractValues = (str: string): MetricValues => {
+            // This regex extracts values like "739M" and "86.68B" along with any emojis
+            // from strings like "Sales (Actual vs Expected): 739M vs 86.68B 🔴"
+            const matches = str.match(/:\s*([\d.]+[A-Za-z%]*)\s*vs\s*([\d.]+[A-Za-z%]*)\s*([\p{Emoji}]*)/u);
+            return matches ? { 
+              value: matches[1], 
+              expected: matches[2],
+              emoji: matches[3] || ''
+            } : { 
+              value: 'N/A', 
+              expected: 'N/A',
+              emoji: ''
+            };
           };
           
           // Parse the string values to extract the actual numbers
@@ -282,26 +309,30 @@ const MessagesList: React.FC<MessagesListProps> = ({
           const nextEPSValues = extractValues(jsonData.next_quarter_vs_expected.eps);
           
           // Initialize metrics array with current and next quarter data
-          const metrics = [
+          const metrics: MetricItem[] = [
             {
               label: 'Sales',
               value: currentSalesValues.value,
-              expected: currentSalesValues.expected
+              expected: currentSalesValues.expected,
+              emoji: currentSalesValues.emoji
             },
             {
               label: 'EPS',
               value: currentEPSValues.value,
-              expected: currentEPSValues.expected
+              expected: currentEPSValues.expected,
+              emoji: currentEPSValues.emoji
             },
             {
               label: 'Sales',
               value: nextSalesValues.value,
-              expected: nextSalesValues.expected
+              expected: nextSalesValues.expected,
+              emoji: nextSalesValues.emoji
             },
             {
               label: 'EPS',
               value: nextEPSValues.value,
-              expected: nextEPSValues.expected
+              expected: nextEPSValues.expected,
+              emoji: nextEPSValues.emoji
             }
           ];
           
@@ -309,23 +340,25 @@ const MessagesList: React.FC<MessagesListProps> = ({
           if (jsonData.current_year_vs_expected) {
             const currentYearSalesValues = jsonData.current_year_vs_expected.sales ? 
               extractValues(jsonData.current_year_vs_expected.sales) : 
-              { value: 'N/A', expected: 'N/A' };
+              { value: 'N/A', expected: 'N/A', emoji: '' };
               
             const currentYearEPSValues = jsonData.current_year_vs_expected.eps ? 
               extractValues(jsonData.current_year_vs_expected.eps) : 
-              { value: 'N/A', expected: 'N/A' };
+              { value: 'N/A', expected: 'N/A', emoji: '' };
             
             // Add current year metrics to the array
             metrics.push(
               {
                 label: 'FY Sales',
                 value: currentYearSalesValues.value,
-                expected: currentYearSalesValues.expected
+                expected: currentYearSalesValues.expected,
+                emoji: currentYearSalesValues.emoji
               },
               {
                 label: 'FY EPS',
                 value: currentYearEPSValues.value,
-                expected: currentYearEPSValues.expected
+                expected: currentYearEPSValues.expected,
+                emoji: currentYearEPSValues.emoji
               }
             );
           }
@@ -340,26 +373,31 @@ const MessagesList: React.FC<MessagesListProps> = ({
           const nextEPS = jsonData.next_quarter_vs_expected.eps || {};
           
           // Initialize metrics array with current and next quarter data
-          const metrics = [
+          // Create metrics array with the consistent type
+          const metrics: MetricItem[] = [
             {
               label: 'Sales',
               value: currentSales.actual || 'N/A',
-              expected: currentSales.expected || 'N/A'
+              expected: currentSales.expected || 'N/A',
+              emoji: ''
             },
             {
               label: 'EPS',
               value: currentEPS.actual || 'N/A',
-              expected: currentEPS.expected || 'N/A'
+              expected: currentEPS.expected || 'N/A',
+              emoji: ''
             },
             {
               label: 'Sales',
               value: nextSales.guidance || 'N/A',
-              expected: nextSales.expected || 'N/A'
+              expected: nextSales.expected || 'N/A',
+              emoji: ''
             },
             {
               label: 'EPS',
               value: nextEPS.guidance || 'N/A',
-              expected: nextEPS.expected || 'N/A'
+              expected: nextEPS.expected || 'N/A',
+              emoji: ''
             }
           ];
           
@@ -373,12 +411,14 @@ const MessagesList: React.FC<MessagesListProps> = ({
               {
                 label: 'FY Sales',
                 value: currentYearSales.actual || 'N/A',
-                expected: currentYearSales.expected || 'N/A'
+                expected: currentYearSales.expected || 'N/A',
+                emoji: ''
               },
               {
                 label: 'FY EPS',
                 value: currentYearEPS.actual || 'N/A',
-                expected: currentYearEPS.expected || 'N/A'
+                expected: currentYearEPS.expected || 'N/A',
+                emoji: ''
               }
             );
           }
