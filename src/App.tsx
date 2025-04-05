@@ -11,31 +11,34 @@ import LandingPage from './components/LandingPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import EmailSignUp from './components/EmailSignUp';
 import BetaAccess from './components/BetaAccess';
+import GlobalDataProvider from './providers/GlobalDataProvider';
 
 function App() {
   return (
     <>
-      <Router>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/email-signup" element={<EmailSignUp />} />
-          <Route path="/beta-access" element={<BetaAccess />} />
-          
-          {/* Protected routes - require beta access */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<Layout />}>
-              <Route index element={<Navigate to="/dashboard/messages" replace />} />
-              <Route path="earnings" element={<EarningsPage />} />
-              <Route path="messages" element={<MessagesPage />} />
-              <Route path="company-config" element={<CompanyConfig />} />
+      <GlobalDataProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/email-signup" element={<EmailSignUp />} />
+            <Route path="/beta-access" element={<BetaAccess />} />
+            
+            {/* Protected routes - require beta access */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/dashboard" element={<Layout />}>
+                <Route index element={<Navigate to="/dashboard/messages" replace />} />
+                <Route path="earnings" element={<EarningsPage />} />
+                <Route path="messages" element={<MessagesPage />} />
+                <Route path="company-config" element={<CompanyConfig />} />
+              </Route>
             </Route>
-          </Route>
-          
-          {/* Catch-all route for 404 pages */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Router>
-      <ToastContainer position="top-right" />
+            
+            {/* Catch-all route for 404 pages */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Router>
+        <ToastContainer position="top-right" />
+      </GlobalDataProvider>
     </>
   );
 }

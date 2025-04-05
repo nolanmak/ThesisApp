@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import useMessagesData from '../Messages/hooks/useMessagesData';
 import MessagesList from '../Messages/ui/MessagesList';
 import WebSocketStatus from '../Messages/ui/WebSocketStatus';
 import { Message } from '../../types';
+import useGlobalData from '../../hooks/useGlobalData';
 
 const MessagesPage: React.FC = () => {
   // Search state
@@ -12,19 +12,19 @@ const MessagesPage: React.FC = () => {
   // Flag to track if initial message has been set
   const [initialMessageSet, setInitialMessageSet] = useState<boolean>(false);
 
-  // Custom hooks
+  // Use global data provider instead of local hook
   const {
     messages,
-    loading: messagesLoading,
-    refreshing,
-    connected: webSocketConnected,
-    reconnecting: webSocketReconnecting,
-    enabled: webSocketEnabled,
-    fetchMessages: refreshMessages,
-    toggleEnabled,
-    updateSearchTicker: setMessagesSearchTicker,
+    messagesLoading,
+    messagesRefreshing: refreshing,
+    webSocketConnected,
+    webSocketReconnecting,
+    webSocketEnabled,
+    refreshMessages,
+    toggleWebSocket: toggleEnabled,
+    updateMessagesSearchTicker: setMessagesSearchTicker,
     convertToEasternTime
-  } = useMessagesData(searchMessageTicker);
+  } = useGlobalData();
 
   // Set the initial message on first load when messages are available
   useEffect(() => {

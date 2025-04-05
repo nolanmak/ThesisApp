@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { EarningsItem } from '../../types';
-import useEarningsData from '../Messages/hooks/useEarningsData';
 import useConfigData from '../Messages/hooks/useConfigData';
 import EarningsList from '../Messages/ui/EarningsList';
 import SearchFilters from '../Messages/ui/SearchFilters';
 import EarningsModal from '../Messages/modals/EarningsModal';
 import ConfigModal from '../Messages/modals/ConfigModal';
+import useGlobalData from '../../hooks/useGlobalData';
 
 const EarningsPage: React.FC = () => {
   // Date filter state
@@ -17,16 +17,14 @@ const EarningsPage: React.FC = () => {
   const [searchTicker, setSearchTicker] = useState<string>('');
   const [filterActive, setFilterActive] = useState<boolean | null>(null);
 
-  // Custom hooks
+  // Use global data provider instead of local hook
   const {
-    earningsItems,
     filteredEarningsItems,
-    loading: earningsLoading,
+    earningsLoading,
     addEarningsItem,
     handleToggleActive,
-    updateFilters
-    // Removed refreshEarningsData as it's no longer needed
-  } = useEarningsData(searchTicker, filterActive);
+    updateEarningsFilters: updateFilters
+  } = useGlobalData();
   
   const {
     currentConfigItem: selectedConfigItem,
