@@ -34,7 +34,7 @@ const StaticPreview: React.FC<{
           {content.metrics.some(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') ? (
             <>
               {/* Current Quarter Section */}
-              <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.875rem' }}>Current Quarter:</div>
+              <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.75rem' }}>Current Quarter:</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 {content.metrics.slice(0, 2)
                   .filter(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') // Only show populated metrics
@@ -48,7 +48,7 @@ const StaticPreview: React.FC<{
                     }}>
                       <div style={{ fontWeight: '500', fontSize: '0.75rem', color: '#64748b' }}>{metric.label}</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <span style={{ fontWeight: '600', color: '#1e40af' }}>{metric.value}</span>
+                        <span style={{ fontWeight: '600', color: '#1e40af', fontSize: '0.75rem' }}>{metric.value}</span>
                         <span style={{ color: '#64748b', fontSize: '0.75rem' }}>vs</span>
                         <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{metric.expected}</span>
                         {metric.emoji && <span style={{ marginLeft: '4px' }}>{metric.emoji}</span>}
@@ -61,7 +61,7 @@ const StaticPreview: React.FC<{
               {/* Next Quarter Section - Only show if there are populated metrics */}
               {content.metrics.slice(2, 4).some(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') && (
                 <>
-                  <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.875rem', marginTop: '4px' }}>Next Quarter:</div>
+                  <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.75rem', marginTop: '4px' }}>Next Quarter:</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {content.metrics.slice(2, 4)
                       .filter(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') // Only show populated metrics
@@ -90,7 +90,7 @@ const StaticPreview: React.FC<{
               {/* Current Year Section - Only show if there are populated metrics */}
               {content.metrics.slice(4).some(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') && (
                 <>
-                  <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.875rem', marginTop: '4px' }}>Fiscal Year:</div>
+                  <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.75rem', marginTop: '4px' }}>Fiscal Year:</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {content.metrics.slice(4)
                       .filter(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') // Only show populated metrics
@@ -117,7 +117,7 @@ const StaticPreview: React.FC<{
               )}
             </>
           ) : (
-            <div style={{ padding: '8px', color: '#64748b', fontSize: '0.875rem', textAlign: 'center' }}>
+            <div style={{ padding: '8px', color: '#64748b', fontSize: '0.75rem', textAlign: 'center' }}>
               No metrics available
             </div>
           )}
@@ -146,7 +146,7 @@ const StaticPreview: React.FC<{
         style={{
           color: '#1e40af', // Darker blue text
           fontWeight: '500',
-          fontSize: '0.875rem',
+          fontSize: '0.75rem', // Smaller font size to match ticker and timestamp
           lineHeight: '1.4',
           width: '100%',
           whiteSpace: multiline ? 'pre-wrap' : 'nowrap', // Allow wrapping for multiline
