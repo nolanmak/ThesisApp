@@ -71,7 +71,7 @@ const MessagesPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-row h-[calc(100vh-120px)]">
         {/* Messages - 50% width, left aligned */}
-        <div className="w-[50%] flex flex-col mr-4">
+        <div className="w-[65%] flex flex-col mr-4">
           <WebSocketStatus
             searchMessageTicker={searchMessageTicker}
             refreshing={refreshing}
@@ -92,7 +92,7 @@ const MessagesPage: React.FC = () => {
         </div>
         
         {/* Right side content area - 50% width */}
-        <div className="w-[50%] flex flex-col bg-white p-6 rounded-md shadow-md border border-neutral-100">
+        <div className="w-[35%] flex flex-col bg-white p-6 rounded-md shadow-md border border-neutral-100">
           {selectedMessage ? (
             <div className="h-full flex flex-col">
               {/* Header */}
@@ -112,7 +112,7 @@ const MessagesPage: React.FC = () => {
               {/* Content */}
               <div className="flex-1 overflow-auto">
                 <div className="prose max-w-none overflow-x-hidden">
-                  <div className="text-neutral-800 whitespace-pre-wrap markdown-content break-words overflow-wrap-anywhere">
+                  <div className="text-neutral-800 whitespace-pre-wrap markdown-content break-words overflow-wrap-anywhere text-sm">
                     {(() => {
                       // Try to parse the discord_message as JSON
                       try {

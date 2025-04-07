@@ -29,18 +29,17 @@ const StaticPreview: React.FC<{
           overflow: 'hidden'
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
           {/* Only render if we have at least one populated metric */}
           {content.metrics.some(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') ? (
             <>
               {/* Current Quarter Section */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center'}}>
                 <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.75rem', marginRight: '4px' }}>Current Quarter:</div>
                 {content.metrics.slice(0, 2)
                   .filter(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') // Only show populated metrics
                   .map((metric, index) => (
                     <div key={index} style={{ 
-                      flex: '1 1 auto', 
                       backgroundColor: 'transparent',
                       padding: '2px 6px',
                       borderRadius: '4px',
@@ -48,8 +47,8 @@ const StaticPreview: React.FC<{
                       alignItems: 'center',
                       gap: '4px'
                     }}>
-                      <div style={{ fontWeight: '500', fontSize: '0.75rem', color: '#64748b' }}>{metric.label}:</div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                      <div style={{ fontWeight: '500', fontSize: '0.75rem', color: '#64748b'}}>{metric.label}:</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <span style={{ fontWeight: '600', color: '#1e40af', fontSize: '0.75rem' }}>{metric.value}</span>
                         <span style={{ color: '#64748b', fontSize: '0.75rem' }}>vs</span>
                         <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{metric.expected}</span>
@@ -62,13 +61,12 @@ const StaticPreview: React.FC<{
               
               {/* Next Quarter Section - Only show if there are populated metrics */}
               {content.metrics.slice(2, 4).some(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center', marginTop: '2px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
                   <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.75rem', marginRight: '4px' }}>Next Quarter:</div>
                     {content.metrics.slice(2, 4)
                       .filter(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') // Only show populated metrics
                       .map((metric, index) => (
                         <div key={index} style={{ 
-                          flex: '1 1 auto', 
                           backgroundColor: 'transparent',
                           padding: '2px 6px',
                           borderRadius: '4px',
@@ -77,7 +75,7 @@ const StaticPreview: React.FC<{
                           gap: '4px'
                         }}>
                           <div style={{ fontWeight: '500', fontSize: '0.75rem', color: '#64748b' }}>{metric.label}:</div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <span style={{ fontWeight: '600', color: '#1e40af', fontSize: '0.75rem' }}>{metric.value}</span>
                             <span style={{ color: '#64748b', fontSize: '0.75rem' }}>vs</span>
                             <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{metric.expected}</span>
@@ -91,13 +89,12 @@ const StaticPreview: React.FC<{
               
               {/* Current Year Section - Only show if there are populated metrics */}
               {content.metrics.slice(4).some(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center', marginTop: '2px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center'}}>
                   <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.75rem', marginRight: '4px' }}>Fiscal Year:</div>
                     {content.metrics.slice(4)
                       .filter(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') // Only show populated metrics
                       .map((metric, index) => (
                         <div key={index} style={{ 
-                          flex: '1 1 auto', 
                           backgroundColor: 'transparent',
                           padding: '2px 6px',
                           borderRadius: '4px',
@@ -106,7 +103,7 @@ const StaticPreview: React.FC<{
                           gap: '4px'
                         }}>
                           <div style={{ fontWeight: '500', fontSize: '0.75rem', color: '#64748b' }}>{metric.label}:</div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <span style={{ fontWeight: '600', color: '#1e40af', fontSize: '0.75rem' }}>{metric.value}</span>
                             <span style={{ color: '#64748b', fontSize: '0.75rem' }}>vs</span>
                             <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{metric.expected}</span>
