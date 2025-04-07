@@ -211,7 +211,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
       // 1. One with a link (typically the first announcement)
       // 2. One with processed data from the report
       
-      const key = message.ticker;
+      const key = message.ticker + message.quarter + message.year;
       const existingMessage = tickerMessageMap.get(key);
       
       // If we don't have a message for this ticker yet, add it
