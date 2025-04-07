@@ -571,7 +571,16 @@ const MessagesList: React.FC<MessagesListProps> = ({
             </a>
           ) : (
             /* Analysis message with static preview */
-            <div className="flex flex-col hover:bg-neutral-50 transition-colors">
+            <div 
+              className={`flex flex-col hover:bg-neutral-50 transition-colors cursor-pointer`}
+              onClick={(e) => {
+                // Prevent event bubbling to avoid double-triggering the parent onClick
+                e.stopPropagation();
+                if (onSelectMessage) {
+                  onSelectMessage(message);
+                }
+              }}
+            >
               {/* Header with ticker and timestamp */}
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center space-x-2">
