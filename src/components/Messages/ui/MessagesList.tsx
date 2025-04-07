@@ -542,7 +542,12 @@ const MessagesList: React.FC<MessagesListProps> = ({
             newMessageIds.has(message.message_id) 
               ? 'border-2 border-green-500' 
               : 'border border-neutral-100'
-          }`}
+          } ${!message.link ? 'cursor-pointer' : ''}`}
+          onClick={() => {
+            if (!message.link && onSelectMessage) {
+              onSelectMessage(message);
+            }
+          }}
         >
           {message.link ? (
             /* Link message - show on a single line like analysis messages */
@@ -566,14 +571,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
             </a>
           ) : (
             /* Analysis message with static preview */
-            <div 
-              className="flex flex-col cursor-pointer hover:bg-neutral-50 transition-colors"
-              onClick={() => {
-                if (onSelectMessage) {
-                  onSelectMessage(message);
-                }
-              }}
-            >
+            <div className="flex flex-col hover:bg-neutral-50 transition-colors">
               {/* Header with ticker and timestamp */}
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center space-x-2">
