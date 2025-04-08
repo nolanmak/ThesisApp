@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import WaveBackground from './WaveBackground';
 import { ArrowLeft } from 'lucide-react';
-import { submitWaitlistEmail } from '../services/api';
+import { submitWaitlistEmail } from '../../services/api';
 
 const EmailSignUp: React.FC = () => {
   const navigate = useNavigate();
