@@ -1,6 +1,6 @@
 import React, { createContext, useEffect } from 'react';
-import useMessagesData from '../components/Messages/hooks/useMessagesData';
-import useEarningsData from '../components/Messages/hooks/useEarningsData';
+import useMessagesData from '../components/Earnings/hooks/useMessagesData';
+import useEarningsData from '../components/Calendar/hooks/useEarningsData';
 import { Message, EarningsItem } from '../types';
 
 // Define the context shape

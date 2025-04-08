@@ -1,7 +1,6 @@
 import React from 'react';
 import { EarningsItem } from '../../../types';
-import { PieChart, BarChart, Settings } from 'lucide-react';
-import { Loader } from 'lucide-react';
+import { Loader, Settings } from 'lucide-react';
 
 interface EarningsListProps {
   items: EarningsItem[];

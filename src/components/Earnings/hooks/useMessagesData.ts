@@ -136,28 +136,6 @@ const useMessagesData = (initialSearchTicker: string = '') => {
       
       const fetchedMessages = await getMessages(bypassCache);
       
-      console.log('Raw messages from API:', fetchedMessages.map(msg => ({
-        ticker: msg.ticker,
-        timestamp: msg.timestamp,
-        formatted_time: convertToEasternTime(msg.timestamp),
-        has_link: !!msg.link,
-        message_id: msg.message_id
-      })));
-      
-      // Check specifically for April 2025 messages in raw data
-      const april2025Messages = fetchedMessages.filter(msg => {
-        const date = new Date(msg.timestamp);
-        return date.getFullYear() === 2025 && date.getMonth() === 3; // April is month 3 (0-indexed)
-      });
-      
-      console.log('April 2025 Messages in raw data:', april2025Messages.map(msg => ({
-        ticker: msg.ticker,
-        timestamp: msg.timestamp,
-        formatted_time: convertToEasternTime(msg.timestamp),
-        has_link: !!msg.link,
-        message_id: msg.message_id
-      })));
-      
       // Sort messages by timestamp (newest first)
       const sortedMessages = fetchedMessages.sort((a, b) => 
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()

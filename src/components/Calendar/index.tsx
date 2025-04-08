@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { EarningsItem } from '../../types';
-import useConfigData from '../Messages/hooks/useConfigData';
-import EarningsList from '../Messages/ui/EarningsList';
-import SearchFilters from '../Messages/ui/SearchFilters';
-import EarningsModal from '../Messages/modals/EarningsModal';
-import ConfigModal from '../Messages/modals/ConfigModal';
+import useConfigData from './hooks/useConfigData';
+import EarningsList from './ui/EarningsList';
+import SearchFilters from './ui/SearchFilters';
+import EarningsModal from './modals/EarningsModal';
+import ConfigModal from './modals/ConfigModal';
 import useGlobalData from '../../hooks/useGlobalData';
 
-const EarningsPage: React.FC = () => {
+const Calendar: React.FC = () => {
   // Date filter state
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0]
@@ -121,4 +121,4 @@ const EarningsPage: React.FC = () => {
   );
 };
 
-export default EarningsPage;
+export default Calendar;

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import MessagesList from '../Messages/ui/MessagesList';
-import WebSocketStatus from '../Messages/ui/WebSocketStatus';
+import MessagesList from './ui/MessagesList';
+import WebSocketStatus from './ui/WebSocketStatus';
 import { Message } from '../../types';
 import useGlobalData from '../../hooks/useGlobalData';
 
-const MessagesPage: React.FC = () => {
-  // Search state
+const Messages: React.FC = () => {
+  // Search state 
   const [searchMessageTicker, setSearchMessageTicker] = useState<string>('');
   // Selected message for analysis
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
@@ -156,4 +156,4 @@ const MessagesPage: React.FC = () => {
   );
 };
 
-export default MessagesPage;
+export default Messages;
