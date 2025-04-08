@@ -1,0 +1,38 @@
+/* Animation for content fading in */
+.fade-in {
+  animation: fadeIn 1s ease-out;
+}
+
+.fade-in-delayed {
+  animation: fadeIn 1s ease-out 0.3s both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Subtle glow effect for the title container */
+.title-container {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.title-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 15px 2px rgba(255, 255, 255, 0.6);
+  opacity: 0;
+  animation: glowPulse 4s ease-in-out infinite;
+  z-index: -1;
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 0.7; }
+}
