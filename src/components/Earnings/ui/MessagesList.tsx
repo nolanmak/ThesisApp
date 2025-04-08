@@ -538,11 +538,16 @@ const MessagesList: React.FC<MessagesListProps> = ({
       {deduplicatedMessages.map((message) => (
         <div 
           key={message.message_id}
-          className={`bg-white p-3 rounded-md shadow-md hover:border-primary-200 transition-colors ${
+          className={`bg-white p-3 rounded-md shadow-md transition-colors hover:bg-neutral-50 hover:border-primary-200 ${
             newMessageIds.has(message.message_id) 
               ? 'border-2 border-green-500' 
               : 'border border-neutral-100'
-          }`}
+            } ${!message.link ? 'cursor-pointer' : ''}`}
+            onClick={() => {
+              if (!message.link && onSelectMessage) {
+                onSelectMessage(message);
+              }
+            }}
         >
           {message.link ? (
             /* Link message - show on a single line like analysis messages */
@@ -550,7 +555,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
               href={message.link} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="flex justify-between items-center cursor-pointer hover:bg-neutral-50 transition-colors"
+              className="flex justify-between items-center cursor-pointer transition-colors"
             >
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium text-blue-600">{message.ticker}</span>
@@ -567,13 +572,8 @@ const MessagesList: React.FC<MessagesListProps> = ({
           ) : (
             /* Analysis message with static preview */
             <div 
-              className="flex flex-col cursor-pointer hover:bg-neutral-50 transition-colors"
-              onClick={() => {
-                if (onSelectMessage) {
-                  onSelectMessage(message);
-                }
-              }}
-            >
+              className="flex flex-col transition-colors"
+             >
               {/* Header with ticker and timestamp */}
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center space-x-2">
