@@ -31,11 +31,6 @@ export interface VerifyKeywords {
   requires_year?: boolean;
 }
 
-export interface LLMInstructions {
-  system: string;
-  temperature: number;
-}
-
 export type BrowserType = 'chromium' | 'firefox';
 
 export interface CompanyConfig {
@@ -43,7 +38,6 @@ export interface CompanyConfig {
   base_url: string;
   extraction_method?: string;
   href_ignore_words?: string[];
-  llm_instructions: LLMInstructions;
   selector?: string;
   url_ignore_list?: string[];
   verify_keywords: VerifyKeywords;
