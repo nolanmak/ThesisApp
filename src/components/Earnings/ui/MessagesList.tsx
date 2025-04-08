@@ -287,9 +287,9 @@ const MessagesList: React.FC<MessagesListProps> = ({
           };
           
           const extractValues = (str: string): MetricValues => {
-            // This regex extracts values like "739M" and "86.68B" along with any emojis
-            // from strings like "Sales (Actual vs Expected): 739M vs 86.68B 🔴"
-            const matches = str.match(/:\s*([\d.]+[A-Za-z%]*)\s*vs\s*([\d.]+[A-Za-z%]*)\s*([\p{Emoji}]*)/u);
+            // This regex extracts values like "739M", "-86.68B", and negative numbers along with any emojis
+            // from strings like "Sales (Actual vs Expected): 739M vs 86.68B 🔴" or "EPS: -0.25 vs 0.30 🔴"
+            const matches = str.match(/:\s*(-?[\d.]+[A-Za-z%]*)\s*vs\s*(-?[\d.]+[A-Za-z%]*)\s*([\p{Emoji}]*)/u);
             return matches ? { 
               value: matches[1], 
               expected: matches[2],
