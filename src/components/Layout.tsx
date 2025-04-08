@@ -32,8 +32,8 @@ const Layout: React.FC = () => {
             <ul className="flex space-x-3 items-center">
               <li>
                 <Link
-                  to="/dashboard/messages"
-                  className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/messages')}`}
+                  to="/dashboard/earnings"
+                  className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/earnings')}`}
                 >
                   <MessageCircle className="mr-1" size={14} />
                   <span>Earnings</span>
@@ -41,8 +41,8 @@ const Layout: React.FC = () => {
               </li>
               <li>
                 <Link
-                  to="/dashboard/earnings"
-                  className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/earnings')}`}
+                  to="/dashboard/calendar"
+                  className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/calendar')}`}
                 >
                   <Calendar className="mr-1" size={14} />
                   <span>Calendar</span>
