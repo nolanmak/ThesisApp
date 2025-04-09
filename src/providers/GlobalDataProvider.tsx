@@ -1,4 +1,4 @@
-import React, { createContext, useEffect, useMemo } from 'react';
+import React, { createContext, useMemo } from 'react';
 import useMessagesData from '../components/Earnings/hooks/useMessagesData';
 import useEarningsData from '../components/Calendar/hooks/useEarningsData';
 import { Message, EarningsItem } from '../types';
@@ -80,10 +80,11 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // Enrich messages with company names
   const messages = useMemo(() => {
-    return rawMessages.map(message => ({
+    const enriched = rawMessages.map(message => ({
       ...message,
       company_name: tickerToNameMap[message.ticker] || undefined
     }));
+    return enriched;
   }, [rawMessages, tickerToNameMap]);
 
   // Wrapper for createMessagePreview to match expected interface
@@ -93,29 +94,6 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
     return '';
   };
-
-  // Log when messages data updates
-  useEffect(() => {
-    console.log('Messages updated (enriched):', messages);
-  }, [messages]);
-
-  // Log when earnings data updates
-  useEffect(() => {
-    console.log('Earnings Items updated:', earningsItems);
-  }, [earningsItems]);
-
-  // Log when data is loaded
-  useEffect(() => {
-    if (!messagesLoading && messages.length > 0) {
-      console.log('Messages data proactively loaded:', messages.length, 'messages');
-    }
-  }, [messagesLoading, messages]);
-
-  useEffect(() => {
-    if (!earningsLoading && earningsItems.length > 0) {
-      console.log('Earnings data proactively loaded:', earningsItems.length, 'items');
-    }
-  }, [earningsLoading, earningsItems]);
 
   // Provide the context value
   const contextValue: GlobalDataContextType = {
