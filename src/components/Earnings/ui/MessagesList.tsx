@@ -558,7 +558,12 @@ const MessagesList: React.FC<MessagesListProps> = ({
               className="flex justify-between items-center cursor-pointer transition-colors"
             >
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-blue-600">{message.ticker}</span>
+                <span className="text-sm font-medium text-blue-600">
+                  {message.ticker}
+                  {message.company_name && (
+                    <span className="ml-1 text-xs text-neutral-500">({message.company_name})</span>
+                  )}
+                </span>
                 <span className="text-xs text-neutral-600">Q{message.quarter}</span>
                 <span className="text-xs text-neutral-500">
                   {convertToEasternTime(message.timestamp)}
@@ -579,7 +584,12 @@ const MessagesList: React.FC<MessagesListProps> = ({
                 <div className="flex items-center space-x-2">
                   {/* Removed redundant ticker display */}
                   <div className="flex items-center bg-primary-50 px-2 py-0.5 rounded-md text-xs">
-                    <span className="font-medium text-primary-700">{message.ticker}</span>
+                    <span className="font-medium text-primary-700">
+                      {message.ticker}
+                      {message.company_name && (
+                        <span className="ml-1 text-neutral-500">({message.company_name})</span>
+                      )}
+                    </span>
                     <span className="mx-1 text-neutral-400">|</span>
                     <span className="text-neutral-600">Q{message.quarter}</span>
                   </div>
