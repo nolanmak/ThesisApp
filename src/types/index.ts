@@ -20,6 +20,7 @@ export interface Message {
   source?: string;
   link?: string;
   EPSComparison?: string;
+  company_name?: string;
 }
 
 export interface VerifyKeywords {

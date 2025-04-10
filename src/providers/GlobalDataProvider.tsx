@@ -1,4 +1,4 @@
-import React, { createContext, useEffect } from 'react';
+import React, { createContext, useMemo } from 'react';
 import useMessagesData from '../components/Earnings/hooks/useMessagesData';
 import useEarningsData from '../components/Calendar/hooks/useEarningsData';
 import { Message, EarningsItem } from '../types';
@@ -6,7 +6,7 @@ import { Message, EarningsItem } from '../types';
 // Define the context shape
 interface GlobalDataContextType {
   // Messages data
-  messages: Message[];
+  messages: Message[]; // Will now contain enriched messages
   messagesLoading: boolean;
   messagesRefreshing: boolean;
   webSocketConnected: boolean;
@@ -44,7 +44,7 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   
   // Initialize data hooks with persistent connection
   const {
-    messages,
+    messages: rawMessages, // Rename original messages
     loading: messagesLoading,
     refreshing: messagesRefreshing,
     connected: webSocketConnected,
@@ -67,6 +67,26 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     updateFilters: updateEarningsFilters
   } = useEarningsData(searchTicker, filterActive);
 
+  // Create a map from ticker to company name from earningsItems
+  const tickerToNameMap = useMemo(() => {
+    const map: { [key: string]: string } = {};
+    earningsItems.forEach(item => {
+      if (item.ticker && item.company_name) {
+        map[item.ticker] = item.company_name;
+      }
+    });
+    return map;
+  }, [earningsItems]);
+
+  // Enrich messages with company names
+  const messages = useMemo(() => {
+    const enriched = rawMessages.map(message => ({
+      ...message,
+      company_name: tickerToNameMap[message.ticker] || undefined
+    }));
+    return enriched;
+  }, [rawMessages, tickerToNameMap]);
+
   // Wrapper for createMessagePreview to match expected interface
   const createMessagePreview = (message: Message): string => {
     if (message.discord_message) {
@@ -75,23 +95,10 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return '';
   };
 
-  // Log when data is loaded
-  useEffect(() => {
-    if (!messagesLoading && messages.length > 0) {
-      console.log('Messages data proactively loaded:', messages.length, 'messages');
-    }
-  }, [messagesLoading, messages]);
-
-  useEffect(() => {
-    if (!earningsLoading && earningsItems.length > 0) {
-      console.log('Earnings data proactively loaded:', earningsItems.length, 'items');
-    }
-  }, [earningsLoading, earningsItems]);
-
   // Provide the context value
   const contextValue: GlobalDataContextType = {
     // Messages data
-    messages,
+    messages, // Provide the enriched messages
     messagesLoading,
     messagesRefreshing,
     webSocketConnected,
