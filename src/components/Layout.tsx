@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Blend, LogOut, Calendar, MessageCircle } from 'lucide-react';
+import { LogOut, Calendar, MessageCircle } from 'lucide-react';
 
 const Layout: React.FC = () => {
   const location = useLocation();
@@ -23,8 +23,8 @@ const Layout: React.FC = () => {
       <div className="text-neutral-100">
         <div className="max-w-7xl mx-auto px-4 py-4 pb-2 flex justify-between items-center">
           <h1 className="text-lg font-light flex items-center text-neutral-900">
-            <Blend className="mr-2 text-primary-400" size={18} />
-              Thesis
+            <img src="/favicon.svg" alt="Logo" className="mr-2" width={30} height={30} />
+            Thesis
             </h1>
           
           {/* Horizontal Navigation */}

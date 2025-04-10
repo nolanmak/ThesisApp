@@ -25,7 +25,7 @@ const LandingPage: React.FC = () => {
         <div className="max-w-2xl w-full px-4 md:px-6">
           <div className="text-center mb-12 fade-in">
               <h1 className="bg-[#f9fafb]/80 backdrop-blur-sm text-4xl font-bold mb-4 tracking-tight text-neutral-800 w-fit mx-auto flex items-center">
-            <Blend className="mr-2 text-primary-400" size={48} />
+                <img src="/favicon.svg" alt="Logo" className="mr-2" width={48} height={48} />
               Thesis
             </h1>
               <p className="bg-[#f9fafb]/80 backdrop-blur-sm text-xl text-neutral-600 w-fit mx-auto">
