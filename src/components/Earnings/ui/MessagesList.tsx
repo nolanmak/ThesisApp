@@ -543,18 +543,11 @@ const MessagesList: React.FC<MessagesListProps> = ({
               ? 'border-2 border-green-500' 
               : 'border border-neutral-100'
             } ${!message.link ? 'cursor-pointer' : ''}`}
-          onClick={() => {
-            if (!message.link && onSelectMessage) {
-              onSelectMessage(message);
-            }
-          }}
+          onClick={() => {onSelectMessage && onSelectMessage(message);}}
         >
           {message.link ? (
             /* Link message - show on a single line like analysis messages */
-            <a 
-              href={message.link} 
-              target="_blank" 
-              rel="noopener noreferrer"
+            <div
               className="flex justify-between items-center cursor-pointer transition-colors"
             >
               <div className="flex items-center space-x-2">
@@ -571,9 +564,11 @@ const MessagesList: React.FC<MessagesListProps> = ({
               </div>
               
               <div className="inline-flex items-center justify-center w-6 h-6 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors">
-                <ExternalLink size={14} />
+                <a href={message.link} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink size={14} />
+                </a>
               </div>
-            </a>
+            </div>
           ) : (
             /* Analysis message with static preview */
             <div 

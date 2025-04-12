@@ -111,40 +111,42 @@ const Messages: React.FC = () => {
               
               {/* Content */}
               <div className="flex-1 overflow-auto">
-                <div className="prose max-w-none overflow-x-hidden">
-                  <div className="text-neutral-800 whitespace-pre-wrap markdown-content break-words overflow-wrap-anywhere text-sm">
-                    {(() => {
-                      // Try to parse the discord_message as JSON
-                      try {
-                        const jsonData = JSON.parse(selectedMessage.discord_message);
-                        // If it has a message property, return just that part
-                        if (jsonData && jsonData.message) {
-                          return jsonData.message;
+                
+                {!selectedMessage.link && (
+                  <div className="prose max-w-none overflow-x-hidden">
+                    <div className="text-neutral-800 whitespace-pre-wrap markdown-content break-words overflow-wrap-anywhere text-xs">
+                      {(() => {
+                        // Try to parse the discord_message as JSON
+                        try {
+                          const jsonData = JSON.parse(selectedMessage.discord_message);
+                          // If it has a message property, return just that part
+                          if (jsonData && jsonData.message) {
+                            return jsonData.message;
+                          }
+                          // Otherwise, stringify the JSON with formatting for readability
+                          return JSON.stringify(jsonData, null, 2);
+                        } catch {
+                          // Not JSON, return as is
+                          return selectedMessage.discord_message;
                         }
-                        // Otherwise, stringify the JSON with formatting for readability
-                        return JSON.stringify(jsonData, null, 2);
-                      } catch {
-                        // Not JSON, return as is
-                        return selectedMessage.discord_message;
-                      }
-                    })()}
+                      })()}
+                    </div>
                   </div>
-                  
-                  {selectedMessage.link && (
-                    <div className="mt-4 pt-4 border-t border-neutral-200">
-                      <a 
-                        href={selectedMessage.link} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center px-4 py-2 bg-primary-50 text-primary-700 rounded-md hover:bg-primary-100 transition-colors"
-                      >
-                        <span>View {selectedMessage.ticker} Report</span>
+                )}
+                {selectedMessage.link && (
+                  <div className="pt-4 border-neutral-200">
+                    <a 
+                      href={selectedMessage.link} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 bg-primary-50 text-primary-700 rounded-md hover:bg-primary-100 transition-colors"
+                    >
+                      <span>View {selectedMessage.ticker} Report</span>
                       </a>
                     </div>
                   )}
                 </div>
               </div>
-            </div>
           ) : (
             <div className="h-full flex items-center justify-center text-neutral-500">
               <p>Select a message to view analysis</p>
