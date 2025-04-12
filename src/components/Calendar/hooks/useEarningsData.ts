@@ -114,10 +114,15 @@ const useEarningsData = (initialSearchTicker: string = '', initialFilterActive: 
         const searchTickerStr = typeof prev.searchTicker === 'string' ? prev.searchTicker : '';
         const searchLower = searchTickerStr.toLowerCase();
         
-        // Search in both ticker and company name
+        // Check if search starts with $ to search only by ticker
+        const isTickerOnlySearch = searchTickerStr.startsWith('$');
+        // If starts with $, remove it for the actual search
+        const searchTermLower = isTickerOnlySearch ? searchLower.substring(1) : searchLower;
+        
+        // Search in ticker only if starts with $, otherwise search in both ticker and company name
         const matchesSearch = searchTickerStr === '' || 
-          item.ticker.toLowerCase().includes(searchLower) || 
-          (item.company_name && item.company_name.toLowerCase().includes(searchLower));
+          item.ticker.toLowerCase().includes(searchTermLower) || 
+          (!isTickerOnlySearch && item.company_name && item.company_name.toLowerCase().includes(searchTermLower));
           
         const matchesActive = prev.filterActive === null || 
           item.is_active === prev.filterActive;
