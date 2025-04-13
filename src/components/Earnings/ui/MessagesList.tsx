@@ -573,7 +573,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
               ? 'border-2 border-green-500' 
               : 'border border-neutral-100'
             } ${!message.link ? 'cursor-pointer' : ''}`}
-          onClick={() => {onSelectMessage && onSelectMessage(message);}}
+          onClick={() => onSelectMessage && onSelectMessage(message)}
         >
           {message.link ? (
             /* Link message - show on a single line like analysis messages */
