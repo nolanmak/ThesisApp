@@ -80,12 +80,19 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
           const defaultConfig = getDefaultConfig(currentItem.ticker);
           const existingConfig = await getCompanyConfigByTicker(currentItem.ticker);
           
+          console.log('Config data format:', {
+            defaultConfig,
+            existingConfig
+          });
+          
           // If config exists, pre-populate the form
           if (existingConfig) {
             
-            // Convert array fields to strings for textarea
+            // Convert array fields to strings for textarea and normalize case for extraction_method
             const formData: ConfigFormData = {
               ...existingConfig,
+              // Normalize extraction_method case (convert 'Web' to 'web')
+              extraction_method: existingConfig.extraction_method?.toLowerCase(),
               href_ignore_words: Array.isArray(existingConfig.href_ignore_words) 
                 ? existingConfig.href_ignore_words.join('\n') 
                 : existingConfig.href_ignore_words,
@@ -100,9 +107,11 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
               }
             };
             
+            console.log('Processed form data:', formData);
             reset(formData);
           } else {
             // Reset form with default values
+            console.log('Using default config:', defaultConfig);
             reset(defaultConfig);
           }
         } catch (error) {
@@ -221,6 +230,7 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                   <option value="pdf">PDF</option>
                   <option value="web">Web</option>
                 </select>
+                {/* Note: The register handles the value selection automatically based on the form data */}
               </div>
               
               <div>
