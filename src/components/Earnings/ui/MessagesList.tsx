@@ -37,7 +37,7 @@ const StaticPreview: React.FC<{
             <>
               {/* Current Quarter Section */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center'}}>
-                <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.75rem', marginRight: '4px' }}>Current Quarter:</div>
+                <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.6rem', marginRight: '4px' }}>Current Quarter:</div>
                 {content.metrics.slice(0, 2)
                   .filter(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') // Only show populated metrics
                   .map((metric, index) => (
@@ -49,12 +49,12 @@ const StaticPreview: React.FC<{
                       alignItems: 'center',
                       gap: '4px'
                     }}>
-                      <div style={{ fontWeight: '500', fontSize: '0.75rem', color: '#64748b'}}>{metric.label}:</div>
+                      <div style={{ fontWeight: '500', fontSize: '0.6rem', color: '#64748b'}}>{metric.label}:</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <span style={{ fontWeight: '600', color: '#1e40af', fontSize: '0.75rem' }}>{metric.value}</span>
-                        <span style={{ color: '#64748b', fontSize: '0.75rem' }}>vs</span>
-                        <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{metric.expected}</span>
-                        {metric.emoji && <span style={{ marginLeft: '2px' }}>{metric.emoji}</span>}
+                        <span style={{ fontWeight: '600', color: '#1e40af', fontSize: '0.6rem' }}>{metric.value}</span>
+                        <span style={{ color: '#64748b', fontSize: '0.6rem' }}>vs</span>
+                        <span style={{ color: '#64748b', fontSize: '0.6rem' }}>{metric.expected}</span>
+                        {metric.emoji && <span style={{ marginLeft: '2px', fontSize: '0.6rem' }}>{metric.emoji}</span>}
                       </div>
                     </div>
                   ))
@@ -64,7 +64,7 @@ const StaticPreview: React.FC<{
               {/* Next Quarter Section - Only show if there are populated metrics */}
               {content.metrics.slice(2, 4).some(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
-                  <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.75rem', marginRight: '4px' }}>Next Quarter:</div>
+                  <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.6rem', marginRight: '4px' }}>Next Quarter:</div>
                     {content.metrics.slice(2, 4)
                       .filter(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') // Only show populated metrics
                       .map((metric, index) => (
@@ -76,12 +76,12 @@ const StaticPreview: React.FC<{
                           alignItems: 'center',
                           gap: '4px'
                         }}>
-                          <div style={{ fontWeight: '500', fontSize: '0.75rem', color: '#64748b' }}>{metric.label}:</div>
+                          <div style={{ fontWeight: '500', fontSize: '0.6rem', color: '#64748b' }}>{metric.label}:</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <span style={{ fontWeight: '600', color: '#1e40af', fontSize: '0.75rem' }}>{metric.value}</span>
-                            <span style={{ color: '#64748b', fontSize: '0.75rem' }}>vs</span>
-                            <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{metric.expected}</span>
-                            {metric.emoji && <span style={{ marginLeft: '2px' }}>{metric.emoji}</span>}
+                            <span style={{ fontWeight: '600', color: '#1e40af', fontSize: '0.6rem' }}>{metric.value}</span>
+                            <span style={{ color: '#64748b', fontSize: '0.6rem' }}>vs</span>
+                            <span style={{ color: '#64748b', fontSize: '0.6rem' }}>{metric.expected}</span>
+                            {metric.emoji && <span style={{ marginLeft: '2px', fontSize: '0.6rem' }}>{metric.emoji}</span>}
                           </div>
                         </div>
                       ))
@@ -92,7 +92,7 @@ const StaticPreview: React.FC<{
               {/* Current Year Section - Only show if there are populated metrics */}
               {content.metrics.slice(4).some(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center'}}>
-                  <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.75rem', marginRight: '4px' }}>Fiscal Year:</div>
+                  <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.6rem', marginRight: '4px' }}>Fiscal Year:</div>
                     {content.metrics.slice(4)
                       .filter(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') // Only show populated metrics
                       .map((metric, index) => (
@@ -104,12 +104,12 @@ const StaticPreview: React.FC<{
                           alignItems: 'center',
                           gap: '4px'
                         }}>
-                          <div style={{ fontWeight: '500', fontSize: '0.75rem', color: '#64748b' }}>{metric.label}:</div>
+                          <div style={{ fontWeight: '500', fontSize: '0.6rem', color: '#64748b' }}>{metric.label}:</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <span style={{ fontWeight: '600', color: '#1e40af', fontSize: '0.75rem' }}>{metric.value}</span>
-                            <span style={{ color: '#64748b', fontSize: '0.75rem' }}>vs</span>
-                            <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{metric.expected}</span>
-                            {metric.emoji && <span style={{ marginLeft: '2px' }}>{metric.emoji}</span>}
+                            <span style={{ fontWeight: '600', color: '#1e40af', fontSize: '0.6rem' }}>{metric.value}</span>
+                            <span style={{ color: '#64748b', fontSize: '0.6rem' }}>vs</span>
+                            <span style={{ color: '#64748b', fontSize: '0.6rem' }}>{metric.expected}</span>
+                            {metric.emoji && <span style={{ marginLeft: '2px', fontSize: '0.6rem' }}>{metric.emoji}</span>}
                           </div>
                         </div>
                       ))
@@ -118,7 +118,7 @@ const StaticPreview: React.FC<{
               )}
             </>
           ) : (
-            <div style={{ padding: '4px', color: '#64748b', fontSize: '0.75rem', textAlign: 'center' }}>
+            <div style={{ padding: '4px', color: '#64748b', fontSize: '0.6rem', textAlign: 'center' }}>
               No metrics available
             </div>
           )}
@@ -147,7 +147,7 @@ const StaticPreview: React.FC<{
         style={{
           color: '#1e40af', // Darker blue text
           fontWeight: '500',
-          fontSize: '0.75rem', // Smaller font size to match ticker and timestamp
+          fontSize: '0.6rem', // Further reduced font size for better compactness
           lineHeight: '1.4',
           width: '100%',
           whiteSpace: multiline ? 'pre-wrap' : 'nowrap', // Allow wrapping for multiline
