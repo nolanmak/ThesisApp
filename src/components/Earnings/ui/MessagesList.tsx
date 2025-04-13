@@ -16,6 +16,8 @@ const StaticPreview: React.FC<{
   multiline?: boolean;
   isMetrics?: boolean;
 }> = ({ content, multiline = false, isMetrics = false }) => {
+  // Debug: Log the content structure
+  console.log('StaticPreview content:', content);
   // If it's metrics data, render a structured layout
   if (isMetrics && typeof content !== 'string') {
     return (
@@ -287,17 +289,45 @@ const MessagesList: React.FC<MessagesListProps> = ({
           };
           
           const extractValues = (str: string): MetricValues => {
-            // This regex extracts values like "739M", "-86.68B", and negative numbers along with any emojis
-            // from strings like "Sales (Actual vs Expected): 739M vs 86.68B 🔴" or "EPS: -0.25 vs 0.30 🔴"
-            const matches = str.match(/:\s*(-?[\d.]+[A-Za-z%]*)\s*vs\s*(-?[\d.]+[A-Za-z%]*)\s*([\p{Emoji}]*)/u);
-            return matches ? { 
-              value: matches[1], 
-              expected: matches[2],
-              emoji: matches[3] || ''
-            } : { 
-              value: 'N/A', 
-              expected: 'N/A',
-              emoji: ''
+            // Default values if parsing fails
+            const defaultValues = { value: 'N/A', expected: 'N/A', emoji: '' };
+            
+            if (!str) return defaultValues;
+            
+            // Find the last occurrence of 'vs' in the string
+            const vsIndex = str.lastIndexOf(' vs ');
+            if (vsIndex === -1) return defaultValues;
+            
+            // Split the string at the 'vs' to get the value and expected parts
+            const valuePart = str.substring(0, vsIndex).trim();
+            const expectedPart = str.substring(vsIndex + 4).trim(); // +4 to skip ' vs '
+            
+            // Extract the value (last word before 'vs')
+            const valueWords = valuePart.split(' ');
+            const value = valueWords[valueWords.length - 1];
+            
+            // Extract expected value and emoji
+            let expected = expectedPart;
+            let emoji = '';
+            
+            // Check for emoji at the end (last two characters)
+            const lastTwoChars = expectedPart.slice(-2);
+            // Simple check if the last character is not alphanumeric or parenthesis
+            if (lastTwoChars && !lastTwoChars.match(/[a-zA-Z0-9()]/)) {
+              emoji = lastTwoChars;
+              expected = expectedPart.slice(0, -2).trim();
+            }
+            
+            // Remove '(Expected)' text if present
+            const expectedIndex = expected.indexOf('(Expected)');
+            if (expectedIndex !== -1) {
+              expected = expected.substring(0, expectedIndex).trim();
+            }
+            
+            return {
+              value: value === 'N/A' ? 'N/A' : value,
+              expected: expected === 'N/A' ? 'N/A' : expected,
+              emoji: emoji
             };
           };
           
