@@ -26,6 +26,7 @@ const EarningsModal: React.FC<EarningsModalProps> = ({
   } = useForm<EarningsItem>({
     defaultValues: currentItem || {
       ticker: '',
+      company_name: '',
       date: '',
       is_active: false,
       quarter: 1,
@@ -89,6 +90,22 @@ const EarningsModal: React.FC<EarningsModalProps> = ({
               />
               {errors.ticker && (
                 <p className="mt-1 text-sm text-error-500">{errors.ticker.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="company_name" className="block text-sm font-medium text-neutral-600 mb-1">
+                Company Name
+              </label>
+              <input
+                id="company_name"
+                type="text"
+                {...register('company_name', { required: 'Company name is required' })}
+                className="block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                placeholder="Apple Inc."
+              />
+              {errors.company_name && (
+                <p className="mt-1 text-sm text-error-500">{errors.company_name.message}</p>
               )}
             </div>
             
