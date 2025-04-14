@@ -87,6 +87,7 @@ const EarningsModal: React.FC<EarningsModalProps> = ({
                 {...register('ticker', { required: 'Ticker is required' })}
                 className="block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                 placeholder="AAPL"
+                style={{ paddingLeft: 10 }}
               />
               {errors.ticker && (
                 <p className="mt-1 text-sm text-error-500">{errors.ticker.message}</p>
@@ -103,6 +104,7 @@ const EarningsModal: React.FC<EarningsModalProps> = ({
                 {...register('company_name', { required: 'Company name is required' })}
                 className="block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                 placeholder="Apple Inc."
+                style={{ paddingLeft: 10 }}
               />
               {errors.company_name && (
                 <p className="mt-1 text-sm text-error-500">{errors.company_name.message}</p>
@@ -148,6 +150,7 @@ const EarningsModal: React.FC<EarningsModalProps> = ({
                     max: { value: 2100, message: 'Year must be 2100 or earlier' }
                   })}
                   className="block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                  style={{ paddingLeft: 10 }}
                 />
                 {errors.year && (
                   <p className="mt-1 text-sm text-error-500">{errors.year.message}</p>
@@ -165,6 +168,7 @@ const EarningsModal: React.FC<EarningsModalProps> = ({
                     valueAsNumber: true
                   })}
                   className="block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                  style={{ paddingLeft: 10 }}
                 >
                   <option value={1}>Q1</option>
                   <option value={2}>Q2</option>
@@ -185,6 +189,7 @@ const EarningsModal: React.FC<EarningsModalProps> = ({
                 id="release_time"
                 {...register('release_time', { required: 'Release time is required' })}
                 className="block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                style={{ paddingLeft: 10 }}
               >
                 <option value="before">Before Market</option>
                 <option value="after">After Market</option>
