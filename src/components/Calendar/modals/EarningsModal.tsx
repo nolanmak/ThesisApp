@@ -123,6 +123,8 @@ const EarningsModal: React.FC<EarningsModalProps> = ({
                     onChange={(date) => field.onChange(date)}
                     className="block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                     dateFormat="yyyy-MM-dd"
+                    withPortal
+                    popperPlacement="bottom"
                   />
                 )}
               />
