@@ -134,8 +134,8 @@ const StaticPreview: React.FC<{
         backgroundColor: '#f0f9ff', // Light blue background
         border: '1px solid #bfdbfe', // Light blue border
         borderRadius: '4px',
-        padding: '6px 10px',
-        margin: '4px 0',
+        padding: '4px 8px',
+        margin: '2px 0',
         minHeight: '24px', // Reduced minimum height
         maxHeight: multiline ? '100px' : '24px', // Reduced maximum height
         overflow: 'hidden',
@@ -568,7 +568,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
       {deduplicatedMessages.map((message) => (
         <div 
           key={message.message_id}
-          className={`bg-white p-3 border-b transition-colors hover:bg-neutral-50 ${
+          className={`bg-white py-2 px-2 border-b transition-colors hover:bg-neutral-50 ${
             newMessageIds.has(message.message_id) 
               ? 'border-l-4 border-l-green-500' 
               : ''
@@ -605,17 +605,17 @@ const MessagesList: React.FC<MessagesListProps> = ({
               className="flex flex-col transition-colors"
              >
               {/* Header with ticker and timestamp */}
-              <div className="flex justify-between items-center mb-2">
-                <div className="flex items-center space-x-2">
+              <div className="flex justify-between items-center mb-1">
+                <div className="flex items-center space-x-1">
                   {/* Removed redundant ticker display */}
-                  <div className="flex items-center bg-primary-50 px-2 py-0.5 rounded-md text-xs">
+                  <div className="flex items-center bg-primary-50 px-1.5 py-0.5 rounded-md text-xs">
                     <span className="font-medium text-primary-700">
                       {message.ticker}
                       {message.company_name && (
                         <span className="ml-1 text-neutral-500">({message.company_name})</span>
                       )}
                     </span>
-                    <span className="mx-1 text-neutral-400">|</span>
+                    <span className="mx-0.5 text-neutral-400">|</span>
                     <span className="text-neutral-600">Q{message.quarter}</span>
                   </div>
                   <span className="text-xs text-neutral-500">
