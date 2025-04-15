@@ -1,13 +1,15 @@
 import React from 'react';
-import { Search, CalendarIcon, Plus } from 'lucide-react';
+import { Search, CalendarIcon, Plus, Clock } from 'lucide-react';
 
 interface SearchFiltersProps {
   searchTicker: string;
   selectedDate: string;
   filterActive: boolean | null;
+  releaseTime: string | null;
   onSearchChange: (value: string) => void;
   onDateChange: (value: string) => void;
   onFilterChange: (value: boolean | null) => void;
+  onReleaseTimeChange: (value: string | null) => void;
   onAddClick: () => void;
 }
 
@@ -15,14 +17,16 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
   searchTicker,
   selectedDate,
   filterActive,
+  releaseTime,
   onSearchChange,
   onDateChange,
   onFilterChange,
+  onReleaseTimeChange,
   onAddClick
 }) => {
   return (
     <div className="flex justify-between items-center mb-4">
-      <div className="flex items-end gap-3 w-full sm:w-2/3">
+      <div className="flex items-end gap-3 w-full sm:w-3/4">
         {/* Search box */}
         <div className="flex-1">
           <div className="relative">
@@ -79,6 +83,25 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
             >
               Watchlist
             </button>
+          </div>
+        </div>
+        
+        {/* Release Time Filter */}
+        <div className="flex-1">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+              <Clock size={14} className="text-neutral-400" />
+            </div>
+            <select
+              id="release-time-filter"
+              value={releaseTime || ''}
+              onChange={(e) => onReleaseTimeChange(e.target.value === '' ? null : e.target.value)}
+              className="pl-8 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-xs h-8"
+            >
+              <option value="">All Times</option>
+              <option value="before">Before Market</option>
+              <option value="after">After Market</option>
+            </select>
           </div>
         </div>
       </div>

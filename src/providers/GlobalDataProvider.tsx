@@ -28,7 +28,8 @@ interface GlobalDataContextType {
   updateEarningsFilters: (
     searchTicker?: string,
     filterActive?: boolean | null,
-    selectedDate?: string
+    selectedDate?: string,
+    releaseTime?: string | null
   ) => void;
 }
 
@@ -41,6 +42,7 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const searchMessageTicker = '';
   const searchTicker = '';
   const filterActive = null;
+  const releaseTime = null;
   
   // Initialize data hooks with persistent connection
   const {
@@ -65,7 +67,7 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     handleToggleActive,
     addEarningsItem,
     updateFilters: updateEarningsFilters
-  } = useEarningsData(searchTicker, filterActive);
+  } = useEarningsData(searchTicker, filterActive, releaseTime);
 
   // Create a map from ticker to company name from earningsItems
   const tickerToNameMap = useMemo(() => {
@@ -123,7 +125,10 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     },
     handleToggleActive,
     addEarningsItem,
-    updateEarningsFilters
+    updateEarningsFilters: async (searchTicker?: string, filterActive?: boolean | null, selectedDate?: string, releaseTime?: string | null) => {
+      updateEarningsFilters(searchTicker, filterActive, selectedDate, releaseTime);
+      return Promise.resolve();
+    }
   };
 
   return (

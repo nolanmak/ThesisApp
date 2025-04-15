@@ -16,6 +16,7 @@ const Calendar: React.FC = () => {
   // Search states
   const [searchTicker, setSearchTicker] = useState<string>('');
   const [filterActive, setFilterActive] = useState<boolean | null>(null);
+  const [releaseTime, setReleaseTime] = useState<string | null>(null);
 
   // Use global data provider instead of local hook
   const {
@@ -58,17 +59,22 @@ const Calendar: React.FC = () => {
   // Handlers for search and filter
   const handleSearchChange = (value: string) => {
     setSearchTicker(value);
-    updateFilters(value, undefined, undefined);
+    updateFilters(value, undefined, undefined, undefined);
   };
 
   const handleDateChange = (value: string) => {
     setSelectedDate(value);
-    updateFilters(undefined, undefined, value);
+    updateFilters(undefined, undefined, value, undefined);
   };
 
   const handleFilterChange = (value: boolean | null) => {
     setFilterActive(value);
-    updateFilters(undefined, value, undefined);
+    updateFilters(undefined, value, undefined, undefined);
+  };
+
+  const handleReleaseTimeChange = (value: string | null) => {
+    setReleaseTime(value);
+    updateFilters(undefined, undefined, undefined, value);
   };
 
   const handleCloseConfigModal = () => {
@@ -86,9 +92,11 @@ const Calendar: React.FC = () => {
             searchTicker={searchTicker}
             selectedDate={selectedDate}
             filterActive={filterActive}
+            releaseTime={releaseTime}
             onSearchChange={handleSearchChange}
             onDateChange={handleDateChange}
             onFilterChange={handleFilterChange}
+            onReleaseTimeChange={handleReleaseTimeChange}
             onAddClick={handleAddEarningsClick}
           />
           

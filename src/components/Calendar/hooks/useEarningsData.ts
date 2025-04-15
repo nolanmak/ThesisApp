@@ -15,16 +15,22 @@ interface EarningsDataState {
   searchTicker: string;
   filterActive: boolean | null;
   selectedDate: string;
+  releaseTime: string | null;
 }
 
-const useEarningsData = (initialSearchTicker: string = '', initialFilterActive: boolean | null = null) => {
+const useEarningsData = (
+  initialSearchTicker: string = '', 
+  initialFilterActive: boolean | null = null,
+  initialReleaseTime: string | null = null
+) => {
   const [state, setState] = useState<EarningsDataState>({
     earningsItems: [],
     filteredEarningsItems: [],
     loading: true,
     searchTicker: initialSearchTicker,
     filterActive: initialFilterActive,
-    selectedDate: format(new Date(), 'yyyy-MM-dd')
+    selectedDate: format(new Date(), 'yyyy-MM-dd'),
+    releaseTime: initialReleaseTime
   });
 
   // Fetch earnings items
@@ -93,13 +99,15 @@ const useEarningsData = (initialSearchTicker: string = '', initialFilterActive: 
   const updateFilters = useCallback((
     searchTicker?: string,
     filterActive?: boolean | null,
-    selectedDate?: string
+    selectedDate?: string,
+    releaseTime?: string | null
   ) => {
     setState(prev => ({
       ...prev,
       ...(searchTicker !== undefined ? { searchTicker } : {}),
       ...(filterActive !== undefined ? { filterActive } : {}),
-      ...(selectedDate !== undefined ? { selectedDate } : {})
+      ...(selectedDate !== undefined ? { selectedDate } : {}),
+      ...(releaseTime !== undefined ? { releaseTime } : {})
     }));
   }, []);
 
@@ -127,10 +135,13 @@ const useEarningsData = (initialSearchTicker: string = '', initialFilterActive: 
         const matchesActive = prev.filterActive === null || 
           item.is_active === prev.filterActive;
         
-        return matchesDate && matchesSearch && matchesActive;
+        const matchesReleaseTime = prev.releaseTime === null || 
+          item.release_time === prev.releaseTime;
+        
+        return matchesDate && matchesSearch && matchesActive && matchesReleaseTime;
       })
     }));
-  }, [state.earningsItems, state.searchTicker, state.filterActive, state.selectedDate]);
+  }, [state.earningsItems, state.searchTicker, state.filterActive, state.selectedDate, state.releaseTime]);
 
   // Initial data fetch
   useEffect(() => {
@@ -144,6 +155,7 @@ const useEarningsData = (initialSearchTicker: string = '', initialFilterActive: 
     searchTicker: state.searchTicker,
     filterActive: state.filterActive,
     selectedDate: state.selectedDate,
+    releaseTime: state.releaseTime,
     fetchEarningsItems,
     handleToggleActive,
     addEarningsItem,
