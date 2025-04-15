@@ -134,10 +134,10 @@ const StaticPreview: React.FC<{
         backgroundColor: '#f0f9ff', // Light blue background
         border: '1px solid #bfdbfe', // Light blue border
         borderRadius: '4px',
-        padding: '4px 8px',
+        padding: '3px 8px',
         margin: '2px 0',
-        minHeight: '24px', // Reduced minimum height
-        maxHeight: multiline ? '100px' : '24px', // Reduced maximum height
+        minHeight: '20px', // Further reduced minimum height
+        maxHeight: multiline ? '80px' : '20px', // Further reduced maximum height
         overflow: 'hidden',
         display: 'flex',
         alignItems: 'flex-start' // Align to top for multiline
@@ -580,11 +580,11 @@ const MessagesList: React.FC<MessagesListProps> = ({
             <div
               className="flex justify-between items-center cursor-pointer transition-colors"
             >
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1">
                 <span className="text-sm font-medium text-blue-600">
                   {message.ticker}
                   {message.company_name && (
-                    <span className="ml-1 text-xs text-neutral-500">({message.company_name})</span>
+                    <span className="ml-0.5 text-xs text-neutral-500">({message.company_name})</span>
                   )}
                 </span>
                 <span className="text-xs text-neutral-600">Q{message.quarter}</span>
@@ -593,7 +593,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                 </span>
               </div>
               
-              <div className="inline-flex items-center justify-center w-6 h-6 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors">
+              <div className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors">
                 <a href={message.link} target="_blank" rel="noopener noreferrer">
                   <ExternalLink size={14} />
                 </a>
@@ -623,7 +623,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                   </span>
                 </div>
                 
-                <div className="inline-flex items-center justify-center w-6 h-6 bg-primary-50 text-primary-700 rounded-full hover:bg-primary-100 transition-colors">
+                <div className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-700 rounded-full hover:bg-primary-100 transition-colors">
                   <BarChart2 size={14} />
                 </div>
               </div>
