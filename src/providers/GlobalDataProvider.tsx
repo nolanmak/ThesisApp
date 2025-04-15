@@ -106,8 +106,9 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     webSocketConnected,
     webSocketReconnecting,
     webSocketEnabled,
-    refreshMessages: async (bypassCache?: boolean) => {
-      refreshMessages(bypassCache === undefined ? true : bypassCache);
+    refreshMessages: async () => {
+      // Call the renamed fetchMessages function
+      await refreshMessages();
       return Promise.resolve();
     },
     toggleWebSocket,
