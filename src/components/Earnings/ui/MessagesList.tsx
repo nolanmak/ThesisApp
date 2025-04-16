@@ -168,6 +168,24 @@ const MessagesList: React.FC<MessagesListProps> = ({
   onSelectMessage,
   createMessagePreview: externalCreateMessagePreview
 }) => {
+  // State to track if the device is mobile
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Check if the device is mobile based on screen width
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    // Initial check
+    checkIfMobile();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', checkIfMobile);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
   // State to track new messages for highlighting
   const [newMessageIds, setNewMessageIds] = useState<Set<string>>(new Set());
   // State to track search term
@@ -574,17 +592,48 @@ const MessagesList: React.FC<MessagesListProps> = ({
               : ''
             } ${!message.link ? 'cursor-pointer' : ''}`}
           onClick={() => onSelectMessage && onSelectMessage(message)}
+          style={{
+            padding: isMobile ? '10px 8px' : undefined
+          }}
         >
           {message.link ? (
             /* Link message - show on a single line like analysis messages */
             <div
               className="flex justify-between items-center cursor-pointer transition-colors"
+              style={{
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: isMobile ? 'flex-start' : 'center',
+                gap: isMobile ? '6px' : '0'
+              }}
             >
-              <div className="flex items-center space-x-1">
-                <span className="text-sm font-medium text-blue-600">
+              <div 
+                className="flex items-center space-x-1"
+                style={{
+                  flexWrap: isMobile ? 'wrap' : 'nowrap',
+                  gap: isMobile ? '4px' : undefined,
+                  width: isMobile ? '100%' : undefined
+                }}
+              >
+                <span 
+                  className="text-sm font-medium text-blue-600"
+                  style={{
+                    display: 'flex',
+                    flexDirection: isMobile ? 'column' : 'row',
+                    alignItems: isMobile ? 'flex-start' : 'center'
+                  }}
+                >
                   {message.ticker}
                   {message.company_name && (
-                    <span className="ml-0.5 text-xs text-neutral-500">({message.company_name})</span>
+                    <span 
+                      className="ml-0.5 text-xs text-neutral-500"
+                      style={{
+                        marginLeft: isMobile ? '0' : '2px',
+                        maxWidth: isMobile ? '100%' : '200px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >({message.company_name})</span>
                   )}
                 </span>
                 <span className="text-xs text-neutral-600">Q{message.quarter}</span>
@@ -593,7 +642,13 @@ const MessagesList: React.FC<MessagesListProps> = ({
                 </span>
               </div>
               
-              <div className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors">
+              <div 
+                className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors"
+                style={{
+                  alignSelf: isMobile ? 'flex-end' : undefined,
+                  marginTop: isMobile ? '4px' : '0'
+                }}
+              >
                 <a href={message.link} target="_blank" rel="noopener noreferrer">
                   <ExternalLink size={14} />
                 </a>
@@ -603,27 +658,81 @@ const MessagesList: React.FC<MessagesListProps> = ({
             /* Analysis message with static preview */
             <div 
               className="flex flex-col transition-colors"
+              style={{
+                gap: isMobile ? '8px' : undefined
+              }}
              >
               {/* Header with ticker and timestamp */}
-              <div className="flex justify-between items-center mb-1">
-                <div className="flex items-center space-x-1">
+              <div 
+                className="flex justify-between items-center mb-1"
+                style={{
+                  flexDirection: isMobile ? 'column' : 'row',
+                  alignItems: isMobile ? 'flex-start' : 'center',
+                  gap: isMobile ? '6px' : undefined,
+                  marginBottom: isMobile ? '6px' : '4px'
+                }}
+              >
+                <div 
+                  className="flex items-center space-x-1"
+                  style={{
+                    flexWrap: isMobile ? 'wrap' : 'nowrap',
+                    gap: isMobile ? '4px' : undefined,
+                    width: isMobile ? '100%' : undefined
+                  }}
+                >
                   {/* Removed redundant ticker display */}
-                  <div className="flex items-center bg-primary-50 px-1.5 py-0.5 rounded-md text-xs">
-                    <span className="font-medium text-primary-700">
+                  <div 
+                    className="flex items-center bg-primary-50 px-1.5 py-0.5 rounded-md text-xs"
+                    style={{
+                      flexDirection: isMobile ? 'column' : 'row',
+                      alignItems: isMobile ? 'flex-start' : 'center',
+                      padding: isMobile ? '4px 6px' : undefined,
+                      width: isMobile ? '100%' : 'auto'
+                    }}
+                  >
+                    <span 
+                      className="font-medium text-primary-700"
+                      style={{
+                        display: 'flex',
+                        flexDirection: isMobile ? 'column' : 'row',
+                        alignItems: isMobile ? 'flex-start' : 'center',
+                        width: isMobile ? '100%' : 'auto'
+                      }}
+                    >
                       {message.ticker}
                       {message.company_name && (
-                        <span className="ml-1 text-neutral-500">({message.company_name})</span>
+                        <span 
+                          className="ml-1 text-neutral-500"
+                          style={{
+                            marginLeft: isMobile ? '0' : '4px',
+                            maxWidth: isMobile ? '100%' : '200px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >({message.company_name})</span>
                       )}
                     </span>
-                    <span className="mx-0.5 text-neutral-400">|</span>
-                    <span className="text-neutral-600">Q{message.quarter}</span>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <span 
+                        className="mx-0.5 text-neutral-400"
+                        style={{ margin: isMobile ? '2px 0' : undefined }}
+                      >|</span>
+                      <span className="text-neutral-600">Q{message.quarter}</span>
+                    </div>
                   </div>
                   <span className="text-xs text-neutral-500">
                     {convertToEasternTime(message.timestamp)}
                   </span>
                 </div>
                 
-                <div className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-700 rounded-full hover:bg-primary-100 transition-colors">
+                <div 
+                  className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-700 rounded-full hover:bg-primary-100 transition-colors"
+                  style={{
+                    alignSelf: isMobile ? 'flex-end' : undefined,
+                    marginTop: isMobile ? '0' : undefined
+                  }}
+                >
                   <BarChart2 size={14} />
                 </div>
               </div>
