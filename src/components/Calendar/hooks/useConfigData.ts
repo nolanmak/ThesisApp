@@ -127,7 +127,6 @@ const useConfigData = () => {
     return {
       ticker: ticker,
       base_url: '',
-      extraction_method: 'pdf',
       href_ignore_words: [],
       selector: 'a',
       url_ignore_list: [],

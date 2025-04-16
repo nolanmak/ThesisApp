@@ -37,7 +37,6 @@ export type BrowserType = 'chromium' | 'firefox';
 export interface CompanyConfig {
   ticker: string;
   base_url: string;
-  extraction_method?: string;
   href_ignore_words?: string[];
   selector?: string;
   url_ignore_list?: string[];

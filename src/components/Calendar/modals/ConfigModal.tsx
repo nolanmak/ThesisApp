@@ -92,7 +92,6 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
             const formData: ConfigFormData = {
               ...existingConfig,
               // Normalize extraction_method case (convert 'Web' to 'web')
-              extraction_method: existingConfig.extraction_method?.toLowerCase(),
               href_ignore_words: Array.isArray(existingConfig.href_ignore_words) 
                 ? existingConfig.href_ignore_words.join('\n') 
                 : existingConfig.href_ignore_words,
@@ -218,21 +217,6 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                   </p>
                 )}
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  Extraction Method
-                </label>
-                <select
-                  {...register("extraction_method")}
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
-                >
-                  <option value="pdf">PDF</option>
-                  <option value="web">Web</option>
-                </select>
-                {/* Note: The register handles the value selection automatically based on the form data */}
-              </div>
-              
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">
                   Browser Type
