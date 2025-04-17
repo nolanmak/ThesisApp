@@ -653,9 +653,9 @@ const MessagesList: React.FC<MessagesListProps> = ({
             <div
               className="flex justify-between items-center cursor-pointer transition-colors"
               style={{
-                flexDirection: isMobile ? 'column' : 'row',
-                alignItems: isMobile ? 'flex-start' : 'center',
-                gap: isMobile ? '6px' : '0',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: '0',
                 width: '100%',
                 maxWidth: '100%',
                 overflow: 'hidden',
@@ -671,35 +671,36 @@ const MessagesList: React.FC<MessagesListProps> = ({
                   overflow: 'hidden',
                 }}
               >
-                <span
-                  className="text-sm font-medium text-blue-600"
-                  style={{
-                    display: 'flex',
-                    flexDirection: isMobile ? 'column' : 'row',
-                    alignItems: isMobile ? 'flex-start' : 'center',
-                  }}
-                >
-                  {message.ticker}
+                <div className="flex items-center space-x-1 bg-primary-50 px-1.5 py-0.5 rounded-md">
+                  <span
+                    className="text-sm font-medium text-blue-600"
+                    style={{
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {message.ticker}
+                  </span>
+                  
                   {message.company_name && (
                     <span
-                      className="ml-0.5 text-xs text-neutral-500"
+                      className="text-xs text-neutral-500"
                       style={{
-                        marginLeft: isMobile ? '0' : '2px',
-                        maxWidth: isMobile ? '100%' : '200px',
+                        maxWidth: isMobile ? '60px' : '200px',
                         overflow: 'hidden',
-                        textOverflow: isMobile ? 'clip' : 'ellipsis',
-                        whiteSpace: isMobile ? 'normal' : 'nowrap',
-                        wordBreak: isMobile ? 'break-word' : 'normal',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
                       }}
                     >
-                      ({message.company_name})
+                      {message.company_name}
                     </span>
                   )}
-                </span>
-                <span className="text-xs text-neutral-600">
-                  Q{message.quarter}
-                </span>
-                <span className="text-xs text-neutral-500">
+                  
+                  <span className="text-xs text-neutral-600">
+                    Q{message.quarter}
+                  </span>
+                </div>
+                
+                <span className="text-xs text-neutral-500 ml-1">
                   {convertToEasternTime(message.timestamp)}
                 </span>
               </div>
@@ -729,87 +730,82 @@ const MessagesList: React.FC<MessagesListProps> = ({
               <div
                 className="flex justify-between items-center mb-1"
                 style={{
-                  flexDirection: isMobile ? 'column' : 'row',
-                  alignItems: isMobile ? 'flex-start' : 'center',
-                  gap: isMobile ? '6px' : undefined,
-                  marginBottom: isMobile ? '6px' : '4px',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: undefined,
+                  marginBottom: '4px',
                   width: '100%',
                   maxWidth: '100%',
-                  overflow: 'hidden',
+                  overflow: 'hidden'
                 }}
               >
                 <div
-                  className="flex items-center space-x-1"
+                  className="flex items-center"
                   style={{
-                    flexWrap: isMobile ? 'wrap' : 'nowrap',
-                    gap: isMobile ? '4px' : undefined,
-                    width: isMobile ? '100%' : undefined,
+                    flexWrap: 'nowrap',
+                    gap: '4px',
+                    width: isMobile ? 'calc(100% - 30px)' : undefined,
                     maxWidth: '100%',
                     overflow: 'hidden',
                   }}
                 >
                   {/* Ticker and company name */}
-                  <div
-                    className="flex items-center bg-primary-50 px-1.5 py-0.5 rounded-md text-xs"
+                  <div 
+                    className="flex items-center space-x-1 bg-primary-50 px-1.5 py-0.5 rounded-md text-xs"
                     style={{
-                      flexDirection: isMobile ? 'column' : 'row',
-                      alignItems: isMobile ? 'flex-start' : 'center',
-                      padding: isMobile ? '4px 6px' : undefined,
-                      width: isMobile ? '100%' : 'auto',
-                      maxWidth: '100%',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      padding: '2px 6px',
+                      width: 'auto',
+                      maxWidth: isMobile ? 'calc(100% - 30px)' : '100%',
                       boxSizing: 'border-box',
-                      overflowX: 'hidden',
-                      wordBreak: isMobile ? 'break-word' : 'normal',
+                      overflowX: 'hidden'
                     }}
                   >
-                    <span
+                    <span 
                       className="font-medium text-primary-700"
                       style={{
                         display: 'flex',
-                        flexDirection: isMobile ? 'column' : 'row',
-                        alignItems: isMobile ? 'flex-start' : 'center',
-                        width: isMobile ? '100%' : 'auto',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        whiteSpace: 'nowrap'
                       }}
                     >
                       {message.ticker}
-                      {message.company_name && (
-                        <span
-                          className="ml-1 text-neutral-500"
-                          style={{
-                            marginLeft: isMobile ? '0' : '4px',
-                            maxWidth: isMobile ? '100%' : '200px',
-                            overflow: 'hidden',
-                            textOverflow: isMobile ? 'clip' : 'ellipsis',
-                            whiteSpace: isMobile ? 'normal' : 'nowrap',
-                            wordBreak: isMobile ? 'break-word' : 'normal',
-                          }}
-                        >
-                          ({message.company_name})
-                        </span>
-                      )}
                     </span>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <span
-                        className="mx-0.5 text-neutral-400"
-                        style={{ margin: isMobile ? '2px 0' : undefined }}
+
+                    {message.company_name && (
+                      <span 
+                        className="text-neutral-500"
+                        style={{
+                          maxWidth: isMobile ? '60px' : '200px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}
                       >
-                        |
+                        {message.company_name}
                       </span>
-                      <span className="text-neutral-600">Q{message.quarter}</span>
-                    </div>
+                    )}
+
+                    <span className="text-neutral-600 mx-1">
+                      Q{message.quarter}
+                    </span>
                   </div>
-                  <span className="text-xs text-neutral-500">
+
+                  <span className="text-xs text-neutral-500 ml-1">
                     {convertToEasternTime(message.timestamp)}
                   </span>
-                </div>
-                <div
-                  className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-700 rounded-full hover:bg-primary-100 transition-colors"
-                  style={{
-                    alignSelf: isMobile ? 'flex-end' : undefined,
-                    marginTop: isMobile ? '0' : undefined,
-                  }}
-                >
-                  <BarChart2 size={14} />
+                  <div
+                    className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors"
+                    style={{
+                      alignSelf: undefined,
+                      marginTop: '0',
+                      marginLeft: '4px',
+                    }}
+                  >
+                    <BarChart2 size={14} />
+                  </div>
                 </div>
               </div>
 
