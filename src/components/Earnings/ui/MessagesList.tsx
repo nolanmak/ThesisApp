@@ -673,7 +673,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
               >
                 {/* Ticker and company name */}
                 <div 
-                  className="flex items-center space-x-1 px-1.5 py-0.5 rounded-md text-xs"
+                  className="flex items-center space-x-1 px-1.5 py-0.5 text-xs"
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -767,7 +767,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                 >
                   {/* Ticker and company name */}
                   <div 
-                    className="flex items-center space-x-1 bg-primary-50 px-1.5 py-0.5 rounded-md text-xs"
+                    className="flex items-center space-x-1 px-1.5 py-0.5 text-xs"
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
@@ -779,7 +779,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     }}
                   >
                     <span 
-                      className="font-medium text-blue-600"
+                      className="font-bold text-neutral-800"
                       style={{
                         display: 'flex',
                         flexDirection: 'row',
