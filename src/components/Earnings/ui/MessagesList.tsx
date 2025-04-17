@@ -662,20 +662,35 @@ const MessagesList: React.FC<MessagesListProps> = ({
               }}
             >
               <div
-                className="flex items-center space-x-1"
+                className="flex items-center"
                 style={{
-                  flexWrap: isMobile ? 'wrap' : 'nowrap',
-                  gap: isMobile ? '4px' : undefined,
-                  width: isMobile ? '100%' : undefined,
+                  flexWrap: 'nowrap',
+                  gap: '4px',
+                  width: isMobile ? 'calc(100% - 30px)' : undefined,
                   maxWidth: '100%',
                   overflow: 'hidden',
                 }}
               >
-                <div className="flex items-center space-x-1 bg-primary-50 px-1.5 py-0.5 rounded-md">
-                  <span
-                    className="text-sm font-medium text-blue-600"
+                {/* Ticker and company name */}
+                <div 
+                  className="flex items-center space-x-1 px-1.5 py-0.5 rounded-md text-xs"
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    padding: '2px 6px',
+                    width: 'auto',
+                    maxWidth: isMobile ? 'calc(100% - 30px)' : '100%',
+                    boxSizing: 'border-box',
+                    overflowX: 'hidden'
+                  }}
+                >
+                  <span 
+                    className="font-medium text-neutral-800"
                     style={{
-                      whiteSpace: 'nowrap',
+                      display: 'flex',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      whiteSpace: 'nowrap'
                     }}
                   >
                     {message.ticker}
@@ -683,7 +698,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                   
                   {message.company_name && (
                     <span
-                      className="text-xs text-neutral-500"
+                      className="text-neutral-500"
                       style={{
                         maxWidth: isMobile ? '60px' : '200px',
                         overflow: 'hidden',
@@ -695,7 +710,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     </span>
                   )}
                   
-                  <span className="text-xs text-neutral-600">
+                  <span className="text-neutral-600 mx-1">
                     Q{message.quarter}
                   </span>
                 </div>
@@ -707,8 +722,9 @@ const MessagesList: React.FC<MessagesListProps> = ({
               <div
                 className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors"
                 style={{
-                  alignSelf: isMobile ? 'flex-end' : undefined,
-                  marginTop: isMobile ? '4px' : '0',
+                  alignSelf: undefined,
+                  marginTop: '0',
+                  marginLeft: '4px',
                 }}
               >
                 <a href={message.link} target="_blank" rel="noopener noreferrer">
@@ -763,7 +779,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     }}
                   >
                     <span 
-                      className="font-medium text-primary-700"
+                      className="font-medium text-blue-600"
                       style={{
                         display: 'flex',
                         flexDirection: 'row',
