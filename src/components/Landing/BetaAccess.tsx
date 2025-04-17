@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import WaveBackground from './WaveBackground';
@@ -7,7 +7,24 @@ import { ArrowLeft } from 'lucide-react';
 const BetaAccess: React.FC = () => {
   const [betaPassword, setBetaPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
+  
+  // Handle responsive design
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    // Initial check
+    checkIfMobile();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', checkIfMobile);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
 
   // Handle beta password submission
   const handleBetaAccess = (e: React.FormEvent) => {
@@ -42,24 +59,32 @@ const BetaAccess: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen w-full overflow-auto">
+    <div className="relative min-h-screen w-full overflow-hidden">
       {/* Wave Background */}
       <WaveBackground />
 
       {/* Centered Content - Updated to center vertically */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen py-8">
-        <div className="max-w-2xl w-full px-4 md:px-6">
+        <div className="max-w-2xl w-full px-4 md:px-6" style={{ maxWidth: '100%' }}>
           
           <div className="text-center mb-2 fade-in">
-            <h1 className="bg-[#f9fafb]/80 backdrop-blur-sm text-4xl font-bold mb-3 tracking-tight text-neutral-800 w-fit mx-auto">
+            <h1 
+              className="bg-[#f9fafb]/80 backdrop-blur-sm font-bold mb-3 tracking-tight text-neutral-800 w-fit mx-auto"
+              style={{
+                fontSize: isMobile ? '1.875rem' : '2.25rem',
+                padding: isMobile ? '0.5rem' : '0.25rem',
+                maxWidth: isMobile ? '90%' : 'auto',
+                wordBreak: 'break-word'
+              }}
+            >
               Beta Access
             </h1>
           </div>
           
           {/* Beta Access Form */}
-          <div className="p-6 max-w-md mx-auto">
-            <form onSubmit={handleBetaAccess} className="flex flex-col">
-              <div className="flex items-center">
+          <div className="p-6 max-w-md mx-auto" style={{ width: isMobile ? '100%' : 'auto', padding: isMobile ? '1rem' : '1.5rem' }}>
+            <form onSubmit={handleBetaAccess} className="flex flex-col" style={{ width: '100%' }}>
+              <div className="flex items-center" style={{ width: '100%' }}>
                 <input
                   id="beta-password"
                   type="password"
@@ -68,6 +93,10 @@ const BetaAccess: React.FC = () => {
                   className="flex-1 px-3 py-[10px] border border-neutral-200 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/90 text-sm"
                   placeholder="Enter your beta access code"
                   required
+                  style={{ 
+                    width: isMobile ? 'calc(100% - 40px)' : 'auto',
+                    minWidth: 0
+                  }}
                 />
                 <button
                   type="submit"
@@ -87,7 +116,7 @@ const BetaAccess: React.FC = () => {
             onClick={() => navigate('/')}
             className="mt-10 flex items-center text-neutral-600 hover:text-neutral-800 transition-colors"
           >
-            <ArrowLeft size={20} className="mr-2" />
+            <ArrowLeft size={isMobile ? 18 : 20} className="mr-2" />
             Return 
           </button>
       </div>
