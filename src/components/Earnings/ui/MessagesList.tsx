@@ -15,9 +15,8 @@ const StaticPreview: React.FC<{
   content: string | { metrics: Array<{label: string, value: string, expected: string, emoji?: string}> }; 
   multiline?: boolean;
   isMetrics?: boolean;
-}> = ({ content, multiline = false, isMetrics = false }) => {
-  // Debug: Log the content structure
-  console.log('StaticPreview content:', content);
+  isMobile?: boolean;
+}> = ({ content, multiline = false, isMetrics = false, isMobile = false }) => {
   // If it's metrics data, render a structured layout
   if (isMetrics && typeof content !== 'string') {
     return (
@@ -26,9 +25,12 @@ const StaticPreview: React.FC<{
           backgroundColor: '#f0f9ff', // Light blue background
           border: '1px solid #bfdbfe', // Light blue border
           borderRadius: '4px',
-          padding: '6px 10px',
+          padding: isMobile ? '8px 8px' : '6px 10px',
           margin: '4px 0',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box'
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
@@ -37,7 +39,13 @@ const StaticPreview: React.FC<{
             <>
               {/* Current Quarter Section */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center'}}>
-                <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '.7rem', marginRight: '4px' }}>Current Quarter:</div>
+                <div style={{ 
+                  fontWeight: '600', 
+                  color: '#2563eb', 
+                  fontSize: isMobile ? '.8rem' : '.7rem', 
+                  marginRight: '4px',
+                  width: isMobile ? '100%' : 'auto'
+                }}>Current Quarter:</div>
                 {content.metrics.slice(0, 2)
                   .filter(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') // Only show populated metrics
                   .map((metric, index) => (
@@ -63,8 +71,22 @@ const StaticPreview: React.FC<{
               
               {/* Next Quarter Section - Only show if there are populated metrics */}
               {content.metrics.slice(2, 4).some(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
-                  <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '.7rem', marginRight: '4px' }}>Next Quarter:</div>
+                <div style={{ 
+                  display: 'flex', 
+                  flexWrap: 'wrap', 
+                  gap: '4px', 
+                  alignItems: 'center',
+                  width: '100%',
+                  maxWidth: '100%',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{ 
+                    fontWeight: '600', 
+                    color: '#2563eb', 
+                    fontSize: isMobile ? '.8rem' : '.7rem', 
+                    marginRight: '4px',
+                    width: isMobile ? '100%' : 'auto'
+                  }}>Next Quarter:</div>
                     {content.metrics.slice(2, 4)
                       .filter(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') // Only show populated metrics
                       .map((metric, index) => (
@@ -91,8 +113,22 @@ const StaticPreview: React.FC<{
               
               {/* Current Year Section - Only show if there are populated metrics */}
               {content.metrics.slice(4).some(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center'}}>
-                  <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '.7rem', marginRight: '4px' }}>Fiscal Year:</div>
+                <div style={{ 
+                  display: 'flex', 
+                  flexWrap: 'wrap', 
+                  gap: '4px', 
+                  alignItems: 'center',
+                  width: '100%',
+                  maxWidth: '100%',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{ 
+                    fontWeight: '600', 
+                    color: '#2563eb', 
+                    fontSize: isMobile ? '.8rem' : '.7rem', 
+                    marginRight: '4px',
+                    width: isMobile ? '100%' : 'auto'
+                  }}>Fiscal Year:</div>
                     {content.metrics.slice(4)
                       .filter(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') // Only show populated metrics
                       .map((metric, index) => (
@@ -134,25 +170,29 @@ const StaticPreview: React.FC<{
         backgroundColor: '#f0f9ff', // Light blue background
         border: '1px solid #bfdbfe', // Light blue border
         borderRadius: '4px',
-        padding: '3px 8px',
+        padding: isMobile ? '5px 8px' : '3px 8px',
         margin: '2px 0',
-        minHeight: '20px', // Further reduced minimum height
-        maxHeight: multiline ? '80px' : '20px', // Further reduced maximum height
+        minHeight: isMobile ? '24px' : '20px',
+        maxHeight: multiline ? (isMobile ? '100px' : '80px') : (isMobile ? '24px' : '20px'),
         overflow: 'hidden',
         display: 'flex',
-        alignItems: 'flex-start' // Align to top for multiline
+        alignItems: 'flex-start', // Align to top for multiline
+        width: '100%',
+        maxWidth: '100%',
+        boxSizing: 'border-box'
       }}
     >
       <div
         style={{
           color: '#1e40af', // Darker blue text
           fontWeight: '500',
-          fontSize: '.7rem', // Slightly larger font size for readability
+          fontSize: isMobile ? '.8rem' : '.7rem',
           lineHeight: '1.4',
           width: '100%',
-          whiteSpace: multiline ? 'pre-wrap' : 'nowrap', // Allow wrapping for multiline
+          whiteSpace: multiline || isMobile ? 'pre-wrap' : 'nowrap', // Always allow wrapping on mobile
           overflow: 'hidden',
-          textOverflow: multiline ? 'clip' : 'ellipsis' // Add ellipsis for single line only
+          textOverflow: (multiline || isMobile) ? 'clip' : 'ellipsis', // Add ellipsis for single line only
+          wordBreak: isMobile ? 'break-word' : 'normal' // Break long words on mobile
         }}
       >
         {typeof content === 'string' ? content : ''}
@@ -186,6 +226,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
     // Cleanup
     return () => window.removeEventListener('resize', checkIfMobile);
   }, []);
+
   // State to track new messages for highlighting
   const [newMessageIds, setNewMessageIds] = useState<Set<string>>(new Set());
   // State to track search term
@@ -582,7 +623,14 @@ const MessagesList: React.FC<MessagesListProps> = ({
   }
 
   return (
-    <div className="max-h-[calc(100vh-120px)] overflow-auto scrollbar-hide">
+    <div 
+      className="max-h-[calc(100vh-120px)] overflow-auto scrollbar-hide"
+      style={{
+        width: '100%',
+        maxWidth: '100%',
+        overflowX: 'hidden'
+      }}
+    >
       {deduplicatedMessages.map((message) => (
         <div 
           key={message.message_id}
@@ -593,7 +641,11 @@ const MessagesList: React.FC<MessagesListProps> = ({
             } ${!message.link ? 'cursor-pointer' : ''}`}
           onClick={() => onSelectMessage && onSelectMessage(message)}
           style={{
-            padding: isMobile ? '10px 8px' : undefined
+            padding: isMobile ? '10px 8px' : undefined,
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box',
+            overflowX: 'hidden',
           }}
         >
           {message.link ? (
@@ -603,50 +655,59 @@ const MessagesList: React.FC<MessagesListProps> = ({
               style={{
                 flexDirection: isMobile ? 'column' : 'row',
                 alignItems: isMobile ? 'flex-start' : 'center',
-                gap: isMobile ? '6px' : '0'
+                gap: isMobile ? '6px' : '0',
+                width: '100%',
+                maxWidth: '100%',
+                overflow: 'hidden',
               }}
             >
-              <div 
+              <div
                 className="flex items-center space-x-1"
                 style={{
                   flexWrap: isMobile ? 'wrap' : 'nowrap',
                   gap: isMobile ? '4px' : undefined,
-                  width: isMobile ? '100%' : undefined
+                  width: isMobile ? '100%' : undefined,
+                  maxWidth: '100%',
+                  overflow: 'hidden',
                 }}
               >
-                <span 
+                <span
                   className="text-sm font-medium text-blue-600"
                   style={{
                     display: 'flex',
                     flexDirection: isMobile ? 'column' : 'row',
-                    alignItems: isMobile ? 'flex-start' : 'center'
+                    alignItems: isMobile ? 'flex-start' : 'center',
                   }}
                 >
                   {message.ticker}
                   {message.company_name && (
-                    <span 
+                    <span
                       className="ml-0.5 text-xs text-neutral-500"
                       style={{
                         marginLeft: isMobile ? '0' : '2px',
                         maxWidth: isMobile ? '100%' : '200px',
                         overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
+                        textOverflow: isMobile ? 'clip' : 'ellipsis',
+                        whiteSpace: isMobile ? 'normal' : 'nowrap',
+                        wordBreak: isMobile ? 'break-word' : 'normal',
                       }}
-                    >({message.company_name})</span>
+                    >
+                      ({message.company_name})
+                    </span>
                   )}
                 </span>
-                <span className="text-xs text-neutral-600">Q{message.quarter}</span>
+                <span className="text-xs text-neutral-600">
+                  Q{message.quarter}
+                </span>
                 <span className="text-xs text-neutral-500">
                   {convertToEasternTime(message.timestamp)}
                 </span>
               </div>
-              
-              <div 
+              <div
                 className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors"
                 style={{
                   alignSelf: isMobile ? 'flex-end' : undefined,
-                  marginTop: isMobile ? '4px' : '0'
+                  marginTop: isMobile ? '4px' : '0',
                 }}
               >
                 <a href={message.link} target="_blank" rel="noopener noreferrer">
@@ -656,68 +717,84 @@ const MessagesList: React.FC<MessagesListProps> = ({
             </div>
           ) : (
             /* Analysis message with static preview */
-            <div 
+            <div
               className="flex flex-col transition-colors"
               style={{
-                gap: isMobile ? '8px' : undefined
+                gap: isMobile ? '8px' : undefined,
+                width: '100%',
+                maxWidth: '100%',
+                overflow: 'hidden',
               }}
-             >
-              {/* Header with ticker and timestamp */}
-              <div 
+            >
+              <div
                 className="flex justify-between items-center mb-1"
                 style={{
                   flexDirection: isMobile ? 'column' : 'row',
                   alignItems: isMobile ? 'flex-start' : 'center',
                   gap: isMobile ? '6px' : undefined,
-                  marginBottom: isMobile ? '6px' : '4px'
+                  marginBottom: isMobile ? '6px' : '4px',
+                  width: '100%',
+                  maxWidth: '100%',
+                  overflow: 'hidden',
                 }}
               >
-                <div 
+                <div
                   className="flex items-center space-x-1"
                   style={{
                     flexWrap: isMobile ? 'wrap' : 'nowrap',
                     gap: isMobile ? '4px' : undefined,
-                    width: isMobile ? '100%' : undefined
+                    width: isMobile ? '100%' : undefined,
+                    maxWidth: '100%',
+                    overflow: 'hidden',
                   }}
                 >
-                  {/* Removed redundant ticker display */}
-                  <div 
+                  {/* Ticker and company name */}
+                  <div
                     className="flex items-center bg-primary-50 px-1.5 py-0.5 rounded-md text-xs"
                     style={{
                       flexDirection: isMobile ? 'column' : 'row',
                       alignItems: isMobile ? 'flex-start' : 'center',
                       padding: isMobile ? '4px 6px' : undefined,
-                      width: isMobile ? '100%' : 'auto'
+                      width: isMobile ? '100%' : 'auto',
+                      maxWidth: '100%',
+                      boxSizing: 'border-box',
+                      overflowX: 'hidden',
+                      wordBreak: isMobile ? 'break-word' : 'normal',
                     }}
                   >
-                    <span 
+                    <span
                       className="font-medium text-primary-700"
                       style={{
                         display: 'flex',
                         flexDirection: isMobile ? 'column' : 'row',
                         alignItems: isMobile ? 'flex-start' : 'center',
-                        width: isMobile ? '100%' : 'auto'
+                        width: isMobile ? '100%' : 'auto',
                       }}
                     >
                       {message.ticker}
                       {message.company_name && (
-                        <span 
+                        <span
                           className="ml-1 text-neutral-500"
                           style={{
                             marginLeft: isMobile ? '0' : '4px',
                             maxWidth: isMobile ? '100%' : '200px',
                             overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
+                            textOverflow: isMobile ? 'clip' : 'ellipsis',
+                            whiteSpace: isMobile ? 'normal' : 'nowrap',
+                            wordBreak: isMobile ? 'break-word' : 'normal',
                           }}
-                        >({message.company_name})</span>
+                        >
+                          ({message.company_name})
+                        </span>
                       )}
                     </span>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <span 
+                      <span
                         className="mx-0.5 text-neutral-400"
                         style={{ margin: isMobile ? '2px 0' : undefined }}
-                      >|</span>
+                      >
+                        |
+                      </span>
                       <span className="text-neutral-600">Q{message.quarter}</span>
                     </div>
                   </div>
@@ -725,24 +802,24 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     {convertToEasternTime(message.timestamp)}
                   </span>
                 </div>
-                
-                <div 
+                <div
                   className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-700 rounded-full hover:bg-primary-100 transition-colors"
                   style={{
                     alignSelf: isMobile ? 'flex-end' : undefined,
-                    marginTop: isMobile ? '0' : undefined
+                    marginTop: isMobile ? '0' : undefined,
                   }}
                 >
                   <BarChart2 size={14} />
                 </div>
               </div>
-              
+
               {/* Static preview of the message content */}
               {message.discord_message && (
-                <StaticPreview 
-                  content={createMessagePreview(message).content} 
+                <StaticPreview
+                  content={createMessagePreview(message).content}
                   multiline={createMessagePreview(message).multiline}
                   isMetrics={createMessagePreview(message).isMetrics}
+                  isMobile={isMobile}
                 />
               )}
             </div>
