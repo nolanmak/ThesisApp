@@ -8,6 +8,7 @@ interface EarningsListProps {
   configExists: (ticker: string) => boolean;
   onToggleActive: (item: EarningsItem) => void;
   onOpenConfigModal: (item: EarningsItem) => void;
+  isMobile?: boolean;
 }
 
 const EarningsList: React.FC<EarningsListProps> = ({
@@ -15,7 +16,8 @@ const EarningsList: React.FC<EarningsListProps> = ({
   loading,
   configExists,
   onToggleActive,
-  onOpenConfigModal
+  onOpenConfigModal,
+  isMobile = false
 }) => {
 
   if (loading) {
@@ -36,16 +38,61 @@ const EarningsList: React.FC<EarningsListProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4 overflow-auto scrollbar-hide">
+    <div 
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4 overflow-auto scrollbar-hide"
+      style={{
+        gridTemplateColumns: isMobile ? '1fr' : undefined,
+        gap: isMobile ? '12px' : '16px',
+        width: '100%',
+        maxWidth: '100%',
+        boxSizing: 'border-box',
+        overflowX: 'hidden'
+      }}
+    >
       {items.map((item) => (
         <div 
           key={`${item.ticker}-${item.date}`} 
-          className="bg-white border border-neutral-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 aspect-square p-4 flex flex-col"
+          className="bg-white border border-neutral-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col"
+          style={{
+            aspectRatio: isMobile ? 'auto' : '1/1',
+            padding: isMobile ? '12px 10px' : '16px',
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box',
+            overflowX: 'hidden'
+          }}
         >
-          <div className="flex justify-between items-start mb-3">
-            <div>
-              <h3 className="text-xl font-semibold text-neutral-800">{item.ticker}</h3>
-              <p className="text-sm text-neutral-500 truncate max-w-[200px]">{item.company_name}</p>
+          <div 
+            className="flex justify-between items-start mb-3"
+            style={{
+              marginBottom: isMobile ? '8px' : '12px',
+              width: '100%',
+              maxWidth: '100%',
+              overflowX: 'hidden'
+            }}
+          >
+            <div style={{ maxWidth: 'calc(100% - 80px)', overflow: 'hidden' }}>
+              <h3 
+                className="font-semibold text-neutral-800"
+                style={{
+                  fontSize: isMobile ? '1rem' : '1.25rem',
+                  lineHeight: isMobile ? '1.2' : '1.4',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}
+              >
+                {item.ticker}
+              </h3>
+              <p 
+                className="text-neutral-500 truncate"
+                style={{
+                  fontSize: isMobile ? '0.75rem' : '0.875rem',
+                  maxWidth: isMobile ? '120px' : '200px'
+                }}
+              >
+                {item.company_name}
+              </p>
             </div>
             <div className="flex items-center space-x-2">
               {item.is_active && (
@@ -83,17 +130,45 @@ const EarningsList: React.FC<EarningsListProps> = ({
             </div>
           </div>
           
-          <div className="text-sm text-neutral-500 mb-2">
+          <div 
+            className="text-neutral-500 mb-2"
+            style={{
+              fontSize: isMobile ? '0.75rem' : '0.875rem',
+              marginBottom: isMobile ? '8px' : '8px',
+              width: '100%',
+              maxWidth: '100%',
+              overflow: 'hidden'
+            }}
+          >
             <p>Q{item.quarter} {item.year}</p>
             <p>{item.release_time === 'before' ? 'Before Market' : 
                 item.release_time === 'after' ? 'After Market' : 'During Market'}</p>
           </div>
           
           {/* Placeholder for future chart */}
-          <div className="flex-grow bg-neutral-50 rounded-md border border-dashed border-neutral-200 flex items-center justify-center mt-2">
+          <div 
+            className="flex-grow bg-neutral-50 rounded-md border border-dashed border-neutral-200 flex items-center justify-center"
+            style={{
+              marginTop: isMobile ? '8px' : '8px',
+              minHeight: isMobile ? '60px' : '80px',
+              width: '100%',
+              maxWidth: '100%',
+              boxSizing: 'border-box'
+            }}
+          >
             <div className="flex flex-col items-center">
-              <p className="text-neutral-400 text-xs">No metrics added</p>
-              <p className="text-neutral-400 text-xs">Click chart button to add</p>
+              <p 
+                className="text-neutral-400" 
+                style={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}
+              >
+                No metrics added
+              </p>
+              <p 
+                className="text-neutral-400" 
+                style={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}
+              >
+                Click chart button to add
+              </p>
             </div>
           </div>
         </div>

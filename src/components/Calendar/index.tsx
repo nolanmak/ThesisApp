@@ -8,6 +8,24 @@ import ConfigModal from './modals/ConfigModal';
 import useGlobalData from '../../hooks/useGlobalData';
 
 const Calendar: React.FC = () => {
+  // State to track if the device is mobile
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  
+  // Check if the device is mobile based on screen width
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    // Initial check
+    checkIfMobile();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', checkIfMobile);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
   // Date filter state
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0]
@@ -83,10 +101,35 @@ const Calendar: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col h-[calc(100vh-120px)]">
+    <div 
+      className="space-y-6"
+      style={{
+        width: '100%',
+        maxWidth: '100%',
+        overflowX: 'hidden'
+      }}
+    >
+      <div 
+        className="flex flex-col"
+        style={{
+          height: isMobile ? 'auto' : 'calc(100vh-120px)',
+          minHeight: isMobile ? 'calc(100vh-120px)' : 'auto',
+          width: '100%',
+          maxWidth: '100%',
+          overflowX: 'hidden'
+        }}
+      >
         {/* Earnings list - full width */}
-        <div className="w-full bg-white p-6 rounded-md shadow-md border border-neutral-100 flex flex-col overflow-hidden">
+        <div 
+          className="w-full bg-white rounded-md shadow-md border border-neutral-100 flex flex-col overflow-hidden"
+          style={{
+            padding: isMobile ? '12px 8px' : '24px',
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box',
+            overflowX: 'hidden'
+          }}
+        >
           
           <SearchFilters
             searchTicker={searchTicker}
@@ -98,6 +141,7 @@ const Calendar: React.FC = () => {
             onFilterChange={handleFilterChange}
             onReleaseTimeChange={handleReleaseTimeChange}
             onAddClick={handleAddEarningsClick}
+            isMobile={isMobile}
           />
           
           <EarningsList
@@ -106,6 +150,7 @@ const Calendar: React.FC = () => {
             onToggleActive={handleToggleActive}
             onOpenConfigModal={handleOpenConfigModal}
             configExists={configExists}
+            isMobile={isMobile}
           />
         </div>
       </div>

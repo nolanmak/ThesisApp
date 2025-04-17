@@ -11,6 +11,7 @@ interface SearchFiltersProps {
   onFilterChange: (value: boolean | null) => void;
   onReleaseTimeChange: (value: string | null) => void;
   onAddClick: () => void;
+  isMobile?: boolean;
 }
 
 const SearchFilters: React.FC<SearchFiltersProps> = ({
@@ -22,13 +23,40 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
   onDateChange,
   onFilterChange,
   onReleaseTimeChange,
-  onAddClick
+  onAddClick,
+  isMobile = false
 }) => {
   return (
-    <div className="flex justify-between items-center mb-4">
-      <div className="flex items-end gap-3 w-full sm:w-3/4">
+    <div 
+      className="flex justify-between items-center"
+      style={{
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: isMobile ? '12px' : undefined,
+        marginBottom: isMobile ? '12px' : '16px',
+        width: '100%',
+        maxWidth: '100%',
+        overflowX: 'hidden'
+      }}
+    >
+      <div 
+        className="flex items-end w-full"
+        style={{
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? '8px' : '12px',
+          width: '100%',
+          maxWidth: '100%',
+          overflowX: 'hidden'
+        }}
+      >
         {/* Search box */}
-        <div className="flex-1">
+        <div 
+          style={{
+            flex: isMobile ? '0 0 100%' : 1,
+            width: isMobile ? '100%' : undefined,
+            maxWidth: '100%',
+            boxSizing: 'border-box'
+          }}
+        >
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
               <Search size={14} className="text-neutral-400" />
@@ -39,13 +67,26 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
               placeholder="Search ticker..."
               value={searchTicker}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-8 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-xs h-8"
+              className="pl-8 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-xs"
+              style={{
+                height: '32px',
+                fontSize: isMobile ? '13px' : '12px',
+                width: '100%',
+                boxSizing: 'border-box'
+              }}
             />
           </div>
         </div>
         
         {/* Date selector */}
-        <div className="flex-1">
+        <div 
+          style={{
+            flex: isMobile ? '0 0 100%' : 1,
+            width: isMobile ? '100%' : undefined,
+            maxWidth: '100%',
+            boxSizing: 'border-box'
+          }}
+        >
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
               <CalendarIcon size={14} className="text-neutral-400" />
@@ -55,14 +96,33 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
               id="date-selector"
               value={selectedDate}
               onChange={(e) => onDateChange(e.target.value)}
-              className="pl-8 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-xs h-8"
+              className="pl-8 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-xs"
+              style={{
+                height: '32px',
+                fontSize: isMobile ? '13px' : '12px',
+                width: '100%',
+                boxSizing: 'border-box'
+              }}
             />
           </div>
         </div>
         
         {/* Show filters */}
-        <div className="flex-1">
-          <div className="flex space-x-1 h-8">
+        <div 
+          style={{
+            flex: isMobile ? '0 0 100%' : 1,
+            width: isMobile ? '100%' : undefined,
+            maxWidth: '100%',
+            boxSizing: 'border-box'
+          }}
+        >
+          <div 
+            className="flex space-x-1"
+            style={{
+              height: '32px',
+              width: '100%'
+            }}
+          >
             <button
               onClick={() => onFilterChange(null)}
               className={`px-2 py-1 text-xs rounded-md ${
@@ -87,7 +147,14 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
         </div>
         
         {/* Release Time Filter */}
-        <div className="flex-1">
+        <div 
+          style={{
+            flex: isMobile ? '0 0 100%' : 1,
+            width: isMobile ? '100%' : undefined,
+            maxWidth: '100%',
+            boxSizing: 'border-box'
+          }}
+        >
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
               <Clock size={14} className="text-neutral-400" />
@@ -96,7 +163,13 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
               id="release-time-filter"
               value={releaseTime || ''}
               onChange={(e) => onReleaseTimeChange(e.target.value === '' ? null : e.target.value)}
-              className="pl-8 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-xs h-8"
+              className="pl-8 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-xs"
+              style={{
+                height: '32px',
+                fontSize: isMobile ? '13px' : '12px',
+                width: '100%',
+                boxSizing: 'border-box'
+              }}
             >
               <option value="">All Times</option>
               <option value="before">Before Market</option>
@@ -107,11 +180,21 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
       </div>
       
       {/* Add Item Button (just a plus icon) */}
-      <div className="flex items-center">
+      <div 
+        className="flex items-center"
+        style={{
+          alignSelf: isMobile ? 'flex-end' : undefined,
+          marginTop: isMobile ? '4px' : '0'
+        }}
+      >
         <button
           onClick={onAddClick}
-          className="p-1.5 h-8 w-8 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors duration-150 ease-in-out shadow-sm flex items-center justify-center"
+          className="p-1.5 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors duration-150 ease-in-out shadow-sm flex items-center justify-center"
           aria-label="Add Item"
+          style={{
+            height: '32px',
+            width: '32px'
+          }}
         >
           <Plus size={16} />
         </button>
