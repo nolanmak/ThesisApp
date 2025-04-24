@@ -46,4 +46,5 @@ export interface CompanyConfig {
   key_element_selector?: string;
   key_element_id?: string;
   key_element_class?: string;
+  use_proxy?: boolean;
 }

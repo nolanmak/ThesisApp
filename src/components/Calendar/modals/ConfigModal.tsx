@@ -91,6 +91,7 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
             // Convert array fields to strings for textarea and normalize case for extraction_method
             const formData: ConfigFormData = {
               ...existingConfig,
+              use_proxy: existingConfig.use_proxy ?? false,
               // Normalize extraction_method case (convert 'Web' to 'web')
               href_ignore_words: Array.isArray(existingConfig.href_ignore_words) 
                 ? existingConfig.href_ignore_words.join('\n') 
@@ -111,12 +112,19 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
           } else {
             // Reset form with default values
             console.log('Using default config:', defaultConfig);
-            reset(defaultConfig);
+            reset({
+              ...defaultConfig,
+              use_proxy: defaultConfig.use_proxy ?? false
+            });
           }
         } catch (error) {
           console.error('Error fetching config for item:', error);
           // In case of error, just show default form
-          reset(getDefaultConfig(currentItem.ticker));
+          const defaultConfig = getDefaultConfig(currentItem.ticker);
+          reset({
+            ...defaultConfig,
+            use_proxy: defaultConfig.use_proxy ?? false
+          });
           toast.error('Could not fetch existing configuration. Starting with a new form.');
         }
       };
@@ -149,6 +157,7 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
     // Process textarea inputs that should be arrays
     const processedData: CompanyConfig = {
       ...formData as unknown as CompanyConfig,
+      use_proxy: !!formData.use_proxy,
       href_ignore_words: typeof formData.href_ignore_words === 'string' 
         ? formData.href_ignore_words.split('\n').filter(line => line.trim() !== '')
         : Array.isArray(formData.href_ignore_words) 
@@ -228,6 +237,19 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                   <option value="chromium">Chromium</option>
                   <option value="firefox">Firefox</option>
                 </select>
+              </div>
+
+              {/* Use Proxy Checkbox */}
+              <div className="flex items-center mb-2">
+                <input
+                  type="checkbox"
+                  id="use_proxy"
+                  {...register("use_proxy")}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="use_proxy" className="ml-2 block text-sm text-gray-700">
+                  Use Proxy
+                </label>
               </div>
               
               <div>

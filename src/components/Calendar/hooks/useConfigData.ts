@@ -142,7 +142,8 @@ const useConfigData = () => {
       page_content_selector: 'body',
       key_element_selector: 'body',
       key_element_id: '',
-      key_element_class: ''
+      key_element_class: '',
+      use_proxy: true
     };
   }, []);
 
