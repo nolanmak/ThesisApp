@@ -258,6 +258,10 @@ const Messages: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Alpha version disclosure banner */}
+      <div className="bg-red-50 text-red-600 px-4 py-2 text-sm font-medium rounded-md border border-red-200 flex items-center justify-center">
+        This is an alpha version. Please validate any data through other sources.
+      </div>
       {/* Feedback Modal */}
       {feedbackModalOpen && selectedMessage && (
         <FeedbackModal 
