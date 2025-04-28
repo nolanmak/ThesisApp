@@ -463,6 +463,11 @@ const Messages: React.FC = () => {
           )}
         </div>
       </div>
+      
+      {/* Alpha version disclosure banner (bottom) */}
+      <div className="bg-red-50 text-red-600 px-4 py-2 text-sm font-medium rounded-md border border-red-200 flex items-center justify-center mt-6">
+        This is an alpha version. Please validate any data through other sources.
+      </div>
     </div>
   );
 };
