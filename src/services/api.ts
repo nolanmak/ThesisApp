@@ -9,14 +9,6 @@ const getEnvUrl = (baseUrl: string, urlEnv: string, baseUrlEnv: string, defaultU
   return import.meta.env[urlEnv] || import.meta.env[baseUrlEnv] || defaultUrl;
 };
 
-// Get the API URLs from environment variables with fallbacks
-const HISTORICAL_API_URL = getEnvUrl(
-  'HISTORICAL_API_BASE_URL',
-  'VITE_HISTORICAL_API_URL',
-  'VITE_HISTORICAL_API_BASE_URL',
-  'https://rjuc6cu3d0.execute-api.us-east-1.amazonaws.com/prod'
-);
-
 const EARNINGS_API_URL = getEnvUrl(
   'EARNINGS_API_BASE_URL', 
   'VITE_EARNINGS_API_URL',
@@ -46,7 +38,6 @@ const WAITLIST_API_URL = getEnvUrl(
 );
 
 // Use proxies for APIs that have CORS issues during development
-const HISTORICAL_API_BASE_URL = isDev ? '/api/historical' : HISTORICAL_API_URL;
 const EARNINGS_API_BASE_URL = isDev ? '/api/earnings' : EARNINGS_API_URL;
 const WAITLIST_API_BASE_URL = isDev ? '/api/waitlist' : WAITLIST_API_URL;
 
@@ -55,7 +46,6 @@ const CONFIG_API_BASE_URL = CONFIG_API_URL;
 const MESSAGES_API_BASE_URL = MESSAGES_API_URL;
 
 // API Keys
-const HISTORICAL_API_KEY = import.meta.env.VITE_HISTORICAL_API_KEY || 'MqlOKVZsao1KGFiznoT6o5x1asqQZXx91qtL4KwI';
 const EARNINGS_API_KEY = import.meta.env.VITE_EARNINGS_API_KEY || 'MqlOKVZsao1KGFiznoT6o5x1asqQZXx91qtL4KwI';
 const CONFIG_API_KEY = import.meta.env.VITE_CONFIG_API_KEY || 'MqlOKVZsao1KGFiznoT6o5x1asqQZXx91qtL4KwI';
 const MESSAGES_API_KEY = import.meta.env.VITE_MESSAGES_API_KEY || 'MqlOKVZsao1KGFiznoT6o5x1asqQZXx91qtL4KwI';
