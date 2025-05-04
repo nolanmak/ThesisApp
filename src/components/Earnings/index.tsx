@@ -464,9 +464,9 @@ const Messages: React.FC = () => {
         </div>
       </div>
       
-      {/* Alpha version disclosure banner (bottom) */}
-      <div className="bg-red-50 text-red-600 px-4 py-2 text-sm font-medium rounded-md border border-red-200 flex items-center justify-center mt-6">
-        This is an alpha version. Please validate any data through other sources.
+      {/* Disclaimer banner (bottom) */}
+      <div className="bg-gray-50 text-gray-700 px-4 py-3 text-xs leading-tight rounded-md border border-gray-200 flex items-center justify-center mt-6">
+        Disclaimer: This platform offers information and suggestions solely for educational purposes and should not be considered a replacement for professional financial advice. We cover stock investments without guaranteeing the completeness, accuracy, reliability, or suitability of the information, which may incorporate data from third-party sources. Investing in stocks and other financial instruments carries risks, such as potential loss of principal. Users should independently verify all information and consult qualified professionals tailored to their unique financial situations and investment goals. Our content and services are provided "as is," with no express or implied warranties. We are not responsible for any losses or damages resulting from the use of our services. This disclaimer may change; users are encouraged to review it periodically. Using our services indicates acceptance of these terms.
       </div>
     </div>
   );
