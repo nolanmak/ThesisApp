@@ -48,6 +48,10 @@ const Layout: React.FC = () => {
             <img src="/favicon.svg" alt="Logo" className="mr-2" width={30} height={30} />
             Thesis
           </h1>
+          {/* Alpha version disclosure banner */}
+          <div className="bg-red-50 text-red-600 px-4 py-2 text-xs rounded-md border border-red-200 max-w-[200px] md:max-w-[1000px]">
+            This is an alpha version. Please validate any data through other sources.
+          </div>
           
           {/* Mobile Menu Button */}
           {isMobile && (
