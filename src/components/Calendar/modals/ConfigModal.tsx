@@ -251,6 +251,17 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                   Use Proxy
                 </label>
               </div>
+              <div className="flex items-center mb-2">
+                <input
+                  type="checkbox"
+                  id="requires_network_idle"
+                  {...register("requires_network_idle")}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="requires_network_idle" className="ml-2 block text-sm text-gray-700">
+                  Requires Network Idle
+                </label>
+              </div>
               
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">

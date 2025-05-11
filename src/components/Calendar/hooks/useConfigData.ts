@@ -143,7 +143,8 @@ const useConfigData = () => {
       key_element_selector: 'body',
       key_element_id: '',
       key_element_class: '',
-      use_proxy: true
+      use_proxy: true,
+      requires_network_idle: false
     };
   }, []);
 

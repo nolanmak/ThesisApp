@@ -47,4 +47,5 @@ export interface CompanyConfig {
   key_element_id?: string;
   key_element_class?: string;
   use_proxy?: boolean;
+  requires_network_idle?: boolean;
 }
