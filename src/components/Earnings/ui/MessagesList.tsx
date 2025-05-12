@@ -58,11 +58,11 @@ const StaticPreview: React.FC<{
           whiteSpace: 'nowrap' // Ensure single line
         }}>
           {/* Modified condition to handle both messages with and without estimates */}
-          {content.metrics.some(metric => metric.value !== 'N/A') ? (
+          {content.metrics && content.metrics.length > 0 ? (
             <>
               {/* Display metrics in a single line */}
               {content.metrics
-                .filter(metric => metric.value !== 'N/A') // Only show metrics with values
+                .filter(metric => metric.value !== 'N/A' && metric.value !== '') // Only show metrics with values
                 .slice(0, 4) // Limit to 4 metrics to avoid overcrowding
                 .map((metric, index) => (
                   <div key={index} style={{ 
@@ -71,14 +71,14 @@ const StaticPreview: React.FC<{
                     gap: '2px',
                     flexShrink: 0 // Prevent shrinking
                   }}>
-                    <div style={{ fontWeight: '500', fontSize: '.7rem', color: '#64748b'}}>{metric.label}:</div>
+                    <div style={{ fontWeight: '500', fontSize: '.7rem', color: '#1e40af'}}>{metric.label}:</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
                       <span style={{ fontWeight: '600', color: '#1e40af', fontSize: '.7rem' }}>{metric.value}</span>
                       {/* Only show comparison if expected is not 'N/A' */}
-                      {metric.expected !== 'N/A' && (
+                      {metric.expected && metric.expected !== 'N/A' && (
                         <>
-                          <span style={{ color: '#64748b', fontSize: '.7rem' }}>vs</span>
-                          <span style={{ color: '#64748b', fontSize: '.7rem' }}>{metric.expected}</span>
+                          <span style={{ color: '#1e40af', fontSize: '.7rem' }}>vs</span>
+                          <span style={{ color: '#1e40af', fontSize: '.7rem' }}>{metric.expected}</span>
                           {metric.emoji && <span style={{ marginLeft: '2px', fontSize: '.7rem' }}>{metric.emoji}</span>}
                         </>
                       )}
@@ -88,7 +88,7 @@ const StaticPreview: React.FC<{
               }
             </>
           ) : (
-            <div style={{ padding: '4px', color: '#64748b', fontSize: '.7rem', textAlign: 'center' }}>
+            <div style={{ padding: '4px', color: '#1e40af', fontSize: '.7rem', textAlign: 'center' }}>
               No metrics available
             </div>
           )}
@@ -267,7 +267,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
       const jsonData = JSON.parse(message.discord_message);
       
       // Check if it has the specific earnings data format with estimates
-      if (jsonData.current_quarter_vs_expected && jsonData.next_quarter_vs_expected) {
+      if (jsonData.current_quarter_vs_expected) {
         // Handle both formats - the new format with string values and the old format with object values
         let metricsData;
         
@@ -327,36 +327,75 @@ const MessagesList: React.FC<MessagesListProps> = ({
           // Parse the string values to extract the actual numbers
           const currentSalesValues = extractValues(jsonData.current_quarter_vs_expected.sales);
           const currentEPSValues = extractValues(jsonData.current_quarter_vs_expected.eps);
-          const nextSalesValues = extractValues(jsonData.next_quarter_vs_expected.sales);
-          const nextEPSValues = extractValues(jsonData.next_quarter_vs_expected.eps);
           
-          // Initialize metrics array with current and next quarter data
+          // Initialize metrics array with current quarter data
           const metrics: MetricItem[] = [
             {
-              label: 'Sales',
+              label: 'CQ Sales',
               value: currentSalesValues.value,
               expected: currentSalesValues.expected,
               emoji: currentSalesValues.emoji
             },
             {
-              label: 'EPS',
+              label: 'CQ EPS',
               value: currentEPSValues.value,
               expected: currentEPSValues.expected,
               emoji: currentEPSValues.emoji
-            },
-            {
-              label: 'Sales',
-              value: nextSalesValues.value,
-              expected: nextSalesValues.expected,
-              emoji: nextSalesValues.emoji
-            },
-            {
-              label: 'EPS',
-              value: nextEPSValues.value,
-              expected: nextEPSValues.expected,
-              emoji: nextEPSValues.emoji
             }
           ];
+          
+          // Add next quarter metrics if available
+          if (jsonData.next_quarter_vs_expected) {
+            const nextSalesValues = jsonData.next_quarter_vs_expected.sales ? 
+              extractValues(jsonData.next_quarter_vs_expected.sales) : 
+              { value: 'N/A', expected: 'N/A', emoji: '' };
+              
+            const nextEPSValues = jsonData.next_quarter_vs_expected.eps ? 
+              extractValues(jsonData.next_quarter_vs_expected.eps) : 
+              { value: 'N/A', expected: 'N/A', emoji: '' };
+            
+            metrics.push(
+              {
+                label: 'NQ Sales',
+                value: nextSalesValues.value,
+                expected: nextSalesValues.expected,
+                emoji: nextSalesValues.emoji
+              },
+              {
+                label: 'NQ EPS',
+                value: nextEPSValues.value,
+                expected: nextEPSValues.expected,
+                emoji: nextEPSValues.emoji
+              }
+            );
+          }
+          
+          // Add historical growth metrics if available
+          if (jsonData.historical_growth_qoq) {
+            if (jsonData.historical_growth_qoq.sales_qoq) {
+              const salesGrowthMatch = jsonData.historical_growth_qoq.sales_qoq.match(/[-\d.]+%/);
+              if (salesGrowthMatch) {
+                metrics.push({
+                  label: 'Sales QoQ',
+                  value: salesGrowthMatch[0],
+                  expected: 'N/A',
+                  emoji: ''
+                });
+              }
+            }
+            
+            if (jsonData.historical_growth_qoq.eps_qoq) {
+              const epsGrowthMatch = jsonData.historical_growth_qoq.eps_qoq.match(/[-\d.]+%/);
+              if (epsGrowthMatch) {
+                metrics.push({
+                  label: 'EPS QoQ',
+                  value: epsGrowthMatch[0],
+                  expected: 'N/A',
+                  emoji: ''
+                });
+              }
+            }
+          }
           
           // Add current year metrics if available
           if (jsonData.current_year_vs_expected) {
@@ -391,37 +430,71 @@ const MessagesList: React.FC<MessagesListProps> = ({
           // Original format with nested objects
           const currentSales = jsonData.current_quarter_vs_expected.sales || {};
           const currentEPS = jsonData.current_quarter_vs_expected.eps || {};
-          const nextSales = jsonData.next_quarter_vs_expected.sales || {};
-          const nextEPS = jsonData.next_quarter_vs_expected.eps || {};
           
-          // Initialize metrics array with current and next quarter data
+          // Initialize metrics array with current quarter data
           // Create metrics array with the consistent type
           const metrics: MetricItem[] = [
             {
-              label: 'Sales',
+              label: 'CQ Sales',
               value: currentSales.actual || 'N/A',
               expected: currentSales.expected || 'N/A',
               emoji: ''
             },
             {
-              label: 'EPS',
+              label: 'CQ EPS',
               value: currentEPS.actual || 'N/A',
               expected: currentEPS.expected || 'N/A',
               emoji: ''
-            },
-            {
-              label: 'Sales',
-              value: nextSales.guidance || 'N/A',
-              expected: nextSales.expected || 'N/A',
-              emoji: ''
-            },
-            {
-              label: 'EPS',
-              value: nextEPS.guidance || 'N/A',
-              expected: nextEPS.expected || 'N/A',
-              emoji: ''
             }
           ];
+          
+          // Add next quarter metrics if available
+          if (jsonData.next_quarter_vs_expected) {
+            const nextSales = jsonData.next_quarter_vs_expected.sales || {};
+            const nextEPS = jsonData.next_quarter_vs_expected.eps || {};
+            
+            metrics.push(
+              {
+                label: 'NQ Sales',
+                value: nextSales.guidance || 'N/A',
+                expected: nextSales.expected || 'N/A',
+                emoji: ''
+              },
+              {
+                label: 'NQ EPS',
+                value: nextEPS.guidance || 'N/A',
+                expected: nextEPS.expected || 'N/A',
+                emoji: ''
+              }
+            );
+          }
+          
+          // Add historical growth metrics if available
+          if (jsonData.historical_growth_qoq) {
+            if (jsonData.historical_growth_qoq.sales_qoq) {
+              const salesGrowthMatch = jsonData.historical_growth_qoq.sales_qoq.match(/[-\d.]+%/);
+              if (salesGrowthMatch) {
+                metrics.push({
+                  label: 'Sales QoQ',
+                  value: salesGrowthMatch[0],
+                  expected: 'N/A',
+                  emoji: ''
+                });
+              }
+            }
+            
+            if (jsonData.historical_growth_qoq.eps_qoq) {
+              const epsGrowthMatch = jsonData.historical_growth_qoq.eps_qoq.match(/[-\d.]+%/);
+              if (epsGrowthMatch) {
+                metrics.push({
+                  label: 'EPS QoQ',
+                  value: epsGrowthMatch[0],
+                  expected: 'N/A',
+                  emoji: ''
+                });
+              }
+            }
+          }
           
           // Add current year metrics if available
           if (jsonData.current_year_vs_expected) {
@@ -465,7 +538,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
           // Add all available metrics
           currentQuarterMetrics.forEach((metric: Metric) => {
             metrics.push({
-              label: metric.metric_label,
+              label: `CQ ${metric.metric_label}`,
               value: formatMetricValue(metric),
               expected: 'N/A', // No estimates for this format
               emoji: ''
@@ -482,7 +555,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
           // Add all available metrics
           guidanceMetrics.forEach((metric: Metric) => {
             metrics.push({
-              label: `Next Q ${metric.metric_label}`,
+              label: `NQ ${metric.metric_label}`,
               value: formatMetricValue(metric),
               expected: 'N/A', // No estimates for this format
               emoji: ''
@@ -512,7 +585,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
           
           nextYearMetrics.forEach((metric: Metric) => {
             metrics.push({
-              label: `Next FY ${metric.metric_label}`,
+              label: `NFY ${metric.metric_label}`,
               value: formatMetricValue(metric),
               expected: 'N/A',
               emoji: ''
