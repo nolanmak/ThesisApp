@@ -5,6 +5,26 @@ import { Message } from '../../types';
 import useGlobalData from '../../hooks/useGlobalData';
 import { X, ThumbsDown } from 'lucide-react';
 
+// Interface for metric objects
+interface Metric {
+  metric_label: string;
+  metric_value: number | null;
+  metric_value_low: number | null;
+  metric_value_high: number | null;
+  metric_unit?: string;
+  metric_currency?: string;
+}
+
+// Interface for message data structure
+interface MessageData {
+  current_quarter?: Metric[];
+  next_quarter_guidance?: Metric[];
+  current_year?: Metric[];
+  next_year_guidance?: Metric[];
+  message?: string;
+  company_provided_commentary?: string[];
+}
+
 interface FeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -476,7 +496,7 @@ const Messages: React.FC = () => {
 };
 
 // Helper function to format message content for messages without estimates
-const formatMessageWithoutEstimates = (jsonData: any): string => {
+const formatMessageWithoutEstimates = (jsonData: MessageData): string => {
   let formattedMessage = '';
   
   // Current Quarter Section
@@ -484,7 +504,7 @@ const formatMessageWithoutEstimates = (jsonData: any): string => {
     formattedMessage += 'Current Quarter\n';
     
     // Sort metrics by importance (Revenue, EPS, etc.)
-    const sortedMetrics = [...jsonData.current_quarter].sort((a, b) => {
+    const sortedMetrics = [...jsonData.current_quarter].sort((a: Metric, b: Metric) => {
       const order = ['Revenue', 'EPS', 'EPS Diluted', 'Net Income', 'Gross Margin', 'Operating Income'];
       const aIndex = order.indexOf(a.metric_label);
       const bIndex = order.indexOf(b.metric_label);
@@ -538,14 +558,14 @@ const formatMessageWithoutEstimates = (jsonData: any): string => {
   if (jsonData.next_quarter_guidance && Array.isArray(jsonData.next_quarter_guidance)) {
     // Filter out metrics with null values
     const guidanceMetrics = jsonData.next_quarter_guidance.filter(
-      (m: any) => m.metric_value !== null || m.metric_value_low !== null
+      (m: Metric) => m.metric_value !== null || m.metric_value_low !== null
     );
     
     if (guidanceMetrics.length > 0) {
       formattedMessage += 'Next Quarter Guidance\n';
       
       // Sort metrics by importance
-      const sortedGuidance = [...guidanceMetrics].sort((a, b) => {
+      const sortedGuidance = [...guidanceMetrics].sort((a: Metric, b: Metric) => {
         const order = ['Revenue', 'EPS', 'EPS Diluted', 'Net Income', 'Gross Margin', 'Operating Income'];
         const aIndex = order.indexOf(a.metric_label);
         const bIndex = order.indexOf(b.metric_label);
@@ -594,14 +614,14 @@ const formatMessageWithoutEstimates = (jsonData: any): string => {
   if (jsonData.current_year && Array.isArray(jsonData.current_year) && jsonData.current_year.length > 0) {
     // Filter out metrics with null values
     const yearMetrics = jsonData.current_year.filter(
-      (m: any) => m.metric_value !== null || m.metric_value_low !== null
+      (m: Metric) => m.metric_value !== null || m.metric_value_low !== null
     );
     
     if (yearMetrics.length > 0) {
       formattedMessage += 'Current Year\n';
       
       // Sort and add metrics
-      const sortedYearMetrics = [...yearMetrics].sort((a, b) => {
+      const sortedYearMetrics = [...yearMetrics].sort((a: Metric, b: Metric) => {
         const order = ['Revenue', 'EPS', 'EPS Diluted', 'Net Income', 'Gross Margin', 'Operating Income'];
         const aIndex = order.indexOf(a.metric_label);
         const bIndex = order.indexOf(b.metric_label);
@@ -650,14 +670,14 @@ const formatMessageWithoutEstimates = (jsonData: any): string => {
   if (jsonData.next_year_guidance && Array.isArray(jsonData.next_year_guidance) && jsonData.next_year_guidance.length > 0) {
     // Filter out metrics with null values
     const nextYearMetrics = jsonData.next_year_guidance.filter(
-      (m: any) => m.metric_value !== null || m.metric_value_low !== null
+      (m: Metric) => m.metric_value !== null || m.metric_value_low !== null
     );
     
     if (nextYearMetrics.length > 0) {
       formattedMessage += 'Next Year Guidance\n';
       
       // Sort and add metrics
-      const sortedNextYearMetrics = [...nextYearMetrics].sort((a, b) => {
+      const sortedNextYearMetrics = [...nextYearMetrics].sort((a: Metric, b: Metric) => {
         const order = ['Revenue', 'EPS', 'EPS Diluted', 'Net Income', 'Gross Margin', 'Operating Income'];
         const aIndex = order.indexOf(a.metric_label);
         const bIndex = order.indexOf(b.metric_label);
@@ -706,7 +726,7 @@ const formatMessageWithoutEstimates = (jsonData: any): string => {
   if (jsonData.company_provided_commentary && Array.isArray(jsonData.company_provided_commentary) && jsonData.company_provided_commentary.length > 0) {
     formattedMessage += 'Company Highlights\n';
     
-    jsonData.company_provided_commentary.forEach((comment: string, index: number) => {
+    jsonData.company_provided_commentary.forEach((comment: string) => {
       formattedMessage += `• ${comment}\n`;
     });
   }

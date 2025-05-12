@@ -2,6 +2,16 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Message } from '../../../types';
 import { ExternalLink, BarChart2 } from 'lucide-react';
 
+// Interface for metric objects
+interface Metric {
+  metric_label: string;
+  metric_value: number | null;
+  metric_value_low: number | null;
+  metric_value_high: number | null;
+  metric_unit?: string;
+  metric_currency?: string;
+}
+
 interface MessagesListProps {
   messages: Message[];
   loading: boolean;
@@ -451,11 +461,10 @@ const MessagesList: React.FC<MessagesListProps> = ({
         if (jsonData.current_quarter && Array.isArray(jsonData.current_quarter)) {
           // Get all metrics with non-null values
           const currentQuarterMetrics = jsonData.current_quarter
-            .filter(m => m.metric_value !== null || (m.metric_value_low !== null && m.metric_value_high !== null))
-            .slice(0, 4); // Limit to first 4 metrics to avoid overcrowding the preview
+            .filter((m: Metric) => m.metric_value !== null || (m.metric_value_low !== null && m.metric_value_high !== null));
           
           // Add all available metrics
-          currentQuarterMetrics.forEach(metric => {
+          currentQuarterMetrics.forEach((metric: Metric) => {
             metrics.push({
               label: metric.metric_label,
               value: formatMetricValue(metric),
@@ -469,13 +478,12 @@ const MessagesList: React.FC<MessagesListProps> = ({
         if (jsonData.next_quarter_guidance && Array.isArray(jsonData.next_quarter_guidance)) {
           // Get all metrics with non-null values
           const guidanceMetrics = jsonData.next_quarter_guidance
-            .filter(m => m.metric_value !== null || (m.metric_value_low !== null && m.metric_value_high !== null))
-            .slice(0, 2); // Limit to first 2 guidance metrics for preview
+            .filter((m: Metric) => m.metric_value !== null || (m.metric_value_low !== null && m.metric_value_high !== null));
           
           // Add all available metrics
-          guidanceMetrics.forEach(metric => {
+          guidanceMetrics.forEach((metric: Metric) => {
             metrics.push({
-              label: metric.metric_label,
+              label: `Next Q ${metric.metric_label}`,
               value: formatMetricValue(metric),
               expected: 'N/A', // No estimates for this format
               emoji: ''
@@ -486,10 +494,9 @@ const MessagesList: React.FC<MessagesListProps> = ({
         // Add any available metrics from current_year - include ALL metrics with values
         if (jsonData.current_year && Array.isArray(jsonData.current_year) && jsonData.current_year.length > 0) {
           const yearMetrics = jsonData.current_year
-            .filter(m => m.metric_value !== null || (m.metric_value_low !== null && m.metric_value_high !== null))
-            .slice(0, 2); // Limit to first 2 metrics for preview
+            .filter((m: Metric) => m.metric_value !== null || (m.metric_value_low !== null && m.metric_value_high !== null));
           
-          yearMetrics.forEach(metric => {
+          yearMetrics.forEach((metric: Metric) => {
             metrics.push({
               label: `FY ${metric.metric_label}`,
               value: formatMetricValue(metric),
@@ -502,10 +509,9 @@ const MessagesList: React.FC<MessagesListProps> = ({
         // Add any available metrics from next_year_guidance - include ALL metrics with values
         if (jsonData.next_year_guidance && Array.isArray(jsonData.next_year_guidance) && jsonData.next_year_guidance.length > 0) {
           const nextYearMetrics = jsonData.next_year_guidance
-            .filter(m => m.metric_value !== null || (m.metric_value_low !== null && m.metric_value_high !== null))
-            .slice(0, 2); // Limit to first 2 metrics for preview
+            .filter((m: Metric) => m.metric_value !== null || (m.metric_value_low !== null && m.metric_value_high !== null));
           
-          nextYearMetrics.forEach(metric => {
+          nextYearMetrics.forEach((metric: Metric) => {
             metrics.push({
               label: `Next FY ${metric.metric_label}`,
               value: formatMetricValue(metric),
@@ -547,7 +553,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
   };
   
   // Helper function to format metric values
-  const formatMetricValue = (metric: any): string => {
+  const formatMetricValue = (metric: Metric): string => {
     if (!metric) return 'N/A';
     
     // Handle range values (low to high)
