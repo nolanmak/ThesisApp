@@ -71,7 +71,6 @@ const StaticPreview: React.FC<{
                     gap: '2px',
                     flexShrink: 0 // Prevent shrinking
                   }}>
-                    {index > 0 && <span style={{ color: '#64748b', fontSize: '.7rem' }}>•</span>}
                     <div style={{ fontWeight: '500', fontSize: '.7rem', color: '#64748b'}}>{metric.label}:</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
                       <span style={{ fontWeight: '600', color: '#1e40af', fontSize: '.7rem' }}>{metric.value}</span>
