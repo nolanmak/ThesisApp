@@ -25,133 +25,58 @@ const StaticPreview: React.FC<{
           backgroundColor: '#f0f9ff', // Light blue background
           border: '1px solid #bfdbfe', // Light blue border
           borderRadius: '4px',
-          padding: isMobile ? '8px 8px' : '6px 10px',
-          margin: '4px 0',
+          padding: isMobile ? '5px 8px' : '3px 8px', // Reduced padding to match text preview
+          margin: '2px 0',
+          minHeight: isMobile ? '24px' : '20px',
+          maxHeight: multiline ? (isMobile ? '100px' : '80px') : (isMobile ? '24px' : '20px'),
           overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center', // Center align for consistent height
           width: '100%',
           maxWidth: '100%',
           boxSizing: 'border-box'
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
-          {/* Only render if we have at least one populated metric */}
-          {content.metrics.some(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') ? (
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'row', // Always use row to ensure single line
+          flexWrap: 'nowrap',
+          gap: '8px', 
+          alignItems: 'center',
+          width: '100%',
+          overflow: 'hidden',
+          whiteSpace: 'nowrap' // Ensure single line
+        }}>
+          {/* Modified condition to handle both messages with and without estimates */}
+          {content.metrics.some(metric => metric.value !== 'N/A') ? (
             <>
-              {/* Current Quarter Section */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center'}}>
-                <div style={{ 
-                  fontWeight: '600', 
-                  color: '#2563eb', 
-                  fontSize: isMobile ? '.8rem' : '.7rem', 
-                  marginRight: '4px',
-                  width: isMobile ? '100%' : 'auto'
-                }}>Current Quarter:</div>
-                {content.metrics.slice(0, 2)
-                  .filter(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') // Only show populated metrics
-                  .map((metric, index) => (
-                    <div key={index} style={{ 
-                      backgroundColor: 'transparent',
-                      padding: '2px 6px',
-                      borderRadius: '4px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}>
-                      <div style={{ fontWeight: '500', fontSize: '.7rem', color: '#64748b'}}>{metric.label}:</div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <span style={{ fontWeight: '600', color: '#1e40af', fontSize: '.7rem' }}>{metric.value}</span>
-                        <span style={{ color: '#64748b', fontSize: '.7rem' }}>vs</span>
-                        <span style={{ color: '#64748b', fontSize: '.7rem' }}>{metric.expected}</span>
-                        {metric.emoji && <span style={{ marginLeft: '2px', fontSize: '.7rem' }}>{metric.emoji}</span>}
-                      </div>
+              {/* Display metrics in a single line */}
+              {content.metrics
+                .filter(metric => metric.value !== 'N/A') // Only show metrics with values
+                .slice(0, 4) // Limit to 4 metrics to avoid overcrowding
+                .map((metric, index) => (
+                  <div key={index} style={{ 
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '2px',
+                    flexShrink: 0 // Prevent shrinking
+                  }}>
+                    {index > 0 && <span style={{ color: '#64748b', fontSize: '.7rem' }}>•</span>}
+                    <div style={{ fontWeight: '500', fontSize: '.7rem', color: '#64748b'}}>{metric.label}:</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                      <span style={{ fontWeight: '600', color: '#1e40af', fontSize: '.7rem' }}>{metric.value}</span>
+                      {/* Only show comparison if expected is not 'N/A' */}
+                      {metric.expected !== 'N/A' && (
+                        <>
+                          <span style={{ color: '#64748b', fontSize: '.7rem' }}>vs</span>
+                          <span style={{ color: '#64748b', fontSize: '.7rem' }}>{metric.expected}</span>
+                          {metric.emoji && <span style={{ marginLeft: '2px', fontSize: '.7rem' }}>{metric.emoji}</span>}
+                        </>
+                      )}
                     </div>
-                  ))
-                }
-              </div>
-              
-              {/* Next Quarter Section - Only show if there are populated metrics */}
-              {content.metrics.slice(2, 4).some(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') && (
-                <div style={{ 
-                  display: 'flex', 
-                  flexWrap: 'wrap', 
-                  gap: '4px', 
-                  alignItems: 'center',
-                  width: '100%',
-                  maxWidth: '100%',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{ 
-                    fontWeight: '600', 
-                    color: '#2563eb', 
-                    fontSize: isMobile ? '.8rem' : '.7rem', 
-                    marginRight: '4px',
-                    width: isMobile ? '100%' : 'auto'
-                  }}>Next Quarter:</div>
-                    {content.metrics.slice(2, 4)
-                      .filter(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') // Only show populated metrics
-                      .map((metric, index) => (
-                        <div key={index} style={{ 
-                          backgroundColor: 'transparent',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}>
-                          <div style={{ fontWeight: '500', fontSize: '0.6rem', color: '#64748b' }}>{metric.label}:</div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <span style={{ fontWeight: '600', color: '#1e40af', fontSize: '0.6rem' }}>{metric.value}</span>
-                            <span style={{ color: '#64748b', fontSize: '0.6rem' }}>vs</span>
-                            <span style={{ color: '#64748b', fontSize: '0.6rem' }}>{metric.expected}</span>
-                            {metric.emoji && <span style={{ marginLeft: '2px', fontSize: '0.6rem' }}>{metric.emoji}</span>}
-                          </div>
-                        </div>
-                      ))
-                    }
-                </div>
-              )}
-              
-              {/* Current Year Section - Only show if there are populated metrics */}
-              {content.metrics.slice(4).some(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') && (
-                <div style={{ 
-                  display: 'flex', 
-                  flexWrap: 'wrap', 
-                  gap: '4px', 
-                  alignItems: 'center',
-                  width: '100%',
-                  maxWidth: '100%',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{ 
-                    fontWeight: '600', 
-                    color: '#2563eb', 
-                    fontSize: isMobile ? '.8rem' : '.7rem', 
-                    marginRight: '4px',
-                    width: isMobile ? '100%' : 'auto'
-                  }}>Fiscal Year:</div>
-                    {content.metrics.slice(4)
-                      .filter(metric => metric.value !== 'N/A' && metric.expected !== 'N/A') // Only show populated metrics
-                      .map((metric, index) => (
-                        <div key={index} style={{ 
-                          backgroundColor: 'transparent',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}>
-                          <div style={{ fontWeight: '500', fontSize: '0.6rem', color: '#64748b' }}>{metric.label}:</div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <span style={{ fontWeight: '600', color: '#1e40af', fontSize: '0.6rem' }}>{metric.value}</span>
-                            <span style={{ color: '#64748b', fontSize: '0.6rem' }}>vs</span>
-                            <span style={{ color: '#64748b', fontSize: '0.6rem' }}>{metric.expected}</span>
-                            {metric.emoji && <span style={{ marginLeft: '2px', fontSize: '0.6rem' }}>{metric.emoji}</span>}
-                          </div>
-                        </div>
-                      ))
-                    }
-                </div>
-              )}
+                  </div>
+                ))
+              }
             </>
           ) : (
             <div style={{ padding: '4px', color: '#64748b', fontSize: '.7rem', textAlign: 'center' }}>
@@ -332,7 +257,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
       // Try to parse as JSON
       const jsonData = JSON.parse(message.discord_message);
       
-      // Check if it has the specific earnings data format we're looking for
+      // Check if it has the specific earnings data format with estimates
       if (jsonData.current_quarter_vs_expected && jsonData.next_quarter_vs_expected) {
         // Handle both formats - the new format with string values and the old format with object values
         let metricsData;
@@ -517,6 +442,86 @@ const MessagesList: React.FC<MessagesListProps> = ({
         return { content: metricsData, multiline: true, isMetrics: true };
       }
       
+      // NEW CASE: Check if it has the format for messages without estimates
+      // This handles the format with current_quarter, next_quarter_guidance, etc.
+      if (jsonData.current_quarter || jsonData.next_quarter_guidance) {
+        const metrics: MetricItem[] = [];
+        
+        // Process current quarter metrics - include ALL metrics with values
+        if (jsonData.current_quarter && Array.isArray(jsonData.current_quarter)) {
+          // Get all metrics with non-null values
+          const currentQuarterMetrics = jsonData.current_quarter
+            .filter(m => m.metric_value !== null || (m.metric_value_low !== null && m.metric_value_high !== null))
+            .slice(0, 4); // Limit to first 4 metrics to avoid overcrowding the preview
+          
+          // Add all available metrics
+          currentQuarterMetrics.forEach(metric => {
+            metrics.push({
+              label: metric.metric_label,
+              value: formatMetricValue(metric),
+              expected: 'N/A', // No estimates for this format
+              emoji: ''
+            });
+          });
+        }
+        
+        // Process next quarter guidance metrics - include ALL metrics with values
+        if (jsonData.next_quarter_guidance && Array.isArray(jsonData.next_quarter_guidance)) {
+          // Get all metrics with non-null values
+          const guidanceMetrics = jsonData.next_quarter_guidance
+            .filter(m => m.metric_value !== null || (m.metric_value_low !== null && m.metric_value_high !== null))
+            .slice(0, 2); // Limit to first 2 guidance metrics for preview
+          
+          // Add all available metrics
+          guidanceMetrics.forEach(metric => {
+            metrics.push({
+              label: metric.metric_label,
+              value: formatMetricValue(metric),
+              expected: 'N/A', // No estimates for this format
+              emoji: ''
+            });
+          });
+        }
+        
+        // Add any available metrics from current_year - include ALL metrics with values
+        if (jsonData.current_year && Array.isArray(jsonData.current_year) && jsonData.current_year.length > 0) {
+          const yearMetrics = jsonData.current_year
+            .filter(m => m.metric_value !== null || (m.metric_value_low !== null && m.metric_value_high !== null))
+            .slice(0, 2); // Limit to first 2 metrics for preview
+          
+          yearMetrics.forEach(metric => {
+            metrics.push({
+              label: `FY ${metric.metric_label}`,
+              value: formatMetricValue(metric),
+              expected: 'N/A',
+              emoji: ''
+            });
+          });
+        }
+        
+        // Add any available metrics from next_year_guidance - include ALL metrics with values
+        if (jsonData.next_year_guidance && Array.isArray(jsonData.next_year_guidance) && jsonData.next_year_guidance.length > 0) {
+          const nextYearMetrics = jsonData.next_year_guidance
+            .filter(m => m.metric_value !== null || (m.metric_value_low !== null && m.metric_value_high !== null))
+            .slice(0, 2); // Limit to first 2 metrics for preview
+          
+          nextYearMetrics.forEach(metric => {
+            metrics.push({
+              label: `Next FY ${metric.metric_label}`,
+              value: formatMetricValue(metric),
+              expected: 'N/A',
+              emoji: ''
+            });
+          });
+        }
+        
+        return { 
+          content: { metrics }, 
+          multiline: true, 
+          isMetrics: true 
+        };
+      }
+      
       // If it has a message property but not the specific format, return just that part
       if (jsonData.message) {
         return { content: jsonData.message, multiline: false, isMetrics: false };
@@ -539,6 +544,56 @@ const MessagesList: React.FC<MessagesListProps> = ({
     
     // For static preview, we want to show as much content as possible
     return { content: plainText, multiline: false, isMetrics: false };
+  };
+  
+  // Helper function to format metric values
+  const formatMetricValue = (metric: any): string => {
+    if (!metric) return 'N/A';
+    
+    // Handle range values (low to high)
+    if (metric.metric_value_low !== null && metric.metric_value_high !== null) {
+      let formattedValue = '';
+      
+      // Format based on unit
+      if (metric.metric_unit === 'millions') {
+        formattedValue = `${metric.metric_value_low}-${metric.metric_value_high}M`;
+      } else if (metric.metric_unit === 'billions') {
+        formattedValue = `${metric.metric_value_low}-${metric.metric_value_high}B`;
+      } else if (metric.metric_unit === '%') {
+        formattedValue = `${metric.metric_value_low}-${metric.metric_value_high}%`;
+      } else {
+        formattedValue = `${metric.metric_value_low}-${metric.metric_value_high}`;
+        if (metric.metric_unit) formattedValue += ` ${metric.metric_unit}`;
+      }
+      
+      return formattedValue;
+    }
+    
+    // Handle single value
+    if (metric.metric_value !== null) {
+      let formattedValue = '';
+      
+      // Format based on unit
+      if (metric.metric_unit === 'millions') {
+        formattedValue = `${metric.metric_value}M`;
+      } else if (metric.metric_unit === 'billions') {
+        formattedValue = `${metric.metric_value}B`;
+      } else if (metric.metric_unit === '%') {
+        formattedValue = `${metric.metric_value}%`;
+      } else {
+        formattedValue = `${metric.metric_value}`;
+        if (metric.metric_unit && metric.metric_unit !== '') formattedValue += ` ${metric.metric_unit}`;
+      }
+      
+      // Add currency symbol if applicable
+      if (metric.metric_currency === 'USD' && !formattedValue.startsWith('$')) {
+        formattedValue = '$' + formattedValue;
+      }
+      
+      return formattedValue;
+    }
+    
+    return 'N/A';
   };
 
   // Set initial messages after first load

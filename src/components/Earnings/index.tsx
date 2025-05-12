@@ -419,10 +419,17 @@ const Messages: React.FC = () => {
                         // Try to parse the discord_message as JSON
                         try {
                           const jsonData = JSON.parse(selectedMessage.discord_message);
+                          
                           // If it has a message property, return just that part
                           if (jsonData && jsonData.message) {
                             return jsonData.message;
                           }
+                          
+                          // Handle the format for messages without estimates
+                          if (jsonData && (jsonData.current_quarter || jsonData.next_quarter_guidance)) {
+                            return formatMessageWithoutEstimates(jsonData);
+                          }
+                          
                           // Otherwise, stringify the JSON with formatting for readability
                           return JSON.stringify(jsonData, null, 2);
                         } catch {
@@ -466,6 +473,245 @@ const Messages: React.FC = () => {
       </div>
     </div>
   );
+};
+
+// Helper function to format message content for messages without estimates
+const formatMessageWithoutEstimates = (jsonData: any): string => {
+  let formattedMessage = '';
+  
+  // Current Quarter Section
+  if (jsonData.current_quarter && Array.isArray(jsonData.current_quarter) && jsonData.current_quarter.length > 0) {
+    formattedMessage += 'Current Quarter\n';
+    
+    // Sort metrics by importance (Revenue, EPS, etc.)
+    const sortedMetrics = [...jsonData.current_quarter].sort((a, b) => {
+      const order = ['Revenue', 'EPS', 'EPS Diluted', 'Net Income', 'Gross Margin', 'Operating Income'];
+      const aIndex = order.indexOf(a.metric_label);
+      const bIndex = order.indexOf(b.metric_label);
+      
+      // If both metrics are in the order array, sort by their position
+      if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+      // If only a is in the order array, it comes first
+      if (aIndex !== -1) return -1;
+      // If only b is in the order array, it comes first
+      if (bIndex !== -1) return 1;
+      // Otherwise, sort alphabetically
+      return a.metric_label.localeCompare(b.metric_label);
+    });
+    
+    // Add each metric to the message - no limits, show all metrics with values
+    sortedMetrics.forEach(metric => {
+      if (metric.metric_value !== null || metric.metric_value_low !== null) {
+        let value = '';
+        
+        // Format range values
+        if (metric.metric_value_low !== null && metric.metric_value_high !== null) {
+          value = `${metric.metric_value_low}-${metric.metric_value_high}`;
+        } else if (metric.metric_value !== null) {
+          value = `${metric.metric_value}`;
+        }
+        
+        // Add unit and currency
+        if (metric.metric_unit === 'millions') {
+          value += 'M';
+        } else if (metric.metric_unit === 'billions') {
+          value += 'B';
+        } else if (metric.metric_unit === '%') {
+          value += '%';
+        } else if (metric.metric_unit && metric.metric_unit !== '') {
+          value += ` ${metric.metric_unit}`;
+        }
+        
+        // Add currency symbol
+        if (metric.metric_currency === 'USD' && !value.startsWith('$')) {
+          value = '$' + value;
+        }
+        
+        formattedMessage += `${metric.metric_label}: ${value}\n`;
+      }
+    });
+    
+    formattedMessage += '\n';
+  }
+  
+  // Next Quarter Guidance Section
+  if (jsonData.next_quarter_guidance && Array.isArray(jsonData.next_quarter_guidance)) {
+    // Filter out metrics with null values
+    const guidanceMetrics = jsonData.next_quarter_guidance.filter(
+      (m: any) => m.metric_value !== null || m.metric_value_low !== null
+    );
+    
+    if (guidanceMetrics.length > 0) {
+      formattedMessage += 'Next Quarter Guidance\n';
+      
+      // Sort metrics by importance
+      const sortedGuidance = [...guidanceMetrics].sort((a, b) => {
+        const order = ['Revenue', 'EPS', 'EPS Diluted', 'Net Income', 'Gross Margin', 'Operating Income'];
+        const aIndex = order.indexOf(a.metric_label);
+        const bIndex = order.indexOf(b.metric_label);
+        
+        if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+        if (aIndex !== -1) return -1;
+        if (bIndex !== -1) return 1;
+        return a.metric_label.localeCompare(b.metric_label);
+      });
+      
+      // Add each guidance metric to the message - no limits, show all metrics with values
+      sortedGuidance.forEach(metric => {
+        let value = '';
+        
+        // Format range values
+        if (metric.metric_value_low !== null && metric.metric_value_high !== null) {
+          value = `${metric.metric_value_low}-${metric.metric_value_high}`;
+        } else if (metric.metric_value !== null) {
+          value = `${metric.metric_value}`;
+        }
+        
+        // Add unit and currency
+        if (metric.metric_unit === 'millions') {
+          value += 'M';
+        } else if (metric.metric_unit === 'billions') {
+          value += 'B';
+        } else if (metric.metric_unit === '%') {
+          value += '%';
+        } else if (metric.metric_unit && metric.metric_unit !== '') {
+          value += ` ${metric.metric_unit}`;
+        }
+        
+        // Add currency symbol
+        if (metric.metric_currency === 'USD' && !value.startsWith('$')) {
+          value = '$' + value;
+        }
+        
+        formattedMessage += `${metric.metric_label}: ${value}\n`;
+      });
+      
+      formattedMessage += '\n';
+    }
+  }
+  
+  // Current Year Section
+  if (jsonData.current_year && Array.isArray(jsonData.current_year) && jsonData.current_year.length > 0) {
+    // Filter out metrics with null values
+    const yearMetrics = jsonData.current_year.filter(
+      (m: any) => m.metric_value !== null || m.metric_value_low !== null
+    );
+    
+    if (yearMetrics.length > 0) {
+      formattedMessage += 'Current Year\n';
+      
+      // Sort and add metrics
+      const sortedYearMetrics = [...yearMetrics].sort((a, b) => {
+        const order = ['Revenue', 'EPS', 'EPS Diluted', 'Net Income', 'Gross Margin', 'Operating Income'];
+        const aIndex = order.indexOf(a.metric_label);
+        const bIndex = order.indexOf(b.metric_label);
+        
+        if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+        if (aIndex !== -1) return -1;
+        if (bIndex !== -1) return 1;
+        return a.metric_label.localeCompare(b.metric_label);
+      });
+      
+      // Add each metric to the message - no limits, show all metrics with values
+      sortedYearMetrics.forEach(metric => {
+        let value = '';
+        
+        // Format range values
+        if (metric.metric_value_low !== null && metric.metric_value_high !== null) {
+          value = `${metric.metric_value_low}-${metric.metric_value_high}`;
+        } else if (metric.metric_value !== null) {
+          value = `${metric.metric_value}`;
+        }
+        
+        // Add unit and currency
+        if (metric.metric_unit === 'millions') {
+          value += 'M';
+        } else if (metric.metric_unit === 'billions') {
+          value += 'B';
+        } else if (metric.metric_unit === '%') {
+          value += '%';
+        } else if (metric.metric_unit && metric.metric_unit !== '') {
+          value += ` ${metric.metric_unit}`;
+        }
+        
+        // Add currency symbol
+        if (metric.metric_currency === 'USD' && !value.startsWith('$')) {
+          value = '$' + value;
+        }
+        
+        formattedMessage += `${metric.metric_label}: ${value}\n`;
+      });
+      
+      formattedMessage += '\n';
+    }
+  }
+  
+  // Next Year Guidance Section
+  if (jsonData.next_year_guidance && Array.isArray(jsonData.next_year_guidance) && jsonData.next_year_guidance.length > 0) {
+    // Filter out metrics with null values
+    const nextYearMetrics = jsonData.next_year_guidance.filter(
+      (m: any) => m.metric_value !== null || m.metric_value_low !== null
+    );
+    
+    if (nextYearMetrics.length > 0) {
+      formattedMessage += 'Next Year Guidance\n';
+      
+      // Sort and add metrics
+      const sortedNextYearMetrics = [...nextYearMetrics].sort((a, b) => {
+        const order = ['Revenue', 'EPS', 'EPS Diluted', 'Net Income', 'Gross Margin', 'Operating Income'];
+        const aIndex = order.indexOf(a.metric_label);
+        const bIndex = order.indexOf(b.metric_label);
+        
+        if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+        if (aIndex !== -1) return -1;
+        if (bIndex !== -1) return 1;
+        return a.metric_label.localeCompare(b.metric_label);
+      });
+      
+      // Add each metric to the message - no limits, show all metrics with values
+      sortedNextYearMetrics.forEach(metric => {
+        let value = '';
+        
+        // Format range values
+        if (metric.metric_value_low !== null && metric.metric_value_high !== null) {
+          value = `${metric.metric_value_low}-${metric.metric_value_high}`;
+        } else if (metric.metric_value !== null) {
+          value = `${metric.metric_value}`;
+        }
+        
+        // Add unit and currency
+        if (metric.metric_unit === 'millions') {
+          value += 'M';
+        } else if (metric.metric_unit === 'billions') {
+          value += 'B';
+        } else if (metric.metric_unit === '%') {
+          value += '%';
+        } else if (metric.metric_unit && metric.metric_unit !== '') {
+          value += ` ${metric.metric_unit}`;
+        }
+        
+        // Add currency symbol
+        if (metric.metric_currency === 'USD' && !value.startsWith('$')) {
+          value = '$' + value;
+        }
+        
+        formattedMessage += `${metric.metric_label}: ${value}\n`;
+      });
+      
+      formattedMessage += '\n';
+    }
+  }
+  
+  // Company Commentary Section
+  if (jsonData.company_provided_commentary && Array.isArray(jsonData.company_provided_commentary) && jsonData.company_provided_commentary.length > 0) {
+    formattedMessage += 'Company Highlights\n';
+    
+    jsonData.company_provided_commentary.forEach((comment: string, index: number) => {
+      formattedMessage += `• ${comment}\n`;
+    });
+  }
+  
+  return formattedMessage;
 };
 
 export default Messages;
