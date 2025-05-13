@@ -297,7 +297,9 @@ const MessagesList: React.FC<MessagesListProps> = ({
             }
           }
         }
-        metrics["Current Quarter"] = currentQuarterMetrics;
+        if (currentQuarterMetrics.length > 0) {
+          metrics["Current Quarter"] = currentQuarterMetrics;
+        }
       }
 
       if (jsonData.next_quarter_vs_expected) {
@@ -350,7 +352,9 @@ const MessagesList: React.FC<MessagesListProps> = ({
             }
           }
         }
-        metrics["Next Quarter"] = nextQuarterMetrics;
+        if (nextQuarterMetrics.length > 0) {
+          metrics["Next Quarter"] = nextQuarterMetrics;
+        }
       }
 
       if (jsonData.current_year_vs_expected) {
@@ -403,7 +407,9 @@ const MessagesList: React.FC<MessagesListProps> = ({
             }
           }
         }
-        metrics["Current Year"] = currentYearMetrics;
+        if (currentYearMetrics.length > 0) {
+          metrics["Current Year"] = currentYearMetrics;
+        }
       }
 
       if (jsonData.historical_growth_qoq) {
@@ -451,7 +457,9 @@ const MessagesList: React.FC<MessagesListProps> = ({
             }
           }
         }
-        metrics["Historical Growth"] = historicalGrowthMetrics;
+        if (historicalGrowthMetrics.length > 0) {
+          metrics["Historical Growth"] = historicalGrowthMetrics;
+        }
       }
     } catch {
       console.log('Unable to parse metrics');
