@@ -67,15 +67,10 @@ const fetchWithAuth = async (
   options: RequestInit = {}
 ): Promise<any> => {
   try {
-    
-    // Create headers with API key
     const headers = new Headers(options.headers || {});
     headers.set('Content-Type', 'application/json');
-    
-    // Always include the API key, even for proxied URLs
     headers.set('x-api-key', apiKey);
     
-    // Merge options with updated headers
     const updatedOptions: RequestInit = {
       ...options,
       headers
