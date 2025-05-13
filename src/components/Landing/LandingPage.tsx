@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import WaveBackground from './WaveBackground';
-import '../../styles/LandingPage.css';
 import { Blend, Mail, ArrowRight, Activity } from 'lucide-react';
 
 const LandingPage: React.FC = () => {
