@@ -19,11 +19,12 @@ type MetricItem = {
 const StaticPreview: React.FC<{ 
   content: { [key: string]: MetricItem[] } | null; 
   isMobile?: boolean;
-}> = ({ content, isMobile = false }) => {
+  key?: string;
+}> = ({ content, isMobile = false, key }) => {
   // If it's metrics data, render a structured layout
   if (content) {
     return (
-      <div 
+      <div key={key}
         style={{
           backgroundColor: '#f0f9ff', // Light blue background
           border: '1px solid #bfdbfe', // Light blue border
@@ -40,7 +41,7 @@ const StaticPreview: React.FC<{
           boxSizing: 'border-box'
         }}
       >
-        <div style={{ 
+        <div key={key} style={{ 
           display: 'flex', 
           flexDirection: 'row', // Always use row to ensure single line
           flexWrap: 'nowrap',
@@ -48,7 +49,7 @@ const StaticPreview: React.FC<{
           alignItems: 'center',
           width: '100%',
           overflow: 'hidden',
-          whiteSpace: 'nowrap' // Ensure single line
+          whiteSpace: 'nowrap'
         }}>
           {/* Modified condition to handle both messages with and without estimates */}
           {content ? (
@@ -62,11 +63,11 @@ const StaticPreview: React.FC<{
                   gap: '4px',
                   flexShrink: 0
                 }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '.7rem', color:"#1e40af"}}>{key}:</div>
+                  <div key={index} style={{ fontWeight: 'bold', fontSize: '.7rem', color:"#1e40af"}}>{key}:</div>
                   {content[key]
-                  .map((metric: MetricItem) => (
+                  .map((metric: MetricItem, index: number) => (
                     <>
-                    {metric.text && <div key={metric.label} style={{ fontWeight: '500', fontSize: '.7rem', color: '#1e40af'}}>{metric.text}</div>}
+                    {metric.text && <div key={index} style={{ fontWeight: '500', fontSize: '.7rem', color: '#1e40af'}}>{metric.text}</div>}
                     </>
                   ))}
                 </div>
@@ -83,7 +84,7 @@ const StaticPreview: React.FC<{
   }
   
   return (
-    <div 
+    <div key={key}
       style={{
         backgroundColor: '#f0f9ff',
         border: '1px solid #bfdbfe',
@@ -100,7 +101,7 @@ const StaticPreview: React.FC<{
         boxSizing: 'border-box'
       }}
     >
-      <div
+      <div key={key}
         style={{
           color: '#1e40af',
           fontWeight: '500',
@@ -429,8 +430,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
         }
       }
     } catch {
-      console.log('Unable to parse metrics');
-      console.log(message)
+      console.log('Unable to parse metrics for message');
     }
     return metrics
   };
@@ -525,7 +525,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
         overflowX: 'hidden'
       }}
     >
-      {deduplicatedMessages.map((message) => (
+      {deduplicatedMessages.map((message, index) => (
         <div 
           key={message.message_id}
           className={`bg-white py-2 px-2 border-b transition-colors hover:bg-neutral-50 ${
@@ -724,6 +724,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                 <StaticPreview
                   content={ParseMessagePayload(message)}
                   isMobile={isMobile}
+                  key={index}
                 />
               )}
             </div>
