@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Message } from '../../../types';
+import { Message, MetricItem } from '../../../types';
 import { ExternalLink, BarChart2 } from 'lucide-react';
 
 interface MessagesListProps {
@@ -10,85 +10,62 @@ interface MessagesListProps {
   onSelectMessage?: (message: Message) => void;
 }
 
-type MetricItem = {
-  label: string;
-  text: string;
-};
-
-// Component for message preview - supports both standard text and structured metrics display
 const StaticPreview: React.FC<{ 
   content: { [key: string]: MetricItem[] } | null; 
   isMobile?: boolean;
   previewKey?: number;
 }> = ({ content, isMobile = false, previewKey }) => {
-  if (!content) {
+  if (content) {
     return (
-      <div key={previewKey} style={{
-        backgroundColor: '#f0f9ff',
-        border: '1px solid #bfdbfe',
-        borderRadius: '4px',
-        padding: isMobile ? '5px 8px' : '3px 8px',
-        margin: '2px 0',
-        minHeight: isMobile ? '24px' : '20px',
-        maxHeight: isMobile ? '100px' : '80px',
-        overflow: 'hidden',
-        display: 'flex',
-        alignItems: 'center',
-        width: '100%',
-        maxWidth: '100%',
-        boxSizing: 'border-box'
-      }}>
-        <div style={{ padding: '4px', color: '#1e40af', fontSize: '.7rem', textAlign: 'center' }}>
-          No metrics available
+      <div key={previewKey}
+      className={`
+        bg-sky-50 border border-sky-200 rounded flex items-center w-full max-w-full box-border overflow-hidden my-[2px]
+        ${isMobile
+          ? 'py-[5px] px-[8px] min-h-6 max-h-[100px]'
+          : 'py-[3px] px-[8px] min-h-[20px] max-h-[80px]'}
+      `}
+      >
+        <div key={previewKey} className="flex flex-row flex-nowrap gap-2 items-center w-full overflow-hidden whitespace-nowrap">
+          {content ? (
+            <div key={previewKey} className="flex flex-col flex-nowrap gap-2 items-start">
+              {Object.keys(content)
+              .filter((key) => ['Current Quarter', 'Next Quarter', 'Historical Growth', 'Current Year'].includes(key))
+              .slice(0, 3)
+              .map((key, index) => (
+                <div key={key+index} className="flex items-center gap-1 flex-shrink-0">
+                  <div key={key+index} className="font-bold text-[0.7rem] text-blue-800">{key}:</div>
+                  {content[key]
+                  .map((metric: MetricItem, itemIndex: number) => (
+                    <>
+                    {metric.text && <div key={key+itemIndex} className="font-medium text-[0.7rem] text-blue-800">{metric.text}</div>}
+                    </>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div key={previewKey} className="text-blue-800 font-medium text-[0.7rem] text-center">No metrics available</div>
+          )}
         </div>
       </div>
     );
   }
   
   return (
-    <div key={previewKey} style={{
-      backgroundColor: '#f0f9ff',
-      border: '1px solid #bfdbfe',
-      borderRadius: '4px',
-      padding: isMobile ? '5px 8px' : '3px 8px',
-      margin: '2px 0',
-      minHeight: isMobile ? '24px' : '20px',
-      maxHeight: isMobile ? '100px' : '80px',
-      overflow: 'hidden',
-      display: 'flex',
-      alignItems: 'center', 
-      width: '100%',
-      maxWidth: '100%',
-      boxSizing: 'border-box'
-    }}>
-      <div style={{ 
-        display: 'flex', 
-        flexDirection: 'column',
-        flexWrap: 'nowrap',
-        gap: '8px', 
-        alignItems: 'start',
-        width: '100%',
-        overflow: 'hidden'
-      }}>
-        {Object.keys(content)
-        .slice(0, 3)
-        .map((key, index) => (
-          <div key={`${key}-${index}`} style={{ 
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            flexShrink: 0
-          }}>
-            <div style={{ fontWeight: 'bold', fontSize: '.7rem', color:"#1e40af"}}>{key}:</div>
-            {content[key].map((metric, itemIndex) => (
-              metric.text ? 
-                <div key={`${key}-${itemIndex}`} style={{ fontWeight: '500', fontSize: '.7rem', color: '#1e40af'}}>
-                  {metric.text}
-                </div>
-              : null
-            ))}
-          </div>
-        ))}
+    <div key={previewKey}
+      className={`bg-sky-50 border border-sky-200 rounded flex items-center w-full max-w-full box-border overflow-hidden my-[2px]
+      ${isMobile
+        ? 'py-[5px] px-[8px] min-h-6 max-h-[100px]'
+        : 'py-[3px] px-[8px] min-h-[20px] max-h-[80px]'}`}
+    >
+      <div key={previewKey} className={`
+          text-blue-800 font-medium w-full overflow-hidden leading-[1.4]
+          ${isMobile
+            ? 'text-[0.8rem] whitespace-pre-wrap text-clip break-words'
+            : 'text-[0.7rem] whitespace-nowrap truncate break-normal'}
+        `}
+      >
+        {typeof content === 'string' ? content : ''}
       </div>
     </div>
   );

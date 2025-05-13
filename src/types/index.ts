@@ -8,6 +8,11 @@ export interface EarningsItem {
   company_name?: string;
 }
 
+export type MetricItem = {
+  label: string;
+  text?: string;
+} | string;
+
 export interface Message {
   message_id: string;
   discord_message: string;
