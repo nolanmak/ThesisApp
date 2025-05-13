@@ -19,73 +19,11 @@ type MetricItem = {
 const StaticPreview: React.FC<{ 
   content: { [key: string]: MetricItem[] } | null; 
   isMobile?: boolean;
-  key?: string;
-}> = ({ content, isMobile = false, key }) => {
-  // If it's metrics data, render a structured layout
-  if (content) {
+  previewKey?: number;
+}> = ({ content, isMobile = false, previewKey }) => {
+  if (!content) {
     return (
-      <div key={key}
-        style={{
-          backgroundColor: '#f0f9ff', // Light blue background
-          border: '1px solid #bfdbfe', // Light blue border
-          borderRadius: '4px',
-          padding: isMobile ? '5px 8px' : '3px 8px', // Reduced padding to match text preview
-          margin: '2px 0',
-          minHeight: isMobile ? '24px' : '20px',
-          maxHeight: isMobile ? '100px' : '80px',
-          overflow: 'hidden',
-          display: 'flex',
-          alignItems: 'center', // Center align for consistent height
-          width: '100%',
-          maxWidth: '100%',
-          boxSizing: 'border-box'
-        }}
-      >
-        <div key={key} style={{ 
-          display: 'flex', 
-          flexDirection: 'row', // Always use row to ensure single line
-          flexWrap: 'nowrap',
-          gap: '8px', 
-          alignItems: 'center',
-          width: '100%',
-          overflow: 'hidden',
-          whiteSpace: 'nowrap'
-        }}>
-          {/* Modified condition to handle both messages with and without estimates */}
-          {content ? (
-            <div style={{ display: 'flex', flexDirection: 'column', flexWrap: 'nowrap', gap: '8px', alignItems: 'start' }}>
-              {Object.keys(content)
-              .slice(0, 3)
-              .map((key, index) => (
-                <div key={index} style={{ 
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  flexShrink: 0
-                }}>
-                  <div key={index} style={{ fontWeight: 'bold', fontSize: '.7rem', color:"#1e40af"}}>{key}:</div>
-                  {content[key]
-                  .map((metric: MetricItem, index: number) => (
-                    <>
-                    {metric.text && <div key={index} style={{ fontWeight: '500', fontSize: '.7rem', color: '#1e40af'}}>{metric.text}</div>}
-                    </>
-                  ))}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ padding: '4px', color: '#1e40af', fontSize: '.7rem', textAlign: 'center' }}>
-              No metrics available
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-  
-  return (
-    <div key={key}
-      style={{
+      <div key={previewKey} style={{
         backgroundColor: '#f0f9ff',
         border: '1px solid #bfdbfe',
         borderRadius: '4px',
@@ -95,26 +33,62 @@ const StaticPreview: React.FC<{
         maxHeight: isMobile ? '100px' : '80px',
         overflow: 'hidden',
         display: 'flex',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         width: '100%',
         maxWidth: '100%',
         boxSizing: 'border-box'
-      }}
-    >
-      <div key={key}
-        style={{
-          color: '#1e40af',
-          fontWeight: '500',
-          fontSize: isMobile ? '.8rem' : '.7rem',
-          lineHeight: '1.4',
-          width: '100%',
-          whiteSpace: isMobile ? 'pre-wrap' : 'nowrap',
-          overflow: 'hidden',
-          textOverflow: isMobile ? 'clip' : 'ellipsis',
-          wordBreak: isMobile ? 'break-word' : 'normal'
-        }}
-      >
-        {typeof content === 'string' ? content : ''}
+      }}>
+        <div style={{ padding: '4px', color: '#1e40af', fontSize: '.7rem', textAlign: 'center' }}>
+          No metrics available
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div key={previewKey} style={{
+      backgroundColor: '#f0f9ff',
+      border: '1px solid #bfdbfe',
+      borderRadius: '4px',
+      padding: isMobile ? '5px 8px' : '3px 8px',
+      margin: '2px 0',
+      minHeight: isMobile ? '24px' : '20px',
+      maxHeight: isMobile ? '100px' : '80px',
+      overflow: 'hidden',
+      display: 'flex',
+      alignItems: 'center', 
+      width: '100%',
+      maxWidth: '100%',
+      boxSizing: 'border-box'
+    }}>
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        flexWrap: 'nowrap',
+        gap: '8px', 
+        alignItems: 'start',
+        width: '100%',
+        overflow: 'hidden'
+      }}>
+        {Object.keys(content)
+        .slice(0, 3)
+        .map((key, index) => (
+          <div key={`${key}-${index}`} style={{ 
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            flexShrink: 0
+          }}>
+            <div style={{ fontWeight: 'bold', fontSize: '.7rem', color:"#1e40af"}}>{key}:</div>
+            {content[key].map((metric, itemIndex) => (
+              metric.text ? 
+                <div key={`${key}-${itemIndex}`} style={{ fontWeight: '500', fontSize: '.7rem', color: '#1e40af'}}>
+                  {metric.text}
+                </div>
+              : null
+            ))}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -724,7 +698,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                 <StaticPreview
                   content={ParseMessagePayload(message)}
                   isMobile={isMobile}
-                  key={index}
+                  previewKey={index}
                 />
               )}
             </div>
