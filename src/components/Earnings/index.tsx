@@ -120,6 +120,7 @@ const Messages: React.FC = () => {
             loading={messagesLoading}
             convertToEasternTime={convertToEasternTime}
             onSelectMessage={handleMessageSelect}
+            isMobile={isMobile}
           />
         </div>
         
