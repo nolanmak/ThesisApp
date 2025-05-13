@@ -2,18 +2,10 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Message } from '../../../types';
 import { ExternalLink, BarChart2 } from 'lucide-react';
 
-interface Metric {
-  metric_label: string;
-  metric_value: number | null;
-  metric_value_low: number | null;
-  metric_value_high: number | null;
-  metric_unit?: string;
-  metric_currency?: string;
-}
-
 interface MessagesListProps {
   messages: Message[];
   loading: boolean;
+  isMobile?: boolean;
   convertToEasternTime: (utcTimestamp: string) => string;
   onSelectMessage?: (message: Message) => void;
 }
@@ -26,12 +18,10 @@ type MetricItem = {
 // Component for message preview - supports both standard text and structured metrics display
 const StaticPreview: React.FC<{ 
   content: { [key: string]: MetricItem[] } | null; 
-  multiline?: boolean;
-  isMetrics?: boolean;
   isMobile?: boolean;
-}> = ({ content, multiline = false, isMetrics = false, isMobile = false }) => {
+}> = ({ content, isMobile = false }) => {
   // If it's metrics data, render a structured layout
-  if (isMetrics && typeof content !== 'string') {
+  if (content) {
     return (
       <div 
         style={{
@@ -41,7 +31,7 @@ const StaticPreview: React.FC<{
           padding: isMobile ? '5px 8px' : '3px 8px', // Reduced padding to match text preview
           margin: '2px 0',
           minHeight: isMobile ? '24px' : '20px',
-          maxHeight: multiline ? (isMobile ? '100px' : '80px') : (isMobile ? '24px' : '20px'),
+          maxHeight: isMobile ? '100px' : '80px',
           overflow: 'hidden',
           display: 'flex',
           alignItems: 'center', // Center align for consistent height
@@ -92,20 +82,19 @@ const StaticPreview: React.FC<{
     );
   }
   
-  // Standard text preview
   return (
     <div 
       style={{
-        backgroundColor: '#f0f9ff', // Light blue background
-        border: '1px solid #bfdbfe', // Light blue border
+        backgroundColor: '#f0f9ff',
+        border: '1px solid #bfdbfe',
         borderRadius: '4px',
         padding: isMobile ? '5px 8px' : '3px 8px',
         margin: '2px 0',
         minHeight: isMobile ? '24px' : '20px',
-        maxHeight: multiline ? (isMobile ? '100px' : '80px') : (isMobile ? '24px' : '20px'),
+        maxHeight: isMobile ? '100px' : '80px',
         overflow: 'hidden',
         display: 'flex',
-        alignItems: 'flex-start', // Align to top for multiline
+        alignItems: 'flex-start',
         width: '100%',
         maxWidth: '100%',
         boxSizing: 'border-box'
@@ -113,15 +102,15 @@ const StaticPreview: React.FC<{
     >
       <div
         style={{
-          color: '#1e40af', // Darker blue text
+          color: '#1e40af',
           fontWeight: '500',
           fontSize: isMobile ? '.8rem' : '.7rem',
           lineHeight: '1.4',
           width: '100%',
-          whiteSpace: multiline || isMobile ? 'pre-wrap' : 'nowrap', // Always allow wrapping on mobile
+          whiteSpace: isMobile ? 'pre-wrap' : 'nowrap',
           overflow: 'hidden',
-          textOverflow: (multiline || isMobile) ? 'clip' : 'ellipsis', // Add ellipsis for single line only
-          wordBreak: isMobile ? 'break-word' : 'normal' // Break long words on mobile
+          textOverflow: isMobile ? 'clip' : 'ellipsis',
+          wordBreak: isMobile ? 'break-word' : 'normal'
         }}
       >
         {typeof content === 'string' ? content : ''}
@@ -133,27 +122,10 @@ const StaticPreview: React.FC<{
 const MessagesList: React.FC<MessagesListProps> = ({
   messages = [],
   loading,
+  isMobile,
   convertToEasternTime,
   onSelectMessage,
 }) => {
-  // State to track if the device is mobile
-  const [isMobile, setIsMobile] = useState(false);
-  
-  // Check if the device is mobile based on screen width
-  useEffect(() => {
-    const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    // Initial check
-    checkIfMobile();
-    
-    // Add event listener for window resize
-    window.addEventListener('resize', checkIfMobile);
-    
-    // Cleanup
-    return () => window.removeEventListener('resize', checkIfMobile);
-  }, []);
 
   const [newMessageIds, setNewMessageIds] = useState<Set<string>>(new Set());
   const [searchMessageTicker, setSearchMessageTicker] = useState<string>('');
@@ -234,13 +206,8 @@ const MessagesList: React.FC<MessagesListProps> = ({
     return null
   };
 
-  const createMessagePreview = (message: Message): { 
-    metrics: { [key: string]: MetricItem[] } | null;
-    multiline: boolean;
-    isMetrics: boolean;
-  } => {
-    
-    if (!message.discord_message || message.report_data?.link) return { metrics: null, multiline: false, isMetrics: false };
+  const ParseMessagePayload = (message: Message): { [key: string]: MetricItem[] } | null => {
+    if (!message.discord_message || message.report_data?.link) return null;
 
     let metrics: { [key: string]: MetricItem[] } = {};
     
@@ -465,11 +432,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
       console.log('Unable to parse metrics');
       console.log(message)
     }
-    return { 
-      metrics: metrics, 
-      multiline: true, 
-      isMetrics: true 
-    };
+    return metrics
   };
   
   // Set initial messages after first load
@@ -759,9 +722,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
               {/* Static preview of the message content */}
               {message.discord_message && (
                 <StaticPreview
-                  content={createMessagePreview(message).metrics}
-                  multiline={createMessagePreview(message).multiline}
-                  isMetrics={createMessagePreview(message).isMetrics}
+                  content={ParseMessagePayload(message)}
                   isMobile={isMobile}
                 />
               )}
