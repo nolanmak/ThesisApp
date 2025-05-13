@@ -19,14 +19,8 @@ const useMessagesData = (initialSearchTicker: string = '') => {
     searchTicker: initialSearchTicker
   });
 
-  // Function to convert UTC to Eastern Time (EST/EDT) with automatic daylight savings time handling
   const convertToEasternTime = useCallback((utcTimestamp: string): string => {
-    // Create a date object from the UTC timestamp
-    const date = new Date(utcTimestamp);
-    
-    // Format the date to Eastern Time (automatically handles EST/EDT transitions)
-    // The America/New_York timezone will automatically adjust for daylight savings time
-    return date.toLocaleString('en-US', {
+    return new Date(utcTimestamp).toLocaleString('en-US', {
       timeZone: 'America/New_York',
       year: 'numeric',
       month: 'short',
@@ -38,37 +32,18 @@ const useMessagesData = (initialSearchTicker: string = '') => {
     });
   }, []);
 
-  // Function to create a preview of the message content
-  const createMessagePreview = useCallback((content: string, maxLength: number = 150): string => {
-    if (!content) return '';
-    
-    // Remove any markdown symbols that might make the preview look odd
-    const cleanContent = content.replace(/[#*_~`]/g, '');
-    
-    if (cleanContent.length <= maxLength) return cleanContent;
-    
-    // Find the last space before maxLength to avoid cutting words
-    const lastSpaceIndex = cleanContent.substring(0, maxLength).lastIndexOf(' ');
-    const cutoffIndex = lastSpaceIndex > 0 ? lastSpaceIndex : maxLength;
-    
-    return cleanContent.substring(0, cutoffIndex) + '...';
-  }, []);
-
   // Handle new WebSocket messages
   const handleNewMessage = useCallback((newMessage: Message) => {
     console.log('New message received via WebSocket:', newMessage);
     
     setState(prev => {
-      // Check if the message already exists by ID
       const exists = prev.messages.some(msg => msg.message_id === newMessage.message_id);
       if (exists) {
         console.log('Message already exists, not adding duplicate');
         return prev;
       }
       
-      // Add the new message to original messages as well
       if (originalMessagesRef.current.length > 0) {
-        // Check if it exists in original messages
         const existsInOriginal = originalMessagesRef.current.some((msg: Message) => msg.message_id === newMessage.message_id);
         if (!existsInOriginal) {
           originalMessagesRef.current = [...originalMessagesRef.current, newMessage]
@@ -76,18 +51,14 @@ const useMessagesData = (initialSearchTicker: string = '') => {
         }
       }
       
-      // If we're filtering, only add the message if it matches the filter
       if (prev.searchTicker !== '' && !newMessage.ticker.toLowerCase().includes(prev.searchTicker.toLowerCase())) {
-        // Don't add to filtered view, but still show notification
         toast.info(`New message received for ${newMessage.ticker}`);
         return prev;
       }
       
-      // Add the new message and sort by timestamp (newest first)
       const updatedMessages = [...prev.messages, newMessage]
         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       
-      // Show a toast notification for the new message
       toast.info(`New message received for ${newMessage.ticker}`);
       
       return {
@@ -218,7 +189,6 @@ const useMessagesData = (initialSearchTicker: string = '') => {
     enableWebSocket,
     disableWebSocket,
     convertToEasternTime,
-    createMessagePreview,
     fetchMessages: handleRefreshWithToast,
     updateSearchTicker,
     toggleEnabled
