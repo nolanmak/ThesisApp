@@ -67,8 +67,6 @@ const fetchWithAuth = async (
   options: RequestInit = {}
 ): Promise<any> => {
   try {
-    // Determine if we're using a proxy URL
-    const isProxiedUrl = url.startsWith('/api/');
     
     // Create headers with API key
     const headers = new Headers(options.headers || {});
@@ -76,10 +74,6 @@ const fetchWithAuth = async (
     
     // Always include the API key, even for proxied URLs
     headers.set('x-api-key', apiKey);
-    
-    // Log request details for debugging
-    console.log(`Making request to: ${url}`);
-    console.log(`Using API key: ${apiKey ? 'Yes (provided)' : 'No (missing)'}`);
     
     // Merge options with updated headers
     const updatedOptions: RequestInit = {
