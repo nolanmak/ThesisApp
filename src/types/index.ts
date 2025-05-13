@@ -19,8 +19,10 @@ export interface Message {
   subject?: string;
   source?: string;
   link?: string;
-  EPSComparison?: string;
   company_name?: string;
+  report_data?: {
+    link?: string;
+  }
 }
 
 export interface VerifyKeywords {

@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Message } from '../../../types';
 import { ExternalLink, BarChart2 } from 'lucide-react';
 
-// Interface for metric objects
 interface Metric {
   metric_label: string;
   metric_value: number | null;
@@ -17,12 +16,16 @@ interface MessagesListProps {
   loading: boolean;
   convertToEasternTime: (utcTimestamp: string) => string;
   onSelectMessage?: (message: Message) => void;
-  createMessagePreview?: (message: Message) => string;
 }
+
+type MetricItem = {
+  label: string;
+  text: string;
+};
 
 // Component for message preview - supports both standard text and structured metrics display
 const StaticPreview: React.FC<{ 
-  content: string | { metrics: Array<{label: string, value: string, expected: string, emoji?: string}> }; 
+  content: { [key: string]: MetricItem[] } | null; 
   multiline?: boolean;
   isMetrics?: boolean;
   isMobile?: boolean;
@@ -58,35 +61,27 @@ const StaticPreview: React.FC<{
           whiteSpace: 'nowrap' // Ensure single line
         }}>
           {/* Modified condition to handle both messages with and without estimates */}
-          {content.metrics && content.metrics.length > 0 ? (
-            <>
-              {/* Display metrics in a single line */}
-              {content.metrics
-                .filter(metric => metric.value !== 'N/A' && metric.value !== '') // Only show metrics with values
-                .slice(0, 4) // Limit to 4 metrics to avoid overcrowding
-                .map((metric, index) => (
-                  <div key={index} style={{ 
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '2px',
-                    flexShrink: 0 // Prevent shrinking
-                  }}>
-                    <div style={{ fontWeight: '500', fontSize: '.7rem', color: '#1e40af'}}>{metric.label}:</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                      <span style={{ fontWeight: '600', color: '#1e40af', fontSize: '.7rem' }}>{metric.value}</span>
-                      {/* Only show comparison if expected is not 'N/A' */}
-                      {metric.expected && metric.expected !== 'N/A' && (
-                        <>
-                          <span style={{ color: '#1e40af', fontSize: '.7rem' }}>vs</span>
-                          <span style={{ color: '#1e40af', fontSize: '.7rem' }}>{metric.expected}</span>
-                          {metric.emoji && <span style={{ marginLeft: '2px', fontSize: '.7rem' }}>{metric.emoji}</span>}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))
-              }
-            </>
+          {content ? (
+            <div style={{ display: 'flex', flexDirection: 'column', flexWrap: 'nowrap', gap: '8px', alignItems: 'start' }}>
+              {Object.keys(content)
+              .slice(0, 3)
+              .map((key, index) => (
+                <div key={index} style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  flexShrink: 0
+                }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '.7rem', color:"#1e40af"}}>{key}:</div>
+                  {content[key]
+                  .map((metric: MetricItem) => (
+                    <>
+                    {metric.text && <div key={metric.label} style={{ fontWeight: '500', fontSize: '.7rem', color: '#1e40af'}}>{metric.text}</div>}
+                    </>
+                  ))}
+                </div>
+              ))}
+            </div>
           ) : (
             <div style={{ padding: '4px', color: '#1e40af', fontSize: '.7rem', textAlign: 'center' }}>
               No metrics available
@@ -140,7 +135,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
   loading,
   convertToEasternTime,
   onSelectMessage,
-  createMessagePreview: externalCreateMessagePreview
 }) => {
   // State to track if the device is mobile
   const [isMobile, setIsMobile] = useState(false);
@@ -161,28 +155,21 @@ const MessagesList: React.FC<MessagesListProps> = ({
     return () => window.removeEventListener('resize', checkIfMobile);
   }, []);
 
-  // State to track new messages for highlighting
   const [newMessageIds, setNewMessageIds] = useState<Set<string>>(new Set());
-  // State to track search term
   const [searchMessageTicker, setSearchMessageTicker] = useState<string>('');
-  // State to hold deduplicated messages
   const [deduplicatedMessages, setDeduplicatedMessages] = useState<Message[]>([]);
   
-  // Refs
   const allSeenMessageIdsRef = useRef<Set<string>>(new Set());
   const prevMessagesRef = useRef<Message[]>([]);
   const initialLoadCompletedRef = useRef<boolean>(false);
   
-  // Update search term from props
   useEffect(() => {
-    // Extract search term from WebSocketStatus component
     const searchParam = new URLSearchParams(window.location.search).get('search');
     if (searchParam) {
       setSearchMessageTicker(searchParam);
     }
   }, []);
   
-  // Process and deduplicate messages
   useEffect(() => {
     if (!messages || messages.length === 0) {
       setDeduplicatedMessages([]);
@@ -197,483 +184,286 @@ const MessagesList: React.FC<MessagesListProps> = ({
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
     
-    // Process messages to keep only the first one per ticker
     sortedMessages.forEach(message => {
-      // For each ticker, we want to keep at most 2 messages:
-      // 1. One with a link (typically the first announcement)
-      // 2. One with processed data from the report
       
       const key = message.ticker + message.quarter + message.year;
       const existingMessage = tickerMessageMap.get(key);
       
-      // If we don't have a message for this ticker yet, add it
       if (!existingMessage) {
         tickerMessageMap.set(key, message);
       } 
-      // If we already have a message for this ticker
       else {
-        // If current message has a link and existing doesn't, or vice versa, keep both
         const hasLink = !!message.link;
         const existingHasLink = !!existingMessage.link;
         
-        // If they have different link status (one has link, other doesn't), 
-        // we want to keep both as they serve different purposes
         if (hasLink !== existingHasLink) {
-          // Store as a special key to keep both messages
           tickerMessageMap.set(`${key}-${hasLink ? 'link' : 'data'}`, message);
         }
-        // If both have the same link status, keep the newer one (which should be first in our sorted array)
-        // This is already handled by the initial set operation
       }
     });
     
-    // Convert the map values back to an array and sort by timestamp
     const deduplicated = Array.from(tickerMessageMap.values()).sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
     
     setDeduplicatedMessages(deduplicated);
   }, [messages]);
-  // Define a type for metric items to ensure consistency
-  type MetricItem = {
-    label: string;
-    value: string;
-    expected: string;
-    emoji: string;
+
+  const checkItemValNotNull = (value: string): boolean => {
+    return value != null && value != undefined && value != '' && value != 'N/A'
+  }
+
+  const createMetricText = (item: any, label: string): string | null => {
+    const actual = item.actual
+    const low = item.low
+    const high = item.high
+    if (checkItemValNotNull(actual) || (checkItemValNotNull(low) && checkItemValNotNull(high))) {
+      let text = ''
+      if (checkItemValNotNull(low) && checkItemValNotNull(high)) {
+        text = `${label}: ${low} - ${high}`
+      }
+      else {
+        text = `${label}: ${actual}`
+      }
+      const expected = item.expected
+      if (checkItemValNotNull(expected)) {
+        text += ` vs ${expected} (${item.delta}) ${item.indicator}`
+      }
+      return text
+    }
+    return null
   };
 
-  // Helper function to create a preview of the message content
   const createMessagePreview = (message: Message): { 
-    content: string | { metrics: Array<MetricItem> }; 
+    metrics: { [key: string]: MetricItem[] } | null;
     multiline: boolean;
     isMetrics: boolean;
   } => {
-    // Use external preview function if provided
-    if (externalCreateMessagePreview) {
-      return { content: externalCreateMessagePreview(message), multiline: false, isMetrics: false };
-    }
     
-    // If EPSComparison is available, use that for the preview
-    if (message.EPSComparison) {
-      return { content: message.EPSComparison, multiline: false, isMetrics: false };
-    }
+    if (!message.discord_message || message.report_data?.link) return { metrics: null, multiline: false, isMetrics: false };
+
+    let metrics: { [key: string]: MetricItem[] } = {};
     
-    // Otherwise fall back to discord_message
-    if (!message.discord_message) return { content: '', multiline: false, isMetrics: false };
-    
-    // Check if discord_message is a JSON string
     try {
-      // Try to parse as JSON
       const jsonData = JSON.parse(message.discord_message);
       
-      // Check if it has the specific earnings data format with estimates
       if (jsonData.current_quarter_vs_expected) {
-        // Handle both formats - the new format with string values and the old format with object values
-        let metricsData;
-        
-        // Check if we have the new format (string values)
-        if (typeof jsonData.current_quarter_vs_expected.sales === 'string') {
-          // Extract values from formatted strings
-          // Define the return type for extractValues to ensure consistency
-          type MetricValues = {
-            value: string;
-            expected: string;
-            emoji: string;
-          };
-          
-          const extractValues = (str: string): MetricValues => {
-            // Default values if parsing fails
-            const defaultValues = { value: 'N/A', expected: 'N/A', emoji: '' };
-            
-            if (!str) return defaultValues;
-            
-            // Find the last occurrence of 'vs' in the string
-            const vsIndex = str.lastIndexOf(' vs ');
-            if (vsIndex === -1) return defaultValues;
-            
-            // Split the string at the 'vs' to get the value and expected parts
-            const valuePart = str.substring(0, vsIndex).trim();
-            const expectedPart = str.substring(vsIndex + 4).trim(); // +4 to skip ' vs '
-            
-            // Extract the value (last word before 'vs')
-            const valueWords = valuePart.split(' ');
-            const value = valueWords[valueWords.length - 1];
-            
-            // Extract expected value and emoji
-            let expected = expectedPart;
-            let emoji = '';
-            
-            // Check for emoji at the end (last two characters)
-            const lastTwoChars = expectedPart.slice(-2);
-            // Simple check if the last character is not alphanumeric or parenthesis
-            if (lastTwoChars && !lastTwoChars.match(/[a-zA-Z0-9()]/)) {
-              emoji = lastTwoChars;
-              expected = expectedPart.slice(0, -2).trim();
-            }
-            
-            // Remove '(Expected)' text if present
-            const expectedIndex = expected.indexOf('(Expected)');
-            if (expectedIndex !== -1) {
-              expected = expected.substring(0, expectedIndex).trim();
-            }
-            
-            return {
-              value: value === 'N/A' ? 'N/A' : value,
-              expected: expected === 'N/A' ? 'N/A' : expected,
-              emoji: emoji
-            };
-          };
-          
-          // Parse the string values to extract the actual numbers
-          const currentSalesValues = extractValues(jsonData.current_quarter_vs_expected.sales);
-          const currentEPSValues = extractValues(jsonData.current_quarter_vs_expected.eps);
-          
-          // Initialize metrics array with current quarter data
-          const metrics: MetricItem[] = [
-            {
-              label: 'CQ Sales',
-              value: currentSalesValues.value,
-              expected: currentSalesValues.expected,
-              emoji: currentSalesValues.emoji
-            },
-            {
-              label: 'CQ EPS',
-              value: currentEPSValues.value,
-              expected: currentEPSValues.expected,
-              emoji: currentEPSValues.emoji
-            }
-          ];
-          
-          // Add next quarter metrics if available
-          if (jsonData.next_quarter_vs_expected) {
-            const nextSalesValues = jsonData.next_quarter_vs_expected.sales ? 
-              extractValues(jsonData.next_quarter_vs_expected.sales) : 
-              { value: 'N/A', expected: 'N/A', emoji: '' };
-              
-            const nextEPSValues = jsonData.next_quarter_vs_expected.eps ? 
-              extractValues(jsonData.next_quarter_vs_expected.eps) : 
-              { value: 'N/A', expected: 'N/A', emoji: '' };
-            
-            metrics.push(
+        const currentQuarterData = jsonData.current_quarter_vs_expected;
+        let currentQuarterMetrics: MetricItem[] = [];
+        if (currentQuarterData.sales != null && currentQuarterData.sales != undefined && currentQuarterData.sales != '') {
+          let label = 'Sales'
+          if (typeof currentQuarterData.sales === 'string') {
+            currentQuarterMetrics.push(
               {
-                label: 'NQ Sales',
-                value: nextSalesValues.value,
-                expected: nextSalesValues.expected,
-                emoji: nextSalesValues.emoji
-              },
-              {
-                label: 'NQ EPS',
-                value: nextEPSValues.value,
-                expected: nextEPSValues.expected,
-                emoji: nextEPSValues.emoji
+                label: label,
+                text: currentQuarterData.sales
               }
             );
           }
-          
-          // Add historical growth metrics if available
-          if (jsonData.historical_growth_qoq) {
-            if (jsonData.historical_growth_qoq.sales_qoq) {
-              const salesGrowthMatch = jsonData.historical_growth_qoq.sales_qoq.match(/[-\d.]+%/);
-              if (salesGrowthMatch) {
-                metrics.push({
-                  label: 'Sales QoQ',
-                  value: salesGrowthMatch[0],
-                  expected: 'N/A',
-                  emoji: ''
-                });
-              }
-            }
-            
-            if (jsonData.historical_growth_qoq.eps_qoq) {
-              const epsGrowthMatch = jsonData.historical_growth_qoq.eps_qoq.match(/[-\d.]+%/);
-              if (epsGrowthMatch) {
-                metrics.push({
-                  label: 'EPS QoQ',
-                  value: epsGrowthMatch[0],
-                  expected: 'N/A',
-                  emoji: ''
-                });
-              }
+          else {
+            const currentQuarterSalesData = currentQuarterData.sales;
+            let text = createMetricText(currentQuarterSalesData, label)
+            if (text) {
+              currentQuarterMetrics.push(
+                {
+                  label: label,
+                  text: text
+                }
+              );
             }
           }
-          
-          // Add current year metrics if available
-          if (jsonData.current_year_vs_expected) {
-            const currentYearSalesValues = jsonData.current_year_vs_expected.sales ? 
-              extractValues(jsonData.current_year_vs_expected.sales) : 
-              { value: 'N/A', expected: 'N/A', emoji: '' };
-              
-            const currentYearEPSValues = jsonData.current_year_vs_expected.eps ? 
-              extractValues(jsonData.current_year_vs_expected.eps) : 
-              { value: 'N/A', expected: 'N/A', emoji: '' };
-            
-            // Add current year metrics to the array
-            metrics.push(
-              {
-                label: 'FY Sales',
-                value: currentYearSalesValues.value,
-                expected: currentYearSalesValues.expected,
-                emoji: currentYearSalesValues.emoji
-              },
-              {
-                label: 'FY EPS',
-                value: currentYearEPSValues.value,
-                expected: currentYearEPSValues.expected,
-                emoji: currentYearEPSValues.emoji
-              }
-            );
-          }
-          
-          // Format the data as structured metrics
-          metricsData = { metrics };
-        } else {
-          // Original format with nested objects
-          const currentSales = jsonData.current_quarter_vs_expected.sales || {};
-          const currentEPS = jsonData.current_quarter_vs_expected.eps || {};
-          
-          // Initialize metrics array with current quarter data
-          // Create metrics array with the consistent type
-          const metrics: MetricItem[] = [
-            {
-              label: 'CQ Sales',
-              value: currentSales.actual || 'N/A',
-              expected: currentSales.expected || 'N/A',
-              emoji: ''
-            },
-            {
-              label: 'CQ EPS',
-              value: currentEPS.actual || 'N/A',
-              expected: currentEPS.expected || 'N/A',
-              emoji: ''
-            }
-          ];
-          
-          // Add next quarter metrics if available
-          if (jsonData.next_quarter_vs_expected) {
-            const nextSales = jsonData.next_quarter_vs_expected.sales || {};
-            const nextEPS = jsonData.next_quarter_vs_expected.eps || {};
-            
-            metrics.push(
-              {
-                label: 'NQ Sales',
-                value: nextSales.guidance || 'N/A',
-                expected: nextSales.expected || 'N/A',
-                emoji: ''
-              },
-              {
-                label: 'NQ EPS',
-                value: nextEPS.guidance || 'N/A',
-                expected: nextEPS.expected || 'N/A',
-                emoji: ''
-              }
-            );
-          }
-          
-          // Add historical growth metrics if available
-          if (jsonData.historical_growth_qoq) {
-            if (jsonData.historical_growth_qoq.sales_qoq) {
-              const salesGrowthMatch = jsonData.historical_growth_qoq.sales_qoq.match(/[-\d.]+%/);
-              if (salesGrowthMatch) {
-                metrics.push({
-                  label: 'Sales QoQ',
-                  value: salesGrowthMatch[0],
-                  expected: 'N/A',
-                  emoji: ''
-                });
-              }
-            }
-            
-            if (jsonData.historical_growth_qoq.eps_qoq) {
-              const epsGrowthMatch = jsonData.historical_growth_qoq.eps_qoq.match(/[-\d.]+%/);
-              if (epsGrowthMatch) {
-                metrics.push({
-                  label: 'EPS QoQ',
-                  value: epsGrowthMatch[0],
-                  expected: 'N/A',
-                  emoji: ''
-                });
-              }
-            }
-          }
-          
-          // Add current year metrics if available
-          if (jsonData.current_year_vs_expected) {
-            const currentYearSales = jsonData.current_year_vs_expected.sales || {};
-            const currentYearEPS = jsonData.current_year_vs_expected.eps || {};
-            
-            // Add current year metrics to the array
-            metrics.push(
-              {
-                label: 'FY Sales',
-                value: currentYearSales.actual || 'N/A',
-                expected: currentYearSales.expected || 'N/A',
-                emoji: ''
-              },
-              {
-                label: 'FY EPS',
-                value: currentYearEPS.actual || 'N/A',
-                expected: currentYearEPS.expected || 'N/A',
-                emoji: ''
-              }
-            );
-          }
-          
-          metricsData = { metrics };
         }
         
-        return { content: metricsData, multiline: true, isMetrics: true };
+        if (currentQuarterData.eps != null && currentQuarterData.eps != undefined && currentQuarterData.eps != '' && currentQuarterData.eps != 'N/A') {  
+          let label = 'EPS'
+          if (typeof currentQuarterData.eps === 'string') {
+            currentQuarterMetrics.push(
+              {
+                label: label,
+                text: currentQuarterData.eps
+              }
+            );
+          }
+          else {
+            const currentQuarterEPSData = currentQuarterData.eps;
+            let text = createMetricText(currentQuarterEPSData, label)
+            if (text) {
+              currentQuarterMetrics.push(
+                {
+                  label: label,
+                  text: text
+                }
+              );
+            }
+          }
+        }
+        metrics["Current Quarter"] = currentQuarterMetrics;
       }
-      
-      // NEW CASE: Check if it has the format for messages without estimates
-      // This handles the format with current_quarter, next_quarter_guidance, etc.
-      if (jsonData.current_quarter || jsonData.next_quarter_guidance) {
-        const metrics: MetricItem[] = [];
-        
-        // Process current quarter metrics - include ALL metrics with values
-        if (jsonData.current_quarter && Array.isArray(jsonData.current_quarter)) {
-          // Get all metrics with non-null values
-          const currentQuarterMetrics = jsonData.current_quarter
-            .filter((m: Metric) => m.metric_value !== null || (m.metric_value_low !== null && m.metric_value_high !== null));
-          
-          // Add all available metrics
-          currentQuarterMetrics.forEach((metric: Metric) => {
-            metrics.push({
-              label: `CQ ${metric.metric_label}`,
-              value: formatMetricValue(metric),
-              expected: 'N/A', // No estimates for this format
-              emoji: ''
-            });
-          });
+
+      if (jsonData.next_quarter_vs_expected) {
+        let nextQuarterData = jsonData.next_quarter_vs_expected;
+        let nextQuarterMetrics: MetricItem[] = [];
+        if (nextQuarterData.sales != null && nextQuarterData.sales != undefined && nextQuarterData.sales != '') {
+          let label = 'Sales'
+          if (typeof nextQuarterData.sales === 'string') {
+            nextQuarterMetrics.push(
+              {
+                label: label,
+                text: nextQuarterData.sales
+              }
+            );
+          }
+          else {
+            const nextQuarterSalesData = nextQuarterData.sales;
+            let text = createMetricText(nextQuarterSalesData, label)
+            if (text) {
+              nextQuarterMetrics.push(
+                {
+                  label: label,
+                  text: text
+                }
+              );
+            }
+          }
         }
         
-        // Process next quarter guidance metrics - include ALL metrics with values
-        if (jsonData.next_quarter_guidance && Array.isArray(jsonData.next_quarter_guidance)) {
-          // Get all metrics with non-null values
-          const guidanceMetrics = jsonData.next_quarter_guidance
-            .filter((m: Metric) => m.metric_value !== null || (m.metric_value_low !== null && m.metric_value_high !== null));
-          
-          // Add all available metrics
-          guidanceMetrics.forEach((metric: Metric) => {
-            metrics.push({
-              label: `NQ ${metric.metric_label}`,
-              value: formatMetricValue(metric),
-              expected: 'N/A', // No estimates for this format
-              emoji: ''
-            });
-          });
+        if (nextQuarterData.eps != null && nextQuarterData.eps != undefined && nextQuarterData.eps != '') {
+          let label = 'EPS'
+          if (typeof nextQuarterData.eps === 'string') {
+            nextQuarterMetrics.push(
+              {
+                label: label,
+                text: nextQuarterData.eps
+              }
+            );
+          }
+          else {
+            const nextQuarterEPSData = nextQuarterData.eps;
+            let text = createMetricText(nextQuarterEPSData, label)
+            if (text) {
+              nextQuarterMetrics.push(
+                {
+                  label: label,
+                  text: text
+                }
+              );
+            }
+          }
         }
-        
-        // Add any available metrics from current_year - include ALL metrics with values
-        if (jsonData.current_year && Array.isArray(jsonData.current_year) && jsonData.current_year.length > 0) {
-          const yearMetrics = jsonData.current_year
-            .filter((m: Metric) => m.metric_value !== null || (m.metric_value_low !== null && m.metric_value_high !== null));
-          
-          yearMetrics.forEach((metric: Metric) => {
-            metrics.push({
-              label: `FY ${metric.metric_label}`,
-              value: formatMetricValue(metric),
-              expected: 'N/A',
-              emoji: ''
-            });
-          });
-        }
-        
-        // Add any available metrics from next_year_guidance - include ALL metrics with values
-        if (jsonData.next_year_guidance && Array.isArray(jsonData.next_year_guidance) && jsonData.next_year_guidance.length > 0) {
-          const nextYearMetrics = jsonData.next_year_guidance
-            .filter((m: Metric) => m.metric_value !== null || (m.metric_value_low !== null && m.metric_value_high !== null));
-          
-          nextYearMetrics.forEach((metric: Metric) => {
-            metrics.push({
-              label: `NFY ${metric.metric_label}`,
-              value: formatMetricValue(metric),
-              expected: 'N/A',
-              emoji: ''
-            });
-          });
-        }
-        
-        return { 
-          content: { metrics }, 
-          multiline: true, 
-          isMetrics: true 
-        };
+        metrics["Next Quarter"] = nextQuarterMetrics;
       }
-      
-      // If it has a message property but not the specific format, return just that part
-      if (jsonData.message) {
-        return { content: jsonData.message, multiline: false, isMetrics: false };
+
+      if (jsonData.current_year_vs_expected) {
+        const currentYearData = jsonData.current_year_vs_expected;
+        let currentYearMetrics: MetricItem[] = [];
+        if (currentYearData.sales != null && currentYearData.sales != undefined && currentYearData.sales != '') {
+          let label = 'Sales'
+          if (typeof currentYearData.sales === 'string') {
+            currentYearMetrics.push(
+              {
+                label: label,
+                text: currentYearData.sales
+              }
+            );
+          }
+          else {
+            const currentYearSalesData = currentYearData.sales;
+            let text = createMetricText(currentYearSalesData, label)
+            if (text) {
+              currentYearMetrics.push(
+                {
+                  label: label,
+                  text: text
+                }
+              );
+            }
+          }
+        }
+        
+        if (currentYearData.eps != null && currentYearData.eps != undefined && currentYearData.eps != '') {
+          let label = 'EPS'
+          if (typeof currentYearData.eps === 'string') {
+            currentYearMetrics.push(
+              {
+                label: label,
+                text: currentYearData.eps
+              }
+            );
+          }
+          else {
+            const currentYearEPSData = currentYearData.eps;
+            let text = createMetricText(currentYearEPSData, label)
+            if (text) {
+              currentYearMetrics.push(
+                {
+                  label: label,
+                  text: text
+                }
+              );
+            }
+          }
+        }
+        metrics["Current Year"] = currentYearMetrics;
+      }
+
+      if (jsonData.historical_growth_qoq) {
+        const historicalGrowthData = jsonData.historical_growth_qoq;
+        let historicalGrowthMetrics: MetricItem[] = [];
+        if (historicalGrowthData.sales_qoq != null && historicalGrowthData.sales_qoq != undefined && historicalGrowthData.sales_qoq != '') {
+          let label = 'Sales Growth QoQ'
+          if (typeof historicalGrowthData.sales_qoq === 'string') {
+            historicalGrowthMetrics.push({
+                label: label,
+                text: historicalGrowthData.sales_qoq,
+            });
+          }
+          else {
+            const historicalGrowthSalesData = historicalGrowthData.sales_qoq;
+            let text = createMetricText(historicalGrowthSalesData, label)
+            if (text) {
+              historicalGrowthMetrics.push(
+                {
+                  label: label,
+                  text: text
+                }
+              );
+            }
+          }
+        }
+        if (historicalGrowthData.eps_qoq != null && historicalGrowthData.eps_qoq != undefined && historicalGrowthData.eps_qoq != '') {
+          let label = 'EPS Growth QoQ'
+          if (typeof historicalGrowthData.eps_qoq === 'string') {
+            historicalGrowthMetrics.push({
+                label: label,
+                text: historicalGrowthData.eps_qoq,
+            });
+          }
+          else {
+            const historicalGrowthEPSData = historicalGrowthData.eps_qoq;
+            let text = createMetricText(historicalGrowthEPSData, label)
+            if (text) {
+              historicalGrowthMetrics.push(
+                {
+                  label: label,
+                  text: text
+                }
+              );
+            }
+          }
+        }
+        metrics["Historical Growth"] = historicalGrowthMetrics;
       }
     } catch {
-      // Not JSON, continue with regular text processing
+      console.log('Unable to parse metrics');
+      console.log(message)
     }
-    
-    // Remove any markdown formatting
-    const plainText = message.discord_message
-      .replace(/\*\*/g, '') // Remove bold
-      .replace(/\*/g, '')   // Remove italic
-      .replace(/```[\s\S]*?```/g, '') // Remove code blocks
-      .replace(/`.*?`/g, '') // Remove inline code
-      .replace(/\[.*?\]\(.*?\)/g, '') // Remove links
-      .replace(/#/g, '') // Remove headings
-      .replace(/\n/g, ' ') // Replace newlines with spaces
-      .replace(/\s+/g, ' ') // Replace multiple spaces with a single space
-      .trim();
-    
-    // For static preview, we want to show as much content as possible
-    return { content: plainText, multiline: false, isMetrics: false };
+    return { 
+      metrics: metrics, 
+      multiline: true, 
+      isMetrics: true 
+    };
   };
   
-  // Helper function to format metric values
-  const formatMetricValue = (metric: Metric): string => {
-    if (!metric) return 'N/A';
-    
-    // Handle range values (low to high)
-    if (metric.metric_value_low !== null && metric.metric_value_high !== null) {
-      let formattedValue = '';
-      
-      // Format based on unit
-      if (metric.metric_unit === 'millions') {
-        formattedValue = `${metric.metric_value_low}-${metric.metric_value_high}M`;
-      } else if (metric.metric_unit === 'billions') {
-        formattedValue = `${metric.metric_value_low}-${metric.metric_value_high}B`;
-      } else if (metric.metric_unit === '%') {
-        formattedValue = `${metric.metric_value_low}-${metric.metric_value_high}%`;
-      } else {
-        formattedValue = `${metric.metric_value_low}-${metric.metric_value_high}`;
-        if (metric.metric_unit) formattedValue += ` ${metric.metric_unit}`;
-      }
-      
-      return formattedValue;
-    }
-    
-    // Handle single value
-    if (metric.metric_value !== null) {
-      let formattedValue = '';
-      
-      // Format based on unit
-      if (metric.metric_unit === 'millions') {
-        formattedValue = `${metric.metric_value}M`;
-      } else if (metric.metric_unit === 'billions') {
-        formattedValue = `${metric.metric_value}B`;
-      } else if (metric.metric_unit === '%') {
-        formattedValue = `${metric.metric_value}%`;
-      } else {
-        formattedValue = `${metric.metric_value}`;
-        if (metric.metric_unit && metric.metric_unit !== '') formattedValue += ` ${metric.metric_unit}`;
-      }
-      
-      // Add currency symbol if applicable
-      if (metric.metric_currency === 'USD' && !formattedValue.startsWith('$')) {
-        formattedValue = '$' + formattedValue;
-      }
-      
-      return formattedValue;
-    }
-    
-    return 'N/A';
-  };
-
   // Set initial messages after first load
   useEffect(() => {
     if (!loading && messages.length > 0 && !initialLoadCompletedRef.current) {
@@ -961,7 +751,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
               {/* Static preview of the message content */}
               {message.discord_message && (
                 <StaticPreview
-                  content={createMessagePreview(message).content}
+                  content={createMessagePreview(message).metrics}
                   multiline={createMessagePreview(message).multiline}
                   isMetrics={createMessagePreview(message).isMetrics}
                   isMobile={isMobile}
