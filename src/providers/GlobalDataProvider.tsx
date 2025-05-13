@@ -16,7 +16,6 @@ interface GlobalDataContextType {
   toggleWebSocket: () => void;
   updateMessagesSearchTicker: (searchTerm: string) => void;
   convertToEasternTime: (utcTimestamp: string) => string;
-  createMessagePreview: (message: Message) => string;
   
   // Earnings data
   earningsItems: EarningsItem[];
@@ -56,7 +55,6 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     toggleEnabled: toggleWebSocket,
     updateSearchTicker: updateMessagesSearchTicker,
     convertToEasternTime,
-    createMessagePreview: originalCreateMessagePreview
   } = useMessagesData(searchMessageTicker);
 
   const {
@@ -89,14 +87,6 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return enriched;
   }, [rawMessages, tickerToNameMap]);
 
-  // Wrapper for createMessagePreview to match expected interface
-  const createMessagePreview = (message: Message): string => {
-    if (message.discord_message) {
-      return originalCreateMessagePreview(message.discord_message);
-    }
-    return '';
-  };
-
   // Provide the context value
   const contextValue: GlobalDataContextType = {
     // Messages data
@@ -114,7 +104,6 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     toggleWebSocket,
     updateMessagesSearchTicker,
     convertToEasternTime,
-    createMessagePreview,
     
     // Earnings data
     earningsItems,
