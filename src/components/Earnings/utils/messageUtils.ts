@@ -26,7 +26,13 @@ export const createMetricText = (item: any, label: string): string | null => {
     
     const expected = item.expected;
     if (checkItemValNotNull(expected)) {
-      text += ` vs ${expected} (${item.delta}) ${item.indicator}`;
+      text += ` vs ${expected}`;
+      if (item.delta) {
+        text += ` (${item.delta})`;
+      }
+      if (item.indicator) {
+        text += ` ${item.indicator}`;
+      }
     }
     return text;
   }
