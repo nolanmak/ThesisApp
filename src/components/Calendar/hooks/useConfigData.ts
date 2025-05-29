@@ -18,7 +18,7 @@ const useConfigData = () => {
     data: {} as Record<string, boolean>
   });
 
-  // Fetch configuration status for each ticker
+  // Fetch configuration status for each tickers
   const fetchConfigStatus = useCallback(async () => {
     const now = Date.now();
     
