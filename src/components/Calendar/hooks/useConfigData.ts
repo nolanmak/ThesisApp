@@ -12,7 +12,7 @@ const useConfigData = () => {
   const [currentConfigItem, setCurrentConfigItem] = useState<EarningsItem | null>(null);
   const [showConfigModal, setShowConfigModal] = useState(false);
   
-  // Cache storage
+  // Cache storage hello
   const configCache = useRef({
     lastFetch: 0,
     data: {} as Record<string, boolean>
