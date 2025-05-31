@@ -31,7 +31,7 @@ const useConfigData = () => {
     }
     
     try {
-      // Get all configs at once instead of individually
+      // Get all configs at once instead of individual
       const allConfigs = await getCompanyConfigs();
       const configsMap = allConfigs.reduce((map: Record<string, boolean>, config) => {
         map[config.ticker] = true;
