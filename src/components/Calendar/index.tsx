@@ -3,6 +3,7 @@ import { EarningsItem } from '../../types';
 import useConfigData from './hooks/useConfigData';
 import EarningsList from './ui/EarningsList';
 import SearchFilters from './ui/SearchFilters';
+import Graph from './ui/Graph';
 import EarningsModal from './modals/EarningsModal';
 import ConfigModal from './modals/ConfigModal';
 import useGlobalData from '../../hooks/useGlobalData';
@@ -153,6 +154,10 @@ const Calendar: React.FC = () => {
             isMobile={isMobile}
           />
         </div>
+        <Graph
+          ticker={searchTicker}
+          isMobile={isMobile}
+        />
       </div>
 
       {/* Modals */}
