@@ -22,8 +22,8 @@ export default function Graph({ ticker = 'AAPL', isMobile = false }: GraphProps)
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const height = isMobile ? '200px' : '400px';
-  const width = isMobile ? '100%' : '100%';
+  const height = '100%';
+  const width = '100%';
 
   const fetchStockData = async (ticker: string) => {
     if (!ticker) {
@@ -87,13 +87,14 @@ export default function Graph({ ticker = 'AAPL', isMobile = false }: GraphProps)
         {
           left: '10%',
           right: '10%',
-          height: '60%'  // Main chart takes 60% of the height
+          top: '5%',
+          height: '65%'       // candlestick chart
         },
         {
           left: '10%',
           right: '10%',
-          top: '75%',    // Volume chart starts at 75% from top
-          height: '15%'  // Volume chart takes 15% of the height
+          top: '72%',         // volume chart starts directly below the first
+          height: '18%'       // leaves just 5% at the bottom for the slider
         }
       ],
       xAxis: [
@@ -148,7 +149,7 @@ export default function Graph({ ticker = 'AAPL', isMobile = false }: GraphProps)
           show: true,
           type: 'slider',
           xAxisIndex: [0, 1],  // Control both charts
-          bottom: '5%'
+          bottom: '12%',
         }
       ],
       series: [

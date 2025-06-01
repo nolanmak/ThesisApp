@@ -144,15 +144,17 @@ const Calendar: React.FC = () => {
             onAddClick={handleAddEarningsClick}
             isMobile={isMobile}
           />
-          
-          <EarningsList
-            items={filteredEarningsItems}
+
+          { !searchTicker && (
+            <EarningsList
+              items={filteredEarningsItems}
             loading={earningsLoading}
-            onToggleActive={handleToggleActive}
-            onOpenConfigModal={handleOpenConfigModal}
-            configExists={configExists}
-            isMobile={isMobile}
-          />
+              onToggleActive={handleToggleActive}
+              onOpenConfigModal={handleOpenConfigModal}
+              configExists={configExists}
+              isMobile={isMobile}
+            />
+          )}
         </div>
         <Graph
           ticker={searchTicker}
