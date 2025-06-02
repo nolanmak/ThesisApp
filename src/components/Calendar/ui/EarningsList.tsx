@@ -39,7 +39,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
   }
 
   return (
-    <div
+    <div 
       className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4 overflow-auto scrollbar-hide"
       style={{
         gridTemplateColumns: isMobile ? '1fr' : undefined,
@@ -62,7 +62,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
             overflowX: 'hidden'
           }}
         >
-          <div
+          <div 
             className="flex justify-between items-start mb-3"
             style={{
               marginBottom: isMobile ? '8px' : '12px',
@@ -72,7 +72,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
             }}
           >
             <div style={{ maxWidth: 'calc(100% - 80px)', overflow: 'hidden' }}>
-              <h3
+              <h3 
                 className="font-semibold text-neutral-800"
                 style={{
                   fontSize: isMobile ? '1rem' : '1.25rem',
@@ -84,7 +84,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
               >
                 {item.ticker}
               </h3>
-              <p
+              <p 
                 className="text-neutral-500 truncate"
                 style={{
                   fontSize: isMobile ? '0.75rem' : '0.875rem',
@@ -104,21 +104,22 @@ const EarningsList: React.FC<EarningsListProps> = ({
                       console.error('Error calling onOpenConfigModal:', error);
                     }
                   }}
-                  className={`p-1.5 rounded-full ${configExists(item.ticker)
-                      ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  className={`p-1.5 rounded-full ${
+                    configExists(item.ticker) 
+                      ? 'bg-blue-500 text-white hover:bg-blue-600' 
                       : 'bg-neutral-100 text-neutral-400 hover:bg-neutral-200'
-                    }`}
+                  }`}
                   title={configExists(item.ticker) ? "Edit Config" : "Add Config"}
                 >
                   <Settings size={14} />
                 </button>
               )}
-              <div
+              <div 
                 className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer ${
-                  item.is_active
-                    ? 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                  item.is_active 
+                    ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' 
                     : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
-                  }`}
+                }`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onToggleActive(item);

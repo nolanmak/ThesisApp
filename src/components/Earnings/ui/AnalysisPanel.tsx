@@ -2,6 +2,7 @@ import React from 'react';
 import { Message } from '../../../types';
 import { ThumbsDown, X } from 'lucide-react';
 import { ParseMessagePayload } from '../utils/messageUtils';
+import Graph from '../../Calendar/ui/Graph';
 
 interface AnalysisPanelProps {
   selectedMessage: Message | null;
@@ -157,6 +158,9 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                 )}
               </div>
             )}
+            <div className="pt-4 border-neutral-200">
+              <Graph ticker={selectedMessage.ticker} isMobile={isMobile} />
+            </div>
 
             {selectedMessage.link && (
               <div className="pt-4 border-neutral-200">

@@ -88,13 +88,13 @@ export default function Graph({ ticker = 'AAPL', isMobile = false }: GraphProps)
           left: '10%',
           right: '10%',
           top: '5%',
-          height: '65%'       // candlestick chart
+          height: '60%'       // candlestick chart
         },
         {
           left: '10%',
           right: '10%',
-          top: '72%',         // volume chart starts directly below the first
-          height: '18%'       // leaves just 5% at the bottom for the slider
+          top: '75%',         // volume chart starts directly below the first
+          height: '15%'       // leaves just 5% at the bottom for the slider
         }
       ],
       xAxis: [
