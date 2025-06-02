@@ -143,7 +143,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
             <p>{item.release_time === 'before' ? 'Before Market' :
               item.release_time === 'after' ? 'After Market' : 'During Market'}</p>
           </div>
-          {/* Placeholder for future chart */}
+          {/* Graph */}
           <div
             style={{
               maxWidth: '100%',
