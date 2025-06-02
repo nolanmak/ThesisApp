@@ -3,6 +3,7 @@ import { EarningsItem } from '../../types';
 import useConfigData from './hooks/useConfigData';
 import EarningsList from './ui/EarningsList';
 import SearchFilters from './ui/SearchFilters';
+import Graph from './ui/Graph';
 import EarningsModal from './modals/EarningsModal';
 import ConfigModal from './modals/ConfigModal';
 import useGlobalData from '../../hooks/useGlobalData';
@@ -10,19 +11,19 @@ import useGlobalData from '../../hooks/useGlobalData';
 const Calendar: React.FC = () => {
   // State to track if the device is mobile
   const [isMobile, setIsMobile] = useState<boolean>(false);
-  
+
   // Check if the device is mobile based on screen width
   useEffect(() => {
     const checkIfMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     // Initial check
     checkIfMobile();
-    
+
     // Add event listener for window resize
     window.addEventListener('resize', checkIfMobile);
-    
+
     // Cleanup
     return () => window.removeEventListener('resize', checkIfMobile);
   }, []);
@@ -44,7 +45,7 @@ const Calendar: React.FC = () => {
     handleToggleActive,
     updateEarningsFilters: updateFilters
   } = useGlobalData();
-  
+
   const {
     currentConfigItem: selectedConfigItem,
     showConfigModal,
@@ -101,7 +102,7 @@ const Calendar: React.FC = () => {
   };
 
   return (
-    <div 
+    <div
       className="space-y-6"
       style={{
         width: '100%',
@@ -109,7 +110,7 @@ const Calendar: React.FC = () => {
         overflowX: 'hidden'
       }}
     >
-      <div 
+      <div
         className="flex flex-col"
         style={{
           height: isMobile ? 'auto' : 'calc(100vh-120px)',
@@ -120,7 +121,7 @@ const Calendar: React.FC = () => {
         }}
       >
         {/* Earnings list - full width */}
-        <div 
+        <div
           className="w-full bg-white rounded-md shadow-md border border-neutral-100 flex flex-col overflow-hidden"
           style={{
             padding: isMobile ? '12px 8px' : '24px',
@@ -130,7 +131,7 @@ const Calendar: React.FC = () => {
             overflowX: 'hidden'
           }}
         >
-          
+
           <SearchFilters
             searchTicker={searchTicker}
             selectedDate={selectedDate}
@@ -143,7 +144,7 @@ const Calendar: React.FC = () => {
             onAddClick={handleAddEarningsClick}
             isMobile={isMobile}
           />
-          
+
           <EarningsList
             items={filteredEarningsItems}
             loading={earningsLoading}
@@ -153,6 +154,10 @@ const Calendar: React.FC = () => {
             isMobile={isMobile}
           />
         </div>
+        <Graph
+          ticker={searchTicker}
+          isMobile={isMobile}
+        />
       </div>
 
       {/* Modals */}
@@ -162,7 +167,7 @@ const Calendar: React.FC = () => {
         onSubmit={handleEarningsModalSubmit}
         currentItem={currentEarningsItem}
       />
-      
+
       <ConfigModal
         show={showConfigModal}
         onClose={handleCloseConfigModal}

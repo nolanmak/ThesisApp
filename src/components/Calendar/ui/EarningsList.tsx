@@ -1,6 +1,7 @@
 import React from 'react';
 import { EarningsItem } from '../../../types';
 import { Loader, Settings } from 'lucide-react';
+import Graph from './Graph';
 
 interface EarningsListProps {
   items: EarningsItem[];
@@ -50,11 +51,10 @@ const EarningsList: React.FC<EarningsListProps> = ({
       }}
     >
       {items.map((item) => (
-        <div 
-          key={`${item.ticker}-${item.date}`} 
+        <div
+          key={`${item.ticker}-${item.date}`}
           className="bg-white border border-neutral-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col"
           style={{
-            aspectRatio: isMobile ? 'auto' : '1/1',
             padding: isMobile ? '12px 10px' : '16px',
             width: '100%',
             maxWidth: '100%',
@@ -129,8 +129,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
               </div>
             </div>
           </div>
-          
-          <div 
+          <div
             className="text-neutral-500 mb-2"
             style={{
               fontSize: isMobile ? '0.75rem' : '0.875rem',
@@ -141,35 +140,18 @@ const EarningsList: React.FC<EarningsListProps> = ({
             }}
           >
             <p>Q{item.quarter} {item.year}</p>
-            <p>{item.release_time === 'before' ? 'Before Market' : 
-                item.release_time === 'after' ? 'After Market' : 'During Market'}</p>
+            <p>{item.release_time === 'before' ? 'Before Market' :
+              item.release_time === 'after' ? 'After Market' : 'During Market'}</p>
           </div>
-          
-          {/* Placeholder for future chart */}
-          <div 
-            className="flex-grow bg-neutral-50 rounded-md border border-dashed border-neutral-200 flex items-center justify-center"
+          {/* Graph */}
+          <div
             style={{
-              marginTop: isMobile ? '8px' : '8px',
-              minHeight: isMobile ? '60px' : '80px',
-              width: '100%',
               maxWidth: '100%',
-              boxSizing: 'border-box'
+              boxSizing: 'border-box',
+              position: 'relative'
             }}
           >
-            <div className="flex flex-col items-center">
-              <p 
-                className="text-neutral-400" 
-                style={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}
-              >
-                No metrics added
-              </p>
-              <p 
-                className="text-neutral-400" 
-                style={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}
-              >
-                Click chart button to add
-              </p>
-            </div>
+            <Graph ticker={item.ticker} isMobile={isMobile} />
           </div>
         </div>
       ))}
