@@ -15,205 +15,174 @@ interface GraphProps {
   isMobile?: boolean;
 }
 
-export default function Graph({ ticker = 'AAPL', isMobile = false }: GraphProps) {
+export default function Graph({ ticker = 'AAPL' }: GraphProps) {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<echarts.ECharts | null>(null);
+
   const [data, setData] = useState<StockData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const height = '100%';
-  const width = '100%';
-
-  const fetchStockData = async (ticker: string) => {
-    if (!ticker) {
-      setError('Please enter a ticker symbol');
-      return [];
-    }
-
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${ticker}&outputsize=compact&apikey=${import.meta.env.VITE_ALPHAVANTAGE_API_KEY}`;
-      const res = await fetch(url);
-      const json = await res.json();
-      const rawData = json['Time Series (Daily)'];
-      if (!rawData) {
-        throw new Error('Invalid data from Alpha Vantage');
-      }
-    
-      const formatted = Object.entries(rawData).map(([date, entry]) => ({
-        date,
-        open: parseFloat((entry as Record<string, string>)['1. open']),
-        high: parseFloat((entry as Record<string, string>)['2. high']),
-        low: parseFloat((entry as Record<string, string>)['3. low']),
-        close: parseFloat((entry as Record<string, string>)['4. close']),
-        volume: parseFloat((entry as Record<string, string>)['5. volume'])
-      }));
-    
-      return formatted.reverse(); // Oldest to newest
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch stock data');
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  };
+  const HEIGHT = '100%';
+  const WIDTH = '100%';
 
   useEffect(() => {
-    if (ticker) {
-      console.log('ticker', ticker);
-      fetchStockData(ticker).then(setData);
-    }
+    if (!ticker) return;
+
+    const fetchStockData = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${ticker}&outputsize=compact&apikey=${import.meta.env.VITE_ALPHAVANTAGE_API_KEY}`;
+        const res = await fetch(url);
+        const json = await res.json();
+
+        const rawData = json['Time Series (Daily)'];
+        if (!rawData) throw new Error('Invalid data from Alpha Vantage');
+
+        const formatted = Object.entries(rawData).map(([date, entry]) => {
+          const e = entry as Record<string, string>;
+          return {
+            date,
+            open: parseFloat(e['1. open']),
+            high: parseFloat(e['2. high']),
+            low: parseFloat(e['3. low']),
+            close: parseFloat(e['4. close']),
+            volume: parseFloat(e['5. volume'])
+          };
+        });
+
+        setData(formatted.reverse());
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch stock data');
+        setData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStockData();
   }, [ticker]);
 
-  // Initialize and update chart
   useEffect(() => {
-    if (!chartRef.current || !data.length) return;
+    if (!chartRef.current || data.length === 0) return;
 
     if (!chartInstance.current) {
       chartInstance.current = echarts.init(chartRef.current);
     }
 
-    const option = {
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-          type: 'cross'
-        }
-      },
+    const dates = data.map(item => item.date);
+
+    const options: echarts.EChartsOption = {
+      tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
       grid: [
-        {
-          left: '10%',
-          right: '10%',
-          top: '5%',
-          height: '60%'       // candlestick chart
-        },
-        {
-          left: '10%',
-          right: '10%',
-          top: '75%',         // volume chart starts directly below the first
-          height: '15%'       // leaves just 5% at the bottom for the slider
-        }
+        { left: '10%', right: '10%', top: '5%', height: '60%' }, // price
+        { left: '10%', right: '10%', top: '75%', height: '15%' } // volume
       ],
       xAxis: [
         {
           type: 'category',
-          data: data.map(item => item.date),
-          scale: true,
+          data: dates,
           boundaryGap: false,
           axisLine: { onZero: false },
           splitLine: { show: false },
-          splitNumber: 20,
           gridIndex: 0
         },
         {
           type: 'category',
-          gridIndex: 1,
-          data: data.map(item => item.date),
-          scale: true,
+          data: dates,
           boundaryGap: false,
-          axisLine: { onZero: false },
-          splitLine: { show: false },
-          splitNumber: 20,
-          show: false  // Hide the x-axis labels for volume
+          show: false,
+          gridIndex: 1
         }
       ],
       yAxis: [
         {
           scale: true,
-          splitArea: {
-            show: true
-          },
+          splitArea: { show: true },
           gridIndex: 0
         },
         {
           scale: true,
-          gridIndex: 1,
           splitNumber: 3,
-          axisLabel: { show: false },  // Hide the y-axis labels for volume
+          axisLabel: { show: false },
           axisLine: { show: false },
           axisTick: { show: false },
-          splitLine: { show: false }
+          splitLine: { show: false },
+          gridIndex: 1
         }
       ],
       dataZoom: [
         {
           type: 'inside',
-          xAxisIndex: [0, 1],  // Control both charts
+          xAxisIndex: [0, 1],
           start: 0,
           end: 100
         },
         {
-          show: true,
           type: 'slider',
-          xAxisIndex: [0, 1],  // Control both charts
+          xAxisIndex: [0, 1],
           bottom: '12%',
+          show: true
         }
       ],
       series: [
         {
           name: 'Stock Price',
           type: 'candlestick',
-          data: data.map(item => [
-            item.open,
-            item.close,
-            item.low,
-            item.high
-          ]),
+          xAxisIndex: 0,
+          yAxisIndex: 0,
+          data: data.map(d => [d.open, d.close, d.low, d.high]),
           itemStyle: {
             color: '#ec0000',
             color0: '#00da3c',
             borderColor: '#8A0000',
             borderColor0: '#008F28'
-          },
-          xAxisIndex: 0,
-          yAxisIndex: 0
+          }
         },
         {
           name: 'Volume',
           type: 'bar',
           xAxisIndex: 1,
           yAxisIndex: 1,
-          data: data.map(item => ({
-            value: item.volume,
+          data: data.map(d => ({
+            value: d.volume,
             itemStyle: {
-              color: item.close >= item.open ? '#00da3c' : '#ec0000'  // Green for up, red for down
+              color: d.close >= d.open ? '#00da3c' : '#ec0000'
             }
           }))
         }
       ]
     };
 
-    chartInstance.current.setOption(option);
+    chartInstance.current.setOption(options);
   }, [data]);
 
-  // Resize chart on window resize
   useEffect(() => {
-    const resize = () => chartInstance.current?.resize();
-    window.addEventListener('resize', resize);
-    return () => window.removeEventListener('resize', resize);
+    const handleResize = () => chartInstance.current?.resize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Clean up on unmount
   useEffect(() => {
     return () => chartInstance.current?.dispose();
   }, []);
 
   if (!ticker) {
     return (
-      <div className="flex items-center justify-center" style={{ height, width }}>
+      <div className="flex items-center justify-center" style={{ height: HEIGHT, width: WIDTH }}>
         <p className="text-gray-500">Enter a ticker symbol to view stock data</p>
       </div>
     );
   }
 
   return (
-    <div className="relative" style={{ height, width }}>
+    <div className="relative" style={{ height: HEIGHT, width: WIDTH }}>
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75">
-          <p>Loading chart for {ticker}...</p>
+        <div className="flex flex-col items-center gap-2">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          <p className="text-sm text-gray-600">Loading chart for {ticker}...</p>
         </div>
       )}
       {error && (
