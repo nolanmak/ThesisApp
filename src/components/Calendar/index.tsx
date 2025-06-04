@@ -7,6 +7,15 @@ import EarningsModal from './modals/EarningsModal';
 import ConfigModal from './modals/ConfigModal';
 import useGlobalData from '../../hooks/useGlobalData';
 
+// Helper function to get local date in YYYY-MM-DD format
+const getLocalDateString = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const Calendar: React.FC = () => {
   // State to track if the device is mobile
   const [isMobile, setIsMobile] = useState<boolean>(false);
@@ -26,10 +35,9 @@ const Calendar: React.FC = () => {
     // Cleanup
     return () => window.removeEventListener('resize', checkIfMobile);
   }, []);
-  // Date filter state
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
+  
+  // Date filter state - now using local time
+  const [selectedDate, setSelectedDate] = useState<string>(getLocalDateString());
 
   // Search states
   const [searchTicker, setSearchTicker] = useState<string>('');
