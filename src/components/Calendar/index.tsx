@@ -7,7 +7,7 @@ import EarningsModal from './modals/EarningsModal';
 import ConfigModal from './modals/ConfigModal';
 import useGlobalData from '../../hooks/useGlobalData';
 
-// Helper function to get local date in YYYY-MM-DD format
+// Helper function to get local date in YYYY-MM-DD formats
 const getLocalDateString = () => {
   const now = new Date();
   const year = now.getFullYear();
