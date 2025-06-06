@@ -4,52 +4,9 @@ import { cache, CACHE_KEYS } from './cache';
 // Base URLs - Use local proxy in development mode
 const isDev = import.meta.env.DEV;
 
-// Handle both environment variable formats (with or without BASE_URL in the name)
-const getEnvUrl = (baseUrl: string, urlEnv: string, baseUrlEnv: string, defaultUrl: string) => {
-  return import.meta.env[urlEnv] || import.meta.env[baseUrlEnv] || defaultUrl;
-};
-
-const EARNINGS_API_URL = getEnvUrl(
-  'EARNINGS_API_BASE_URL', 
-  'VITE_EARNINGS_API_URL',
-  'VITE_EARNINGS_API_BASE_URL',
-  'https://iyeq9eqgnb.execute-api.us-east-1.amazonaws.com/prod'
-);
-
-const CONFIG_API_URL = getEnvUrl(
-  'CONFIG_API_BASE_URL',
-  'VITE_CONFIG_API_URL',
-  'VITE_CONFIG_API_BASE_URL',
-  'https://kk0z1vq9tf.execute-api.us-east-1.amazonaws.com/prod'
-);
-
-const MESSAGES_API_URL = getEnvUrl(
-  'MESSAGES_API_BASE_URL',
-  'VITE_MESSAGES_API_URL',
-  'VITE_MESSAGES_API_BASE_URL',
-  'https://kk0z1vq9tf.execute-api.us-east-1.amazonaws.com/prod'
-);
-
-const WAITLIST_API_URL = getEnvUrl(
-  'WAITLIST_API_BASE_URL',
-  'VITE_WAITLIST_API_URL',
-  'VITE_WAITLIST_API_BASE_URL',
-  ''
-);
-
-// Use proxies for APIs that have CORS issues during development
-const EARNINGS_API_BASE_URL = isDev ? '/api/earnings' : EARNINGS_API_URL;
-const WAITLIST_API_BASE_URL = isDev ? '/api/waitlist' : WAITLIST_API_URL;
-
-// For other APIs, use direct URLs
-const CONFIG_API_BASE_URL = CONFIG_API_URL;
-const MESSAGES_API_BASE_URL = MESSAGES_API_URL;
-
 // API Keys
-const EARNINGS_API_KEY = import.meta.env.VITE_EARNINGS_API_KEY || 'MqlOKVZsao1KGFiznoT6o5x1asqQZXx91qtL4KwI';
-const CONFIG_API_KEY = import.meta.env.VITE_CONFIG_API_KEY || 'MqlOKVZsao1KGFiznoT6o5x1asqQZXx91qtL4KwI';
-const MESSAGES_API_KEY = import.meta.env.VITE_MESSAGES_API_KEY || 'MqlOKVZsao1KGFiznoT6o5x1asqQZXx91qtL4KwI';
-const WAITLIST_API_KEY = import.meta.env.VITE_WAITLIST_API_KEY || '';
+const { VITE_API_BASE_URL, VITE_API_KEY } = import.meta.env;
+
 
 // Cache expiry times (in milliseconds)
 const CACHE_EXPIRY = {
@@ -62,22 +19,22 @@ const CACHE_EXPIRY = {
  * Helper function to fetch data with authentication
  */
 const fetchWithAuth = async (
-  url: string,
-  apiKey: string,
+  endpoint: string,
   options: RequestInit = {}
 ): Promise<any> => {
   try {
     const headers = new Headers(options.headers || {});
     headers.set('Content-Type', 'application/json');
-    headers.set('x-api-key', apiKey);
+    headers.set('x-api-key', VITE_API_KEY);
     
     const updatedOptions: RequestInit = {
       ...options,
       headers
     };
     
+    console.log(VITE_API_BASE_URL + endpoint);
     // Make the request
-    const response = await fetch(url, updatedOptions);
+    const response = await fetch(VITE_API_BASE_URL + endpoint, updatedOptions);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -93,7 +50,7 @@ const fetchWithAuth = async (
     // Parse JSON response
     return JSON.parse(text);
   } catch (error) {
-    console.error(`Fetch error for ${url}:`, error);
+    console.error(`Fetch error for ${endpoint}:`, error);
     throw error;
   }
 };
@@ -105,19 +62,14 @@ export const submitWaitlistEmail = async (email: string): Promise<{ success: boo
       throw new Error('Invalid email address');
     }
     
-    if (!WAITLIST_API_BASE_URL) {
-      throw new Error('Waitlist API URL not configured');
-    }
-    
     await fetchWithAuth(
-      `${WAITLIST_API_BASE_URL}`, 
-      WAITLIST_API_KEY, 
+      `/waitlist`, 
       {
         method: 'POST',
         body: JSON.stringify({ email })
       }
     );
-    
+
     return { 
       success: true, 
       message: 'Successfully added to waitlist' 
@@ -140,14 +92,8 @@ export const getMessages = async (bypassCache: boolean = true): Promise<Message[
   }
   
   try {
-    const url = `${MESSAGES_API_BASE_URL}/messages`;
-    
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': MESSAGES_API_KEY
-      }
-    });
+    const response = await fetchWithAuth(`/messages`);
+    console.log(response);
     
     if (!response.ok) {
       throw new Error(`API request failed: ${response.status} ${response.statusText}`);
@@ -165,14 +111,9 @@ export const getMessages = async (bypassCache: boolean = true): Promise<Message[
 
 export const getMessageById = async (message_id: string): Promise<Message | null> => {
   try {
-    const url = `${MESSAGES_API_BASE_URL}/messages/${message_id}`;
+    const endpoint = `/messages/${message_id}`;
     
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': MESSAGES_API_KEY
-      }
-    });
+    const response = await fetchWithAuth(endpoint);
     
     if (!response.ok) {
       if (response.status === 404) {
@@ -198,11 +139,8 @@ export const getEarningsItems = async (bypassCache: boolean = false): Promise<Ea
   }
   
   try {
-    const response = await fetchWithAuth(`${EARNINGS_API_BASE_URL}/earnings`, EARNINGS_API_KEY);
-    
-    if (!response) {
-      throw new Error(`API request failed`);
-    }
+    const response = await fetchWithAuth(`/earnings`);
+
     
     const items = response;
     
@@ -219,7 +157,7 @@ export const getEarningsItems = async (bypassCache: boolean = false): Promise<Ea
 export const updateEarningsItem = async (updates: Partial<EarningsItem>): Promise<EarningsItem> => {
   try {
     // Use our CORS-safe function for POST requests
-    const response = await fetchWithAuth(`${EARNINGS_API_BASE_URL}/earnings`, EARNINGS_API_KEY, {
+    const response = await fetchWithAuth(`/earnings`, {
       method: 'PUT',
       body: JSON.stringify(updates)
     });
@@ -243,7 +181,7 @@ export const updateEarningsItem = async (updates: Partial<EarningsItem>): Promis
 export const createEarningsItem = async (item: Omit<EarningsItem, 'id'>): Promise<EarningsItem> => {
   try {
     // Use our CORS-safe function for POST requests
-    const response = await fetchWithAuth(`${EARNINGS_API_BASE_URL}/earnings`, EARNINGS_API_KEY, {
+    const response = await fetchWithAuth(`/earnings`, {
       method: 'POST',
       body: JSON.stringify(item)
     });
@@ -275,10 +213,7 @@ export const getCompanyConfigs = async (): Promise<CompanyConfig[]> => {
     }
 
     // If not in cache, fetch from API
-    const data = await fetchWithAuth(
-      `${CONFIG_API_BASE_URL}/configs`,
-      CONFIG_API_KEY
-    );
+    const data = await fetchWithAuth(`/configs`);
     
     // Store in cache
     cache.set(CACHE_KEYS.COMPANY_CONFIGS, data, CACHE_EXPIRY.MEDIUM);
@@ -303,8 +238,7 @@ export const getCompanyConfigByTicker = async (ticker: string): Promise<CompanyC
 
     // If not in cache, fetch from API
     const data = await fetchWithAuth(
-      `${CONFIG_API_BASE_URL}/configs/${ticker}`,
-      CONFIG_API_KEY
+      `/configs/${ticker}`
     );
     
     // Store in cache
@@ -322,8 +256,7 @@ export const getCompanyConfigByTicker = async (ticker: string): Promise<CompanyC
 export const createOrUpdateCompanyConfig = async (config: CompanyConfig): Promise<CompanyConfig> => {
   try {
     const data = await fetchWithAuth(
-      `${CONFIG_API_BASE_URL}/configs`,
-      CONFIG_API_KEY,
+      `/configs`,
       {
         method: 'POST',
         body: JSON.stringify(config)
