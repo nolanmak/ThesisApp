@@ -14,9 +14,6 @@ const CACHE_EXPIRY = {
   LONG: 15 * 60 * 1000, // 15 minutes
 };
 
-console.log("VITE_API_BASE_URL", VITE_API_BASE_URL);
-console.log("VITE_API_KEY", VITE_API_KEY);
-
 /**
  * Helper function to fetch data with authentication
  */
@@ -34,8 +31,6 @@ const fetchWithAuth = async (
       headers
     };
     
-    console.log("VITE_API_BASE_URL + endpoint:", VITE_API_BASE_URL + endpoint);
-    console.log("updatedOptions:", updatedOptions);
     // Make the request
     const response = await fetch(VITE_API_BASE_URL + endpoint, updatedOptions);
 
