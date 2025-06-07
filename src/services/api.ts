@@ -2,7 +2,6 @@ import { EarningsItem, CompanyConfig, Message } from '../types';
 import { cache, CACHE_KEYS } from './cache';
 
 // Base URLs - Use local proxy in development mode
-const isDev = import.meta.env.DEV;
 
 // API Keys
 const { VITE_API_BASE_URL, VITE_API_KEY } = import.meta.env;
@@ -36,9 +35,12 @@ const fetchWithAuth = async (
     };
     
     console.log("VITE_API_BASE_URL + endpoint:", VITE_API_BASE_URL + endpoint);
+    console.log("updatedOptions:", updatedOptions);
     // Make the request
     const response = await fetch(VITE_API_BASE_URL + endpoint, updatedOptions);
-    
+
+    console.log("response:", response);
+
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
@@ -95,14 +97,8 @@ export const getMessages = async (bypassCache: boolean = true): Promise<Message[
   }
   
   try {
-    const response = await fetchWithAuth(`/messages`);
-    console.log(response);
-    
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-    }
-    
-    const messages = await response.json();
+    const messages = await fetchWithAuth(`/messages`);
+    console.log("messages:", messages);
     
     cache.set(cacheKey, messages, CACHE_EXPIRY.SHORT);
     return messages;
@@ -143,7 +139,6 @@ export const getEarningsItems = async (bypassCache: boolean = false): Promise<Ea
   
   try {
     const response = await fetchWithAuth(`/earnings`);
-
     
     const items = response;
     
