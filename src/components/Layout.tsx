@@ -1,44 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, Calendar, MessageCircle, Menu } from 'lucide-react';
+import { useAuth } from "react-oidc-context";
 
 const Layout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  
+  const auth = useAuth();
+
   // Check if the device is mobile based on screen width
   useEffect(() => {
     const checkIfMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
     // Initial check
     checkIfMobile();
-    
     // Add event listener for window resize
     window.addEventListener('resize', checkIfMobile);
-    
     // Cleanup
     return () => window.removeEventListener('resize', checkIfMobile);
   }, []);
-  
+
   const isActive = (path: string) => {
     return location.pathname === path ? 'text-blue-500' : 'text-neutral-500 hover:text-blue-400';
   };
-  
-  const handleLogout = () => {
-    // Clear the beta access from local storage
-    localStorage.removeItem('beta_access');
-    // Redirect to landing page
-    navigate('/');
+
+  const handleLogout = async () => {
+    try {
+      if (auth.isAuthenticated) {
+        await auth.removeUser(); // Clean up user session
+      }
+    } catch (error) {
+      console.error('Error during logout:', error);
+    } finally {
+      localStorage.removeItem('beta_access'); // Always clear
+      navigate('/'); // Always redirect home
+    }
   };
-  
+
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
   };
-  
+
   return (
     <div className="flex flex-col h-screen bg-neutral-50">
       {/* Top Navigation Bar */}
@@ -52,7 +57,7 @@ const Layout: React.FC = () => {
           <div className="bg-red-50 text-red-600 px-4 py-2 text-xs rounded-md border border-red-200 max-w-[200px] md:max-w-[1000px]">
             This is an alpha version. Please validate any data through other sources.
           </div>
-          
+
           {/* Mobile Menu Button */}
           {isMobile && (
             <button
@@ -63,7 +68,7 @@ const Layout: React.FC = () => {
               <Menu size={24} />
             </button>
           )}
-          
+
           {/* Desktop Navigation */}
           {!isMobile && (
             <nav>
@@ -98,10 +103,10 @@ const Layout: React.FC = () => {
               </ul>
             </nav>
           )}
-          
+
           {/* Mobile Navigation Overlay */}
           {isMobile && menuOpen && (
-            <div 
+            <div
               style={{
                 position: 'fixed',
                 top: 0,
@@ -157,7 +162,6 @@ const Layout: React.FC = () => {
           )}
         </div>
       </div>
-      
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
         <div className="p-4 max-w-7xl mx-auto">
