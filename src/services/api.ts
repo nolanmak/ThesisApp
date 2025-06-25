@@ -109,17 +109,8 @@ export const getMessages = async (bypassCache: boolean = true): Promise<Message[
 export const getMessageById = async (message_id: string): Promise<Message | null> => {
   try {
     const endpoint = `/messages/${message_id}`;
-    
-    const response = await fetchWithAuth(endpoint);
-    
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null;
-      }
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-    }
-    
-    return await response.json();
+    const message = await fetchWithAuth<Message>(endpoint);
+    return message;
   } catch (error) {
     console.error(`Error fetching message ${message_id}:`, error);
     return null;
