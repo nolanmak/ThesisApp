@@ -54,7 +54,7 @@ export const ParseMessagePayload = (message: Message): { [key: string]: MetricIt
       const currentQuarterData = jsonData.current_quarter_vs_expected;
       let currentQuarterMetrics: MetricItem[] = [];
       if (currentQuarterData.sales != null && currentQuarterData.sales != undefined && currentQuarterData.sales != '') {
-        let label = 'Sales';
+        const label = 'Sales';
         if (typeof currentQuarterData.sales === 'string') {
           currentQuarterMetrics.push({
             label: label,
@@ -62,7 +62,7 @@ export const ParseMessagePayload = (message: Message): { [key: string]: MetricIt
           });
         } else {
           const currentQuarterSalesData = currentQuarterData.sales;
-          let text = createMetricText(currentQuarterSalesData, label);
+          const text = createMetricText(currentQuarterSalesData, label);
           if (text) {
             currentQuarterMetrics.push({
               label: label,
@@ -73,7 +73,7 @@ export const ParseMessagePayload = (message: Message): { [key: string]: MetricIt
       }
       
       if (currentQuarterData.eps != null && currentQuarterData.eps != undefined && currentQuarterData.eps != '' && currentQuarterData.eps != 'N/A') {  
-        let label = 'EPS';
+        const label = 'EPS';
         if (typeof currentQuarterData.eps === 'string') {
           currentQuarterMetrics.push({
             label: label,
@@ -81,7 +81,7 @@ export const ParseMessagePayload = (message: Message): { [key: string]: MetricIt
           });
         } else {
           const currentQuarterEPSData = currentQuarterData.eps;
-          let text = createMetricText(currentQuarterEPSData, label);
+          const text = createMetricText(currentQuarterEPSData, label);
           if (text) {
             currentQuarterMetrics.push({
               label: label,
@@ -99,7 +99,7 @@ export const ParseMessagePayload = (message: Message): { [key: string]: MetricIt
       let nextQuarterData = jsonData.next_quarter_vs_expected;
       let nextQuarterMetrics: MetricItem[] = [];
       if (nextQuarterData.sales != null && nextQuarterData.sales != undefined && nextQuarterData.sales != '') {
-        let label = 'Sales';
+        const label = 'Sales';
         if (typeof nextQuarterData.sales === 'string') {
           nextQuarterMetrics.push({
             label: label,
@@ -107,7 +107,7 @@ export const ParseMessagePayload = (message: Message): { [key: string]: MetricIt
           });
         } else {
           const nextQuarterSalesData = nextQuarterData.sales;
-          let text = createMetricText(nextQuarterSalesData, label);
+          const text = createMetricText(nextQuarterSalesData, label);
           if (text) {
             nextQuarterMetrics.push({
               label: label,
@@ -118,7 +118,7 @@ export const ParseMessagePayload = (message: Message): { [key: string]: MetricIt
       }
       
       if (nextQuarterData.eps != null && nextQuarterData.eps != undefined && nextQuarterData.eps != '') {
-        let label = 'EPS';
+        const label = 'EPS';
         if (typeof nextQuarterData.eps === 'string') {
           nextQuarterMetrics.push({
             label: label,
@@ -126,7 +126,7 @@ export const ParseMessagePayload = (message: Message): { [key: string]: MetricIt
           });
         } else {
           const nextQuarterEPSData = nextQuarterData.eps;
-          let text = createMetricText(nextQuarterEPSData, label);
+          const text = createMetricText(nextQuarterEPSData, label);
           if (text) {
             nextQuarterMetrics.push({
               label: label,
@@ -144,7 +144,7 @@ export const ParseMessagePayload = (message: Message): { [key: string]: MetricIt
       const currentYearData = jsonData.current_year_vs_expected;
       let currentYearMetrics: MetricItem[] = [];
       if (currentYearData.sales != null && currentYearData.sales != undefined && currentYearData.sales != '') {
-        let label = 'Sales';
+        const label = 'Sales';
         if (typeof currentYearData.sales === 'string') {
           currentYearMetrics.push({
             label: label,
@@ -152,7 +152,7 @@ export const ParseMessagePayload = (message: Message): { [key: string]: MetricIt
           });
         } else {
           const currentYearSalesData = currentYearData.sales;
-          let text = createMetricText(currentYearSalesData, label);
+          const text = createMetricText(currentYearSalesData, label);
           if (text) {
             currentYearMetrics.push({
               label: label,
@@ -163,7 +163,7 @@ export const ParseMessagePayload = (message: Message): { [key: string]: MetricIt
       }
       
       if (currentYearData.eps != null && currentYearData.eps != undefined && currentYearData.eps != '') {
-        let label = 'EPS';
+        const label = 'EPS';
         if (typeof currentYearData.eps === 'string') {
           currentYearMetrics.push({
             label: label,
@@ -171,7 +171,7 @@ export const ParseMessagePayload = (message: Message): { [key: string]: MetricIt
           });
         } else {
           const currentYearEPSData = currentYearData.eps;
-          let text = createMetricText(currentYearEPSData, label);
+          const text = createMetricText(currentYearEPSData, label);
           if (text) {
             currentYearMetrics.push({
               label: label,
@@ -197,7 +197,7 @@ export const ParseMessagePayload = (message: Message): { [key: string]: MetricIt
           });
         } else {
           const historicalGrowthSalesData = historicalGrowthData.sales_qoq;
-          let text = createMetricText(historicalGrowthSalesData, label);
+          const text = createMetricText(historicalGrowthSalesData, label);
           if (text) {
             historicalGrowthMetrics.push({
               label: label,
@@ -215,7 +215,7 @@ export const ParseMessagePayload = (message: Message): { [key: string]: MetricIt
           });
         } else {
           const historicalGrowthEPSData = historicalGrowthData.eps_qoq;
-          let text = createMetricText(historicalGrowthEPSData, label);
+          const text = createMetricText(historicalGrowthEPSData, label);
           if (text) {
             historicalGrowthMetrics.push({
               label: label,
@@ -228,6 +228,51 @@ export const ParseMessagePayload = (message: Message): { [key: string]: MetricIt
         metrics["Historical Growth"] = historicalGrowthMetrics;
       }
     }
+    if (jsonData.next_year_vs_expected) {
+      const nextYearData = jsonData.next_year_vs_expected;
+      const nextYearMetrics: MetricItem[] = [];
+      if (nextYearData.sales != null && nextYearData.sales != undefined && nextYearData.sales != '') {
+        const label = 'Sales';
+        if (typeof nextYearData.sales === 'string') {
+          nextYearMetrics.push({
+            label: label,
+            text: nextYearData.sales
+          });
+        } else {
+          const nextYearSalesData = nextYearData.sales;
+          const text = createMetricText(nextYearSalesData, label);
+          if (text) {
+            nextYearMetrics.push({
+              label: label,
+              text: text
+            });
+          }
+        }
+      }
+      
+      if (nextYearData.eps != null && nextYearData.eps != undefined && nextYearData.eps != '') {
+        const label = 'EPS';
+        if (typeof nextYearData.eps === 'string') {
+          nextYearMetrics.push({
+            label: label,
+            text: nextYearData.eps
+          });
+        } else {
+          const nextYearEPSData = nextYearData.eps;
+          const text = createMetricText(nextYearEPSData, label);
+          if (text) {
+            nextYearMetrics.push({
+              label: label,
+              text: text
+            });
+          }
+        }
+      }
+      if (nextYearMetrics.length > 0) {
+        metrics["Next Year"] = nextYearMetrics;
+      }
+    }
+
     if (jsonData.company_highlights) {
       const companyHighlightsData = jsonData.company_highlights;
       if (companyHighlightsData.length > 0) {
