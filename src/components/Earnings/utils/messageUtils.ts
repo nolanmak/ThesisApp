@@ -2,16 +2,28 @@
 import { Message, MetricItem } from '../../../types';
 
 /**
+ * Interface for metric data items used in createMetricText
+ */
+interface MetricDataItem {
+  actual?: string;
+  low?: string;
+  high?: string;
+  expected?: string;
+  delta?: string;
+  indicator?: string;
+}
+
+/**
  * Check if a value is not null, undefined, empty or 'N/A'
  */
-export const checkItemValNotNull = (value: string): boolean => {
-  return value != null && value != undefined && value != '' && value != 'N/A';
+export const checkItemValNotNull = (value: string | undefined): boolean => {
+  return value != null && value != undefined && value !== '' && value !== 'N/A';
 };
 
 /**
  * Create formatted metric text from a metric item
  */
-export const createMetricText = (item: any, label: string): string | null => {
+export const createMetricText = (item: MetricDataItem, label: string): string | null => {
   const actual = item.actual;
   const low = item.low;
   const high = item.high;
@@ -45,14 +57,14 @@ export const createMetricText = (item: any, label: string): string | null => {
 export const ParseMessagePayload = (message: Message): { [key: string]: MetricItem[] } | null => {
   if (!message.discord_message || message.report_data?.link) return null;
 
-  let metrics: { [key: string]: MetricItem[] } = {};
+  const metrics: { [key: string]: MetricItem[] } = {};
   
   try {
     const jsonData = JSON.parse(message.discord_message);
     
     if (jsonData.current_quarter_vs_expected) {
       const currentQuarterData = jsonData.current_quarter_vs_expected;
-      let currentQuarterMetrics: MetricItem[] = [];
+      const currentQuarterMetrics: MetricItem[] = [];
       if (currentQuarterData.sales != null && currentQuarterData.sales != undefined && currentQuarterData.sales != '') {
         const label = 'Sales';
         if (typeof currentQuarterData.sales === 'string') {
@@ -96,8 +108,8 @@ export const ParseMessagePayload = (message: Message): { [key: string]: MetricIt
     }
 
     if (jsonData.next_quarter_vs_expected) {
-      let nextQuarterData = jsonData.next_quarter_vs_expected;
-      let nextQuarterMetrics: MetricItem[] = [];
+      const nextQuarterData = jsonData.next_quarter_vs_expected;
+      const nextQuarterMetrics: MetricItem[] = [];
       if (nextQuarterData.sales != null && nextQuarterData.sales != undefined && nextQuarterData.sales != '') {
         const label = 'Sales';
         if (typeof nextQuarterData.sales === 'string') {
@@ -142,7 +154,7 @@ export const ParseMessagePayload = (message: Message): { [key: string]: MetricIt
 
     if (jsonData.current_year_vs_expected) {
       const currentYearData = jsonData.current_year_vs_expected;
-      let currentYearMetrics: MetricItem[] = [];
+      const currentYearMetrics: MetricItem[] = [];
       if (currentYearData.sales != null && currentYearData.sales != undefined && currentYearData.sales != '') {
         const label = 'Sales';
         if (typeof currentYearData.sales === 'string') {
@@ -187,9 +199,9 @@ export const ParseMessagePayload = (message: Message): { [key: string]: MetricIt
 
     if (jsonData.historical_growth_qoq) {
       const historicalGrowthData = jsonData.historical_growth_qoq;
-      let historicalGrowthMetrics: MetricItem[] = [];
+      const historicalGrowthMetrics: MetricItem[] = [];
       if (historicalGrowthData.sales_qoq != null && historicalGrowthData.sales_qoq != undefined && historicalGrowthData.sales_qoq != '') {
-        let label = 'Sales Growth QoQ';
+        const label = 'Sales Growth QoQ';
         if (typeof historicalGrowthData.sales_qoq === 'string') {
           historicalGrowthMetrics.push({
             label: label,
@@ -207,7 +219,7 @@ export const ParseMessagePayload = (message: Message): { [key: string]: MetricIt
         }
       }
       if (historicalGrowthData.eps_qoq != null && historicalGrowthData.eps_qoq != undefined && historicalGrowthData.eps_qoq != '') {
-        let label = 'EPS Growth QoQ';
+        const label = 'EPS Growth QoQ';
         if (typeof historicalGrowthData.eps_qoq === 'string') {
           historicalGrowthMetrics.push({
             label: label,
