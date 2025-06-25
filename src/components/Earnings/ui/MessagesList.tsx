@@ -38,7 +38,11 @@ const StaticPreview: React.FC<{
                   {content[key]
                   .map((metric: MetricItem, itemIndex: number) => (
                     <>
-                    {metric.text && <div key={key+itemIndex} className="font-medium text-[0.7rem] text-blue-800">{metric.text}</div>}
+                    {typeof metric === 'string' ? (
+                      <div key={key+itemIndex} className="font-medium text-[0.7rem] text-blue-800">{metric}</div>
+                    ) : metric.text ? (
+                      <div key={key+itemIndex} className="font-medium text-[0.7rem] text-blue-800">{metric.text}</div>
+                    ) : null}
                     </>
                   ))}
                 </div>
