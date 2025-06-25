@@ -31,7 +31,7 @@ const StaticPreview: React.FC<{
             <div key={previewKey} className="flex flex-col flex-nowrap gap-2 items-start">
               {Object.keys(content)
               .filter((key) => ['Current Quarter', 'Next Quarter', 'Historical Growth', 'Current Year', 'Next Year'].includes(key))
-              .slice(0, 5)
+              .slice(0, 3)
               .map((key, index) => (
                 <div key={key+index} className="flex items-center gap-1 flex-shrink-0">
                   <div key={key+index} className="font-bold text-[0.7rem] text-blue-800">{key}:</div>
