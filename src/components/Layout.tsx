@@ -29,8 +29,11 @@ const Layout: React.FC = () => {
   };
   
   const handleLogout = () => {
-    // Clear the beta access from local storage
-    localStorage.removeItem('beta_access');
+    // Clear the auth tokens from local storage
+    localStorage.removeItem('user_data');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('id_token');
+    localStorage.removeItem('refresh_token');
     // Redirect to landing page
     navigate('/');
   };

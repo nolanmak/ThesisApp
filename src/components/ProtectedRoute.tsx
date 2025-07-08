@@ -5,8 +5,8 @@ const ProtectedRoute = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // Check if user has beta access
-    const hasAccess = localStorage.getItem('beta_access') === 'granted';
+    // Check if user has authenticated
+    const hasAccess = localStorage.getItem('user_data') !== null;
     setIsAuthenticated(hasAccess);
   }, []);
 
