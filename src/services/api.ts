@@ -17,10 +17,13 @@ const CACHE_EXPIRY = {
 /**
  * Helper function to fetch data with authentication
  */
-const fetchWithAuth = async (
+/**
+ * Helper function to fetch data with authentication
+ */
+const fetchWithAuth = async <T = Record<string, unknown>>(
   endpoint: string,
   options: RequestInit = {}
-): Promise<any> => {
+): Promise<T> => {
   try {
     const headers = new Headers(options.headers || {});
     headers.set('Content-Type', 'application/json');
@@ -44,11 +47,11 @@ const fetchWithAuth = async (
     // Handle empty response
     const text = await response.text();
     if (!text) {
-      return null;
+      return null as unknown as T;
     }
     
     // Parse JSON response
-    return JSON.parse(text);
+    return JSON.parse(text) as T;
   } catch (error) {
     console.error(`Fetch error for ${endpoint}:`, error);
     throw error;
@@ -92,7 +95,7 @@ export const getMessages = async (bypassCache: boolean = true): Promise<Message[
   }
   
   try {
-    const messages = await fetchWithAuth(`/messages`);
+    const messages = await fetchWithAuth<Message[]>(`/messages`);
     console.log("messages:", messages);
     
     cache.set(cacheKey, messages, CACHE_EXPIRY.SHORT);
@@ -106,17 +109,8 @@ export const getMessages = async (bypassCache: boolean = true): Promise<Message[
 export const getMessageById = async (message_id: string): Promise<Message | null> => {
   try {
     const endpoint = `/messages/${message_id}`;
-    
-    const response = await fetchWithAuth(endpoint);
-    
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null;
-      }
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-    }
-    
-    return await response.json();
+    const message = await fetchWithAuth<Message>(endpoint);
+    return message;
   } catch (error) {
     console.error(`Error fetching message ${message_id}:`, error);
     return null;
@@ -133,9 +127,7 @@ export const getEarningsItems = async (bypassCache: boolean = false): Promise<Ea
   }
   
   try {
-    const response = await fetchWithAuth(`/earnings`);
-    
-    const items = response;
+    const items = await fetchWithAuth<EarningsItem[]>(`/earnings`);
     
     // Cache the items
     cache.set(cacheKey, items, CACHE_EXPIRY.SHORT);
@@ -150,16 +142,14 @@ export const getEarningsItems = async (bypassCache: boolean = false): Promise<Ea
 export const updateEarningsItem = async (updates: Partial<EarningsItem>): Promise<EarningsItem> => {
   try {
     // Use our CORS-safe function for POST requests
-    const response = await fetchWithAuth(`/earnings`, {
+    const updatedItem = await fetchWithAuth<EarningsItem>(`/earnings`, {
       method: 'PUT',
       body: JSON.stringify(updates)
     });
     
-    if (!response) {
+    if (!updatedItem) {
       throw new Error(`API request failed`);
     }
-    
-    const updatedItem = response;
     
     // Invalidate cache
     cache.remove(CACHE_KEYS.EARNINGS_ITEMS);
@@ -174,16 +164,14 @@ export const updateEarningsItem = async (updates: Partial<EarningsItem>): Promis
 export const createEarningsItem = async (item: Omit<EarningsItem, 'id'>): Promise<EarningsItem> => {
   try {
     // Use our CORS-safe function for POST requests
-    const response = await fetchWithAuth(`/earnings`, {
+    const newItem = await fetchWithAuth<EarningsItem>(`/earnings`, {
       method: 'POST',
       body: JSON.stringify(item)
     });
     
-    if (!response) {
+    if (!newItem) {
       throw new Error(`API request failed`);
     }
-    
-    const newItem = response;
     
     // Invalidate cache
     cache.remove(CACHE_KEYS.EARNINGS_ITEMS);
@@ -206,7 +194,7 @@ export const getCompanyConfigs = async (): Promise<CompanyConfig[]> => {
     }
 
     // If not in cache, fetch from API
-    const data = await fetchWithAuth(`/configs`);
+    const data = await fetchWithAuth<CompanyConfig[]>(`/configs`);
     
     // Store in cache
     cache.set(CACHE_KEYS.COMPANY_CONFIGS, data, CACHE_EXPIRY.MEDIUM);
@@ -230,7 +218,7 @@ export const getCompanyConfigByTicker = async (ticker: string): Promise<CompanyC
     }
 
     // If not in cache, fetch from API
-    const data = await fetchWithAuth(
+    const data = await fetchWithAuth<CompanyConfig | null>(
       `/configs/${ticker}`
     );
     
@@ -248,7 +236,7 @@ export const getCompanyConfigByTicker = async (ticker: string): Promise<CompanyC
 
 export const createOrUpdateCompanyConfig = async (config: CompanyConfig): Promise<CompanyConfig> => {
   try {
-    const data = await fetchWithAuth(
+    const data = await fetchWithAuth<CompanyConfig>(
       `/configs`,
       {
         method: 'POST',

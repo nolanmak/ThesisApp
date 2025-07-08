@@ -30,7 +30,7 @@ const StaticPreview: React.FC<{
           {content ? (
             <div key={previewKey} className="flex flex-col flex-nowrap gap-2 items-start">
               {Object.keys(content)
-              .filter((key) => ['Current Quarter', 'Next Quarter', 'Historical Growth', 'Current Year'].includes(key))
+              .filter((key) => ['Current Quarter', 'Next Quarter', 'Historical Growth', 'Current Year', 'Next Year'].includes(key))
               .slice(0, 3)
               .map((key, index) => (
                 <div key={key+index} className="flex items-center gap-1 flex-shrink-0">
@@ -38,7 +38,11 @@ const StaticPreview: React.FC<{
                   {content[key]
                   .map((metric: MetricItem, itemIndex: number) => (
                     <>
-                    {metric.text && <div key={key+itemIndex} className="font-medium text-[0.7rem] text-blue-800">{metric.text}</div>}
+                    {typeof metric === 'string' ? (
+                      <div key={key+itemIndex} className="font-medium text-[0.7rem] text-blue-800">{metric}</div>
+                    ) : metric.text ? (
+                      <div key={key+itemIndex} className="font-medium text-[0.7rem] text-blue-800">{metric.text}</div>
+                    ) : null}
                     </>
                   ))}
                 </div>
@@ -101,33 +105,40 @@ const MessagesList: React.FC<MessagesListProps> = ({
       return;
     }
 
-    // Create a map to track the first message for each ticker
-    const tickerMessageMap = new Map<string, Message>();
+    // Create separate maps for link and analysis messages
+    const linkMessagesMap = new Map<string, Message>();
+    const analysisMessagesMap = new Map<string, Message>();
     
-    // Sort messages by timestamp (newest first) before deduplication
+    // Sort messages by timestamp (oldest first) to prioritize speed
     const sortedMessages = [...messages].sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
     
     sortedMessages.forEach(message => {
-      
       const key = message.ticker + message.quarter + message.year;
-      const existingMessage = tickerMessageMap.get(key);
+      const hasLink = !!message.link;
       
-      if (!existingMessage) {
-        tickerMessageMap.set(key, message);
-      } 
-      else {
-        const hasLink = !!message.link;
-        const existingHasLink = !!existingMessage.link;
-        
-        if (hasLink !== existingHasLink) {
-          tickerMessageMap.set(`${key}-${hasLink ? 'link' : 'data'}`, message);
+      if (hasLink) {
+        // This is a link message
+        if (!linkMessagesMap.has(key)) {
+          linkMessagesMap.set(key, message);
+        }
+      } else {
+        // This is an analysis message
+        if (!analysisMessagesMap.has(key)) {
+          analysisMessagesMap.set(key, message);
         }
       }
     });
     
-    const deduplicated = Array.from(tickerMessageMap.values()).sort(
+    // Combine both types of messages
+    const combinedMessages = [
+      ...Array.from(linkMessagesMap.values()),
+      ...Array.from(analysisMessagesMap.values())
+    ];
+    
+    // Sort final results by timestamp (newest first for display)
+    const deduplicated = combinedMessages.sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
     
