@@ -115,10 +115,11 @@ const MessagesList: React.FC<MessagesListProps> = ({
     );
     
     sortedMessages.forEach(message => {
-      const key = message.ticker + message.quarter + message.year;
+      const messageType = message.link ? 'link' : 'analysis';
+      const key = message.ticker + message.quarter + message.year + messageType;
       
       // Only keep the first occurrence of each unique key
-      // This preserves both link and analysis messages equally
+      // This preserves both link and analysis messages for the same ticker/quarter/year
       if (!uniqueMessagesMap.has(key)) {
         uniqueMessagesMap.set(key, message);
       }
