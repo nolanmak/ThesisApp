@@ -66,4 +66,4 @@ coverage
 .tmp
 .cache
 
-package-lock.json
+.vercel*

@@ -1,19 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import WaveBackground from './WaveBackground';
-import { Blend, Mail, ArrowRight, Activity } from 'lucide-react';
+import GoogleSignInButton from './GoogleSignInButton';
 
 const LandingPage: React.FC = () => {
-  const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
-
-  // Check if user is already authenticated
-  useEffect(() => {
-    const hasAccess = localStorage.getItem('beta_access');
-    if (hasAccess === 'granted') {
-      navigate('/dashboard');
-    }
-  }, [navigate]);
 
   // Handle responsive design
   useEffect(() => {
@@ -74,24 +64,9 @@ const LandingPage: React.FC = () => {
             className={`flex ${isMobile ? 'flex-col' : 'flex-row'} gap-4 justify-center mx-auto`}
             style={{ width: isMobile ? '100%' : 'auto' }}
           >
-            <button 
-                onClick={() => navigate('/email-signup')}
-                className="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-md transition-colors duration-300"
-                style={{ width: isMobile ? '100%' : '10rem' }}
-              >
-                <Mail className="mr-2" size={isMobile ? 18 : 20} />
-                Waitlist
-                <ArrowRight className="ml-2" size={isMobile ? 18 : 20} />
-              </button>
-              <button 
-                onClick={() => navigate('/beta-access')}
-                className="flex items-center justify-center bg-neutral-800 hover:bg-neutral-700 text-white py-3 px-6 rounded-md transition-colors duration-300"
-                style={{ width: isMobile ? '100%' : '10rem' }}
-              >
-                <Activity className="mr-2" size={isMobile ? 18 : 20} />
-                Beta
-                <ArrowRight className="ml-2" size={isMobile ? 18 : 20} />
-              </button>
+            <div style={{ width: isMobile ? '100%' : '14rem' }}>
+              <GoogleSignInButton />
+            </div>
           </div>
         </div>
       </div>
