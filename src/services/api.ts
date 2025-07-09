@@ -3,8 +3,11 @@ import { cache, CACHE_KEYS } from './cache';
 
 // Base URLs - Use local proxy in development mode
 
-// API Keys
-const { VITE_API_BASE_URL, VITE_API_KEY } = import.meta.env;
+// API Keys and endpoints
+const { VITE_API_BASE_URL, VITE_API_KEY, VITE_AUDIO_WS_ENDPOINT } = import.meta.env;
+
+// Export WebSocket endpoints for use in services
+export const AUDIO_WS_ENDPOINT = VITE_AUDIO_WS_ENDPOINT || 'wss://1me24ngqv0.execute-api.us-east-1.amazonaws.com/prod';
 
 
 // Cache expiry times (in milliseconds)
