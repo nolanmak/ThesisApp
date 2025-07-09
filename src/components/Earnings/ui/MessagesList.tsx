@@ -105,44 +105,31 @@ const MessagesList: React.FC<MessagesListProps> = ({
       return;
     }
 
-    // Create separate maps for link and analysis messages
-    const linkMessagesMap = new Map<string, Message>();
-    const analysisMessagesMap = new Map<string, Message>();
+    // Create a map for deduplication
+    const uniqueMessagesMap = new Map<string, Message>();
     
-    // Sort messages by timestamp (oldest first) to prioritize speed
+    // First pass: collect unique messages by ticker+quarter+year
+    // Sort by timestamp (oldest first) for consistent deduplication
     const sortedMessages = [...messages].sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
     
     sortedMessages.forEach(message => {
       const key = message.ticker + message.quarter + message.year;
-      const hasLink = !!message.link;
       
-      if (hasLink) {
-        // This is a link message
-        if (!linkMessagesMap.has(key)) {
-          linkMessagesMap.set(key, message);
-        }
-      } else {
-        // This is an analysis message
-        if (!analysisMessagesMap.has(key)) {
-          analysisMessagesMap.set(key, message);
-        }
+      // Only keep the first occurrence of each unique key
+      // This preserves both link and analysis messages equally
+      if (!uniqueMessagesMap.has(key)) {
+        uniqueMessagesMap.set(key, message);
       }
     });
     
-    // Combine both types of messages
-    const combinedMessages = [
-      ...Array.from(linkMessagesMap.values()),
-      ...Array.from(analysisMessagesMap.values())
-    ];
-    
-    // Sort final results by timestamp (newest first for display)
-    const deduplicated = combinedMessages.sort(
+    // Get all unique messages and sort them by timestamp (newest first) for display
+    const sortedDeduplicated = Array.from(uniqueMessagesMap.values()).sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
     
-    setDeduplicatedMessages(deduplicated);
+    setDeduplicatedMessages(sortedDeduplicated);
   }, [messages]);
 
   // Set initial messages after first load
