@@ -116,8 +116,15 @@ const MessagesList: React.FC<MessagesListProps> = ({
     
     sortedMessages.forEach(message => {
       const messageType = message.link ? 'link' : 'analysis';
-      // Get date string (YYYY-MM-DD) from timestamp for daily grouping
-      const messageDate = new Date(message.timestamp).toISOString().split('T')[0];
+      
+      // Validate timestamp and get date string (YYYY-MM-DD) for daily grouping
+      const messageTimestamp = new Date(message.timestamp);
+      if (isNaN(messageTimestamp.getTime())) {
+        console.warn('Invalid timestamp for message:', message);
+        return; // Skip messages with invalid timestamps
+      }
+      
+      const messageDate = messageTimestamp.toISOString().split('T')[0];
       const key = `${message.ticker}-${messageDate}-${messageType}`;
       
       // Only keep the first occurrence (earliest) of each unique key
