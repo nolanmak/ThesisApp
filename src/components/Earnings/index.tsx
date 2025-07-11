@@ -3,6 +3,7 @@ import MessagesList from './ui/MessagesList';
 import WebSocketStatus from './ui/WebSocketStatus';
 import AnalysisPanel from './ui/AnalysisPanel';
 import FeedbackModal from './ui/FeedbackModal';
+import AudioNotificationPlayer from '../AudioNotificationPlayer';
 import { Message } from '../../types';
 import useGlobalData from '../../hooks/useGlobalData';
 import { useAudioWebSocket } from '../../hooks/useAudioWebSocket';
@@ -166,6 +167,9 @@ const Messages: React.FC = () => {
           setFeedbackModalOpen={setFeedbackModalOpen}
         />
       </div>
+      
+      {/* Audio Notification Player */}
+      <AudioNotificationPlayer autoPlay={true} />
       
       {/* Disclaimer banner (bottom) */}
       <div className="bg-gray-50 text-gray-700 px-12 py-3 text-xs leading-tight rounded-md border border-gray-200 mt-6 text-center">
