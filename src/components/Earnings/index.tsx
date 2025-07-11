@@ -46,7 +46,6 @@ const Messages: React.FC = () => {
     connected: audioConnected,
     reconnecting: audioReconnecting,
     enabled: audioEnabled,
-    lastNotification,
     enable: enableAudio,
     disable: disableAudio
   } = useAudioWebSocket({
