@@ -51,7 +51,7 @@ const Messages: React.FC = () => {
   } = useAudioWebSocket({
     onAudioNotification: (notification) => {
       console.log('Audio notification received:', notification);
-      // Refresh messages when audio notification receive
+      // Refresh messages when audio notification received
       refreshMessages();
     },
     onConnectionChange: (connected) => {
