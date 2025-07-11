@@ -108,18 +108,20 @@ const MessagesList: React.FC<MessagesListProps> = ({
     // Create a map for deduplication
     const uniqueMessagesMap = new Map<string, Message>();
     
-    // First pass: collect unique messages by ticker+quarter+year
-    // Sort by timestamp (oldest first) for consistent deduplication
+    // First pass: collect unique messages by ticker+date+messageType
+    // Sort by timestamp (oldest first) to prioritize earliest messages
     const sortedMessages = [...messages].sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
     
     sortedMessages.forEach(message => {
       const messageType = message.link ? 'link' : 'analysis';
-      const key = message.ticker + message.quarter + message.year + messageType;
+      // Get date string (YYYY-MM-DD) from timestamp for daily grouping
+      const messageDate = new Date(message.timestamp).toISOString().split('T')[0];
+      const key = `${message.ticker}-${messageDate}-${messageType}`;
       
-      // Only keep the first occurrence of each unique key
-      // This preserves both link and analysis messages for the same ticker/quarter/year
+      // Only keep the first occurrence (earliest) of each unique key
+      // This preserves both link and analysis messages for the same ticker per day
       if (!uniqueMessagesMap.has(key)) {
         uniqueMessagesMap.set(key, message);
       }
