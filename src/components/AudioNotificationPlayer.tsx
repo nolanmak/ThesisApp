@@ -21,8 +21,7 @@ const AudioNotificationPlayer: React.FC<AudioNotificationPlayerProps> = ({
   // Connect to the Audio WebSocket
   const { 
     connected, 
-    reconnecting, 
-    lastNotification 
+    reconnecting
   } = useAudioWebSocket({
     autoConnect: true,
     persistConnection: true,
@@ -83,35 +82,39 @@ const AudioNotificationPlayer: React.FC<AudioNotificationPlayerProps> = ({
   };
   
   return (
-    <div className="audio-notification-player">
-      <div className="connection-status">
-        <span className={`status-indicator ${connected ? 'connected' : 'disconnected'}`} />
+    <div className="border border-gray-200 rounded-lg p-4 my-4 max-w-2xl">
+      <div className="flex items-center mb-4">
+        <span className={`inline-block w-2.5 h-2.5 rounded-full mr-2 ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
         {connected ? 'Connected to Audio Service' : reconnecting ? 'Reconnecting...' : 'Disconnected'}
       </div>
       
       {connected && !currentAudio && (
-        <div className="audio-help">
-          <p>💡 If audio doesn't play automatically, click the play button when notifications arrive.</p>
+        <div className="mt-4 p-3 bg-gray-50 rounded border-l-4 border-blue-500">
+          <p className="m-0 text-gray-600 text-sm">💡 If audio doesn't play automatically, click the play button when notifications arrive.</p>
         </div>
       )}
       
       {currentAudio && (
-        <div className="audio-player">
-          <h3>Audio Notification</h3>
-          <p>Source: {currentAudio.data.bucket}/{currentAudio.data.key}</p>
+        <div className="mt-4">
+          <h3 className="text-lg font-semibold mb-2">Audio Notification</h3>
+          <p className="text-sm text-gray-600">Source: {currentAudio.data.bucket}/{currentAudio.data.key}</p>
           {currentAudio.data.metadata && currentAudio.data.metadata.ticker && (
-            <p>Ticker: {currentAudio.data.metadata.ticker}</p>
+            <p className="text-sm text-gray-600">Ticker: {currentAudio.data.metadata.ticker}</p>
           )}
           <audio 
             ref={audioRef}
             controls
+            className="w-full mt-2"
             onEnded={handleAudioEnded}
             onPause={() => setIsPlaying(false)}
             onPlay={() => setIsPlaying(true)}
           />
           
           {!isPlaying && (
-            <button onClick={handlePlay} className="play-button">
+            <button 
+              onClick={handlePlay} 
+              className="mt-2 px-4 py-2 bg-blue-500 text-white border-none rounded cursor-pointer hover:bg-blue-600"
+            >
               Play Audio
             </button>
           )}
@@ -119,9 +122,9 @@ const AudioNotificationPlayer: React.FC<AudioNotificationPlayerProps> = ({
       )}
       
       {audioQueue.length > 0 && (
-        <div className="audio-queue">
-          <h4>Audio Queue ({audioQueue.length})</h4>
-          <ul>
+        <div className="mt-4 border-t border-gray-200 pt-4">
+          <h4 className="text-md font-medium mb-2">Audio Queue ({audioQueue.length})</h4>
+          <ul className="pl-5">
             {audioQueue.map((notification, index) => (
               <li key={`${notification.data.message_id}-${index}`}>
                 {notification.data.key.split('/').pop()} 
@@ -132,84 +135,6 @@ const AudioNotificationPlayer: React.FC<AudioNotificationPlayerProps> = ({
         </div>
       )}
       
-      <style jsx>{`
-        .audio-notification-player {
-          border: 1px solid #e0e0e0;
-          border-radius: 8px;
-          padding: 16px;
-          margin: 16px 0;
-          max-width: 600px;
-        }
-        
-        .connection-status {
-          display: flex;
-          align-items: center;
-          margin-bottom: 16px;
-        }
-        
-        .status-indicator {
-          display: inline-block;
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-          margin-right: 8px;
-        }
-        
-        .connected {
-          background-color: #4caf50;
-        }
-        
-        .disconnected {
-          background-color: #f44336;
-        }
-        
-        .audio-player {
-          margin-top: 16px;
-        }
-        
-        .play-button {
-          margin-top: 8px;
-          padding: 8px 16px;
-          background-color: #2196f3;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-        }
-        
-        .play-button:hover {
-          background-color: #0b7dda;
-        }
-        
-        .audio-queue {
-          margin-top: 16px;
-          border-top: 1px solid #e0e0e0;
-          padding-top: 16px;
-        }
-        
-        .audio-queue ul {
-          padding-left: 20px;
-        }
-        
-        .audio-help {
-          margin-top: 16px;
-          padding: 12px;
-          background-color: #f5f5f5;
-          border-radius: 4px;
-          border-left: 4px solid #2196f3;
-        }
-        
-        .audio-help p {
-          margin: 0;
-          color: #666;
-          font-size: 14px;
-        }
-        
-        audio {
-          width: 100%;
-          margin-top: 8px;
-        }
-      `}</style>
     </div>
   );
 };
