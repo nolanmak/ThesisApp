@@ -33,17 +33,17 @@ const StaticPreview: React.FC<{
               .filter((key) => ['Current Quarter', 'Next Quarter', 'Historical Growth', 'Current Year', 'Next Year'].includes(key))
               .slice(0, 3)
               .map((key, index) => (
-                <div key={key+index} className="flex items-center gap-1 flex-shrink-0">
-                  <div key={key+index} className="font-bold text-[0.7rem] text-blue-800">{key}:</div>
+                <div key={`${key}-${index}`} className="flex items-center gap-1 flex-shrink-0">
+                  <div className="font-bold text-[0.7rem] text-blue-800">{key}:</div>
                   {content[key]
                   .map((metric: MetricItem, itemIndex: number) => (
-                    <>
+                    <React.Fragment key={`${key}-metric-${itemIndex}`}>
                     {typeof metric === 'string' ? (
-                      <div key={key+itemIndex} className="font-medium text-[0.7rem] text-blue-800">{metric}</div>
+                      <div className="font-medium text-[0.7rem] text-blue-800">{metric}</div>
                     ) : metric.text ? (
-                      <div key={key+itemIndex} className="font-medium text-[0.7rem] text-blue-800">{metric.text}</div>
+                      <div className="font-medium text-[0.7rem] text-blue-800">{metric.text}</div>
                     ) : null}
-                    </>
+                    </React.Fragment>
                   ))}
                 </div>
               ))}
