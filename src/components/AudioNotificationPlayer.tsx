@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { toast } from 'react-toastify';
 import { useAudioWebSocket } from '../hooks/useAudioWebSocket';
 import { AudioNotification } from '../services/audioWebsocket';
 
@@ -57,6 +58,10 @@ const AudioNotificationPlayer: React.FC<AudioNotificationPlayerProps> = ({
             // If autoplay is blocked, show a notification to the user
             if (error.name === 'NotAllowedError') {
               console.warn('Autoplay was blocked. User interaction is required to play audio.');
+              toast.info('Audio autoplay blocked. Click the play button to hear notifications.', {
+                autoClose: 5000,
+                position: 'top-right'
+              });
             }
           });
       }
@@ -83,6 +88,12 @@ const AudioNotificationPlayer: React.FC<AudioNotificationPlayerProps> = ({
         <span className={`status-indicator ${connected ? 'connected' : 'disconnected'}`} />
         {connected ? 'Connected to Audio Service' : reconnecting ? 'Reconnecting...' : 'Disconnected'}
       </div>
+      
+      {connected && !currentAudio && (
+        <div className="audio-help">
+          <p>💡 If audio doesn't play automatically, click the play button when notifications arrive.</p>
+        </div>
+      )}
       
       {currentAudio && (
         <div className="audio-player">
@@ -178,6 +189,20 @@ const AudioNotificationPlayer: React.FC<AudioNotificationPlayerProps> = ({
         
         .audio-queue ul {
           padding-left: 20px;
+        }
+        
+        .audio-help {
+          margin-top: 16px;
+          padding: 12px;
+          background-color: #f5f5f5;
+          border-radius: 4px;
+          border-left: 4px solid #2196f3;
+        }
+        
+        .audio-help p {
+          margin: 0;
+          color: #666;
+          font-size: 14px;
         }
         
         audio {
