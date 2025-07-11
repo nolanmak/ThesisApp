@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Wifi, WifiOff, Loader, RefreshCw } from 'lucide-react';
+import { Search, Wifi, WifiOff, Loader, RefreshCw, Volume2, VolumeX } from 'lucide-react';
 
 
 interface WebSocketStatusProps {
@@ -11,6 +11,11 @@ interface WebSocketStatusProps {
   onSearchChange: (value: string) => void;
   onRefresh: () => void;
   onToggleWebSocket: () => void;
+  // Audio WebSocket props
+  audioEnabled?: boolean;
+  audioConnected?: boolean;
+  audioReconnecting?: boolean;
+  onToggleAudio?: () => void;
 }
 
 const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
@@ -21,7 +26,11 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
   reconnecting,
   onSearchChange,
   onRefresh,
-  onToggleWebSocket
+  onToggleWebSocket,
+  audioEnabled,
+  audioConnected,
+  audioReconnecting,
+  onToggleAudio
 }) => {
   return (
     <div className="mb-3 flex items-center">
@@ -72,6 +81,37 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
               <WifiOff size={12} />
             )}
           </button>
+
+          {/* Audio WebSocket button */}
+          {onToggleAudio && (
+            <button
+              onClick={onToggleAudio}
+              className={`flex items-center justify-center rounded-full w-6 h-6 transition-colors duration-150 ease-in-out ${
+                audioEnabled 
+                  ? audioConnected 
+                    ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                    : audioReconnecting 
+                      ? 'bg-amber-500 text-white hover:bg-amber-600' 
+                      : 'bg-neutral-300 text-white hover:bg-neutral-400'
+                  : 'bg-neutral-200 text-neutral-500 hover:bg-neutral-300'
+              }`}
+              title={audioEnabled ? "Disable audio notifications" : "Enable audio notifications"}
+            >
+              {audioEnabled ? (
+                audioConnected ? (
+                  <Volume2 size={12} />
+                ) : (
+                  audioReconnecting ? (
+                    <Loader size={12} className="animate-spin" />
+                  ) : (
+                    <VolumeX size={12} />
+                  )
+                )
+              ) : (
+                <VolumeX size={12} />
+              )}
+            </button>
+          )}
           
           {/* Refresh button */}
           <button
