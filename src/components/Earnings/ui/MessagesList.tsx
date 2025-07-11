@@ -108,29 +108,34 @@ const MessagesList: React.FC<MessagesListProps> = ({
     // Create a map for deduplication
     const uniqueMessagesMap = new Map<string, Message>();
     
-    // First pass: collect unique messages by ticker+date+messageType
-    // Sort by timestamp (oldest first) to prioritize earliest messages
-    const sortedMessages = [...messages].sort(
+    // First pass: filter out invalid timestamps, then sort by timestamp (oldest first)
+    const validMessages = messages.filter(message => {
+      const messageTimestamp = new Date(message.timestamp);
+      const isValid = !isNaN(messageTimestamp.getTime());
+      if (!isValid) {
+        console.warn('Invalid timestamp for message:', message);
+      }
+      return isValid;
+    });
+
+    const sortedMessages = validMessages.sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
     
     sortedMessages.forEach(message => {
       const messageType = message.link ? 'link' : 'analysis';
-      
-      // Validate timestamp and get date string (YYYY-MM-DD) for daily grouping
       const messageTimestamp = new Date(message.timestamp);
-      if (isNaN(messageTimestamp.getTime())) {
-        console.warn('Invalid timestamp for message:', message);
-        return; // Skip messages with invalid timestamps
-      }
-      
       const messageDate = messageTimestamp.toISOString().split('T')[0];
       const key = `${message.ticker}-${messageDate}-${messageType}`;
       
       // Only keep the first occurrence (earliest) of each unique key
-      // This preserves both link and analysis messages for the same ticker per day
       if (!uniqueMessagesMap.has(key)) {
         uniqueMessagesMap.set(key, message);
+        // Debug log to verify we're taking the earliest
+        console.log(`Adding earliest ${messageType} for ${message.ticker} on ${messageDate}:`, messageTimestamp.toISOString());
+      } else {
+        // Debug log to show we're skipping later messages
+        console.log(`Skipping later ${messageType} for ${message.ticker} on ${messageDate}:`, messageTimestamp.toISOString());
       }
     });
     
