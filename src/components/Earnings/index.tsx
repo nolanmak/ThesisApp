@@ -5,6 +5,7 @@ import AnalysisPanel from './ui/AnalysisPanel';
 import FeedbackModal from './ui/FeedbackModal';
 import { Message } from '../../types';
 import useGlobalData from '../../hooks/useGlobalData';
+import { useAudioWebSocket } from '../../hooks/useAudioWebSocket';
 
 const Messages: React.FC = () => {
   const [searchMessageTicker, setSearchMessageTicker] = useState<string>('');
@@ -38,6 +39,33 @@ const Messages: React.FC = () => {
     updateMessagesSearchTicker: setMessagesSearchTicker,
     convertToEasternTime
   } = useGlobalData();
+
+  // Audio WebSocket integration
+  const {
+    connected: audioConnected,
+    reconnecting: audioReconnecting,
+    enabled: audioEnabled,
+    lastNotification,
+    enable: enableAudio,
+    disable: disableAudio
+  } = useAudioWebSocket({
+    onAudioNotification: (notification) => {
+      console.log('Audio notification received:', notification);
+      // Refresh messages when audio notification received
+      refreshMessages();
+    },
+    onConnectionChange: (connected) => {
+      console.log('Audio WebSocket connection status:', connected);
+    }
+  });
+
+  const handleToggleAudio = () => {
+    if (audioEnabled) {
+      disableAudio();
+    } else {
+      enableAudio();
+    }
+  };
 
   useEffect(() => {
     if (!initialMessageSet && messages.length > 0 && !messagesLoading) {
@@ -113,6 +141,10 @@ const Messages: React.FC = () => {
             onSearchChange={handleMessageSearchChange}
             onRefresh={refreshMessages}
             onToggleWebSocket={toggleEnabled}
+            audioEnabled={audioEnabled}
+            audioConnected={audioConnected}
+            audioReconnecting={audioReconnecting}
+            onToggleAudio={handleToggleAudio}
           />
           
           <MessagesList
