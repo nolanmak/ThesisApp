@@ -1,11 +1,16 @@
-import { EarningsItem, CompanyConfig, Message } from '../types';
-import { cache, CACHE_KEYS } from './cache';
+import { EarningsItem, CompanyConfig, Message } from "../types";
+import { cache, CACHE_KEYS } from "./cache";
 
 // Base URLs - Use local proxy in development mode
 
-// API Keys
-const { VITE_API_BASE_URL, VITE_API_KEY } = import.meta.env;
+// API Keys and endpoints
+const { VITE_API_BASE_URL, VITE_API_KEY, VITE_AUDIO_WS_ENDPOINT } = import.meta
+  .env;
 
+// Export WebSocket endpoints for use in services
+export const AUDIO_WS_ENDPOINT =
+  VITE_AUDIO_WS_ENDPOINT ||
+  "wss://1me24ngqv0.execute-api.us-east-1.amazonaws.com/prod";
 
 // Cache expiry times (in milliseconds)
 const CACHE_EXPIRY = {
@@ -26,14 +31,14 @@ const fetchWithAuth = async <T = Record<string, unknown>>(
 ): Promise<T> => {
   try {
     const headers = new Headers(options.headers || {});
-    headers.set('Content-Type', 'application/json');
-    headers.set('x-api-key', VITE_API_KEY);
-    
+    headers.set("Content-Type", "application/json");
+    headers.set("x-api-key", VITE_API_KEY);
+
     const updatedOptions: RequestInit = {
       ...options,
-      headers
+      headers,
     };
-    
+
     // Make the request
     const response = await fetch(VITE_API_BASE_URL + endpoint, updatedOptions);
 
@@ -41,15 +46,17 @@ const fetchWithAuth = async <T = Record<string, unknown>>(
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(
+        `API request failed: ${response.status} ${response.statusText} - ${errorText}`
+      );
     }
-    
+
     // Handle empty response
     const text = await response.text();
     if (!text) {
       return null as unknown as T;
     }
-    
+
     // Parse JSON response
     return JSON.parse(text) as T;
   } catch (error) {
@@ -59,54 +66,58 @@ const fetchWithAuth = async <T = Record<string, unknown>>(
 };
 
 // Waitlist API
-export const submitWaitlistEmail = async (email: string): Promise<{ success: boolean; message?: string }> => {
+export const submitWaitlistEmail = async (
+  email: string
+): Promise<{ success: boolean; message?: string }> => {
   try {
-    if (!email || !email.includes('@')) {
-      throw new Error('Invalid email address');
+    if (!email || !email.includes("@")) {
+      throw new Error("Invalid email address");
     }
-    
-    await fetchWithAuth(
-      `/waitlist`, 
-      {
-        method: 'POST',
-        body: JSON.stringify({ email })
-      }
-    );
 
-    return { 
-      success: true, 
-      message: 'Successfully added to waitlist' 
+    await fetchWithAuth(`/waitlist`, {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+
+    return {
+      success: true,
+      message: "Successfully added to waitlist",
     };
   } catch (error) {
-    console.error('Error submitting waitlist email:', error);
-    return { 
-      success: false, 
-      message: error instanceof Error ? error.message : 'Failed to join waitlist' 
+    console.error("Error submitting waitlist email:", error);
+    return {
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to join waitlist",
     };
   }
 };
 
-export const getMessages = async (bypassCache: boolean = true): Promise<Message[]> => {
+export const getMessages = async (
+  bypassCache: boolean = true
+): Promise<Message[]> => {
   const cacheKey = CACHE_KEYS.MESSAGES;
   const cachedMessages = !bypassCache ? cache.get<Message[]>(cacheKey) : null;
-  
+
   if (cachedMessages) {
     return cachedMessages;
   }
-  
+
   try {
     const messages = await fetchWithAuth<Message[]>(`/messages`);
     console.log("messages:", messages);
-    
+
     cache.set(cacheKey, messages, CACHE_EXPIRY.SHORT);
     return messages;
   } catch (error) {
-    console.error('Error fetching messages:', error);
+    console.error("Error fetching messages:", error);
     return [];
   }
 };
 
-export const getMessageById = async (message_id: string): Promise<Message | null> => {
+export const getMessageById = async (
+  message_id: string
+): Promise<Message | null> => {
   try {
     const endpoint = `/messages/${message_id}`;
     const message = await fetchWithAuth<Message>(endpoint);
@@ -118,42 +129,46 @@ export const getMessageById = async (message_id: string): Promise<Message | null
 };
 
 // Earnings Items API
-export const getEarningsItems = async (bypassCache: boolean = false): Promise<EarningsItem[]> => {
+export const getEarningsItems = async (
+  bypassCache: boolean = false
+): Promise<EarningsItem[]> => {
   const cacheKey = CACHE_KEYS.EARNINGS_ITEMS;
   const cachedItems = !bypassCache ? cache.get<EarningsItem[]>(cacheKey) : null;
-  
+
   if (cachedItems) {
     return cachedItems;
   }
-  
+
   try {
     const items = await fetchWithAuth<EarningsItem[]>(`/earnings`);
-    
+
     // Cache the items
     cache.set(cacheKey, items, CACHE_EXPIRY.SHORT);
-    
+
     return items;
   } catch (error) {
-    console.error('Error fetching earnings items:', error);
+    console.error("Error fetching earnings items:", error);
     return [];
   }
 };
 
-export const updateEarningsItem = async (updates: Partial<EarningsItem>): Promise<EarningsItem> => {
+export const updateEarningsItem = async (
+  updates: Partial<EarningsItem>
+): Promise<EarningsItem> => {
   try {
     // Use our CORS-safe function for POST requests
     const updatedItem = await fetchWithAuth<EarningsItem>(`/earnings`, {
-      method: 'PUT',
-      body: JSON.stringify(updates)
+      method: "PUT",
+      body: JSON.stringify(updates),
     });
-    
+
     if (!updatedItem) {
       throw new Error(`API request failed`);
     }
-    
+
     // Invalidate cache
     cache.remove(CACHE_KEYS.EARNINGS_ITEMS);
-    
+
     return updatedItem;
   } catch (error) {
     console.error(`Error updating earnings item ${updates.ticker}:`, error);
@@ -161,24 +176,26 @@ export const updateEarningsItem = async (updates: Partial<EarningsItem>): Promis
   }
 };
 
-export const createEarningsItem = async (item: Omit<EarningsItem, 'id'>): Promise<EarningsItem> => {
+export const createEarningsItem = async (
+  item: Omit<EarningsItem, "id">
+): Promise<EarningsItem> => {
   try {
     // Use our CORS-safe function for POST requests
     const newItem = await fetchWithAuth<EarningsItem>(`/earnings`, {
-      method: 'POST',
-      body: JSON.stringify(item)
+      method: "POST",
+      body: JSON.stringify(item),
     });
-    
+
     if (!newItem) {
       throw new Error(`API request failed`);
     }
-    
+
     // Invalidate cache
     cache.remove(CACHE_KEYS.EARNINGS_ITEMS);
-    
+
     return newItem;
   } catch (error) {
-    console.error('Error creating earnings item:', error);
+    console.error("Error creating earnings item:", error);
     throw error;
   }
 };
@@ -189,27 +206,29 @@ export const getCompanyConfigs = async (): Promise<CompanyConfig[]> => {
     // Check cache first
     const cachedData = cache.get<CompanyConfig[]>(CACHE_KEYS.COMPANY_CONFIGS);
     if (cachedData) {
-      console.log('Using cached company configs');
+      console.log("Using cached company configs");
       return cachedData;
     }
 
     // If not in cache, fetch from API
     const data = await fetchWithAuth<CompanyConfig[]>(`/configs`);
-    
+
     // Store in cache
     cache.set(CACHE_KEYS.COMPANY_CONFIGS, data, CACHE_EXPIRY.MEDIUM);
-    
+
     return data;
   } catch (error) {
-    console.error('Error fetching company configs:', error);
+    console.error("Error fetching company configs:", error);
     throw error;
   }
 };
 
-export const getCompanyConfigByTicker = async (ticker: string): Promise<CompanyConfig | null> => {
+export const getCompanyConfigByTicker = async (
+  ticker: string
+): Promise<CompanyConfig | null> => {
   try {
     const cacheKey = CACHE_KEYS.COMPANY_CONFIG(ticker);
-    
+
     // Check cache first
     const cachedData = cache.get<CompanyConfig>(cacheKey);
     if (cachedData) {
@@ -221,36 +240,35 @@ export const getCompanyConfigByTicker = async (ticker: string): Promise<CompanyC
     const data = await fetchWithAuth<CompanyConfig | null>(
       `/configs/${ticker}`
     );
-    
+
     // Store in cache
     if (data) {
       cache.set(cacheKey, data, CACHE_EXPIRY.LONG);
     }
-    
+
     return data;
   } catch (error) {
-    console.error('Error fetching company config by ticker:', error);
+    console.error("Error fetching company config by ticker:", error);
     throw error;
   }
 };
 
-export const createOrUpdateCompanyConfig = async (config: CompanyConfig): Promise<CompanyConfig> => {
+export const createOrUpdateCompanyConfig = async (
+  config: CompanyConfig
+): Promise<CompanyConfig> => {
   try {
-    const data = await fetchWithAuth<CompanyConfig>(
-      `/configs`,
-      {
-        method: 'POST',
-        body: JSON.stringify(config)
-      }
-    );
-    
+    const data = await fetchWithAuth<CompanyConfig>(`/configs`, {
+      method: "POST",
+      body: JSON.stringify(config),
+    });
+
     // Invalidate caches
     cache.remove(CACHE_KEYS.COMPANY_CONFIGS);
     cache.remove(CACHE_KEYS.COMPANY_CONFIG(config.ticker));
-    
+
     return data;
   } catch (error) {
-    console.error('Error creating/updating company config:', error);
+    console.error("Error creating/updating company config:", error);
     throw error;
   }
 };
