@@ -17,6 +17,9 @@ const AudioNotificationPlayer: React.FC<AudioNotificationPlayerProps> = ({
   const [currentAudio, setCurrentAudio] = useState<AudioNotification | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioQueue, setAudioQueue] = useState<AudioNotification[]>([]);
+  const [userHasInteracted, setUserHasInteracted] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
+  const [notificationCount, setNotificationCount] = useState(0);
   
   // Connect to the Audio WebSocket
   const { 
@@ -27,6 +30,14 @@ const AudioNotificationPlayer: React.FC<AudioNotificationPlayerProps> = ({
     persistConnection: true,
     onAudioNotification: (notification) => {
       console.log('Received audio notification:', notification);
+      setNotificationCount(prev => prev + 1);
+      
+      // Show a visual notification
+      toast.info(`New audio notification for ${notification.data.metadata?.ticker || 'stock'}`, {
+        position: 'top-right',
+        autoClose: 3000
+      });
+      
       // Add the notification to the queue
       setAudioQueue(prevQueue => [...prevQueue, notification]);
     }
@@ -45,14 +56,19 @@ const AudioNotificationPlayer: React.FC<AudioNotificationPlayerProps> = ({
   // Set up audio source when currentAudio changes
   useEffect(() => {
     if (currentAudio && audioRef.current) {
+      setAudioError(null);
       audioRef.current.src = currentAudio.data.audio_url;
       
-      if (autoPlay) {
+      if (autoPlay && userHasInteracted) {
         audioRef.current.play()
-          .then(() => setIsPlaying(true))
+          .then(() => {
+            setIsPlaying(true);
+            console.log('Audio playing successfully');
+          })
           .catch(error => {
             console.error('Error playing audio:', error);
             setIsPlaying(false);
+            setAudioError(error.message);
             
             // If autoplay is blocked, show a notification to the user
             if (error.name === 'NotAllowedError') {
@@ -61,11 +77,16 @@ const AudioNotificationPlayer: React.FC<AudioNotificationPlayerProps> = ({
                 autoClose: 5000,
                 position: 'top-right'
               });
+            } else {
+              toast.error(`Audio playback failed: ${error.message}`, {
+                autoClose: 5000,
+                position: 'top-right'
+              });
             }
           });
       }
     }
-  }, [currentAudio, autoPlay]);
+  }, [currentAudio, autoPlay, userHasInteracted]);
   
   // Handle audio events
   const handleAudioEnded = () => {
@@ -74,23 +95,64 @@ const AudioNotificationPlayer: React.FC<AudioNotificationPlayerProps> = ({
   };
   
   const handlePlay = () => {
+    setUserHasInteracted(true);
     if (audioRef.current && currentAudio) {
+      setAudioError(null);
       audioRef.current.play()
-        .then(() => setIsPlaying(true))
-        .catch(error => console.error('Error playing audio:', error));
+        .then(() => {
+          setIsPlaying(true);
+          console.log('Manual audio play successful');
+        })
+        .catch(error => {
+          console.error('Error playing audio:', error);
+          setAudioError(error.message);
+          toast.error(`Audio playback failed: ${error.message}`, {
+            autoClose: 5000,
+            position: 'top-right'
+          });
+        });
     }
+  };
+
+  const enableUserInteraction = () => {
+    setUserHasInteracted(true);
   };
   
   return (
     <div className="border border-gray-200 rounded-lg p-4 my-4 max-w-2xl">
-      <div className="flex items-center mb-4">
-        <span className={`inline-block w-2.5 h-2.5 rounded-full mr-2 ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
-        {connected ? 'Connected to Audio Service' : reconnecting ? 'Reconnecting...' : 'Disconnected'}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center">
+          <span className={`inline-block w-2.5 h-2.5 rounded-full mr-2 ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
+          {connected ? 'Connected to Audio Service' : reconnecting ? 'Reconnecting...' : 'Disconnected'}
+        </div>
+        {notificationCount > 0 && (
+          <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+            {notificationCount} notification{notificationCount !== 1 ? 's' : ''} received
+          </div>
+        )}
       </div>
       
-      {connected && !currentAudio && (
+      {connected && !userHasInteracted && (
+        <div className="mt-4 p-3 bg-yellow-50 rounded border-l-4 border-yellow-500">
+          <p className="m-0 text-gray-600 text-sm mb-2">⚠️ Audio autoplay requires user interaction. Click below to enable audio notifications.</p>
+          <button 
+            onClick={enableUserInteraction}
+            className="px-3 py-1 bg-yellow-500 text-white rounded text-sm hover:bg-yellow-600"
+          >
+            Enable Audio
+          </button>
+        </div>
+      )}
+      
+      {connected && !currentAudio && userHasInteracted && (
         <div className="mt-4 p-3 bg-gray-50 rounded border-l-4 border-blue-500">
-          <p className="m-0 text-gray-600 text-sm">💡 If audio doesn't play automatically, click the play button when notifications arrive.</p>
+          <p className="m-0 text-gray-600 text-sm">✅ Audio enabled and ready for notifications.</p>
+        </div>
+      )}
+      
+      {audioError && (
+        <div className="mt-4 p-3 bg-red-50 rounded border-l-4 border-red-500">
+          <p className="m-0 text-red-600 text-sm">❌ Audio Error: {audioError}</p>
         </div>
       )}
       
