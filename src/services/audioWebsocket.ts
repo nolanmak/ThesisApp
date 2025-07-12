@@ -165,6 +165,7 @@ class AudioWebSocketService {
         console.log("Audio WebSocket state at error:", {
           readyState: this.socket?.readyState,
           url: this.socket?.url,
+          endpoint: AUDIO_WS_ENDPOINT
         });
 
         this.isConnecting = false;
@@ -172,7 +173,8 @@ class AudioWebSocketService {
         // Check if we've had too many consecutive errors
         if (this.reconnectAttempts >= this.maxReconnectAttempts - 1) {
           toast.error(
-            "Connection to the audio service is failing. The service may be temporarily unavailable."
+            `Audio WebSocket connection failed after ${this.maxReconnectAttempts} attempts. Check that the endpoint ${AUDIO_WS_ENDPOINT} is correct and accessible.`,
+            { autoClose: 10000 }
           );
         }
 
