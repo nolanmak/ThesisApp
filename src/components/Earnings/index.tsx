@@ -50,14 +50,19 @@ const Messages: React.FC = () => {
     disable: disableAudio
   } = useAudioWebSocket({
     onAudioNotification: (notification) => {
-      console.log('Audio notification received:', notification);
-      // Refresh messages when audio notification received
-      refreshMessages();
+      console.log('[EARNINGS] Audio notification received in Earnings component:', notification);
+      // Delay message refresh to avoid conflicts with audio playback
+      setTimeout(() => {
+        console.log('[EARNINGS] Refreshing messages after audio notification');
+        refreshMessages();
+      }, 1000);
     },
     onConnectionChange: (connected) => {
-      console.log('Audio WebSocket connection status:', connected);
+      console.log('[EARNINGS] Audio WebSocket connection status:', connected);
     }
   });
+  
+  console.log('[EARNINGS] Component rendering. Audio connected:', audioConnected, 'Audio enabled:', audioEnabled);
 
   const handleToggleAudio = () => {
     if (audioEnabled) {
