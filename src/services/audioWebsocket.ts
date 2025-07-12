@@ -142,19 +142,24 @@ class AudioWebSocketService {
 
       this.socket.onmessage = (event) => {
         try {
+          console.log("[AUDIO WS] Raw message received:", event.data);
           const data = JSON.parse(event.data);
-          console.log("Audio WebSocket message received:", data);
+          console.log("[AUDIO WS] Parsed message:", data);
+          console.log("[AUDIO WS] Message handlers count:", this.messageHandlers.length);
 
           if (data.type === "new_audio") {
+            console.log("[AUDIO WS] Notifying message handlers for new_audio");
             this.notifyMessageHandlers(data);
           } else {
             console.warn(
-              "Received Audio WebSocket message with unknown format:",
+              "[AUDIO WS] Received message with unknown type. Expected 'new_audio', got:",
+              data.type,
+              "Full message:",
               data
             );
           }
         } catch (error) {
-          console.error("Error parsing Audio WebSocket message:", error);
+          console.error("[AUDIO WS] Error parsing message:", error, "Raw data:", event.data);
         }
       };
 
@@ -254,9 +259,12 @@ class AudioWebSocketService {
   public subscribeToAudioNotifications(
     handler: AudioMessageHandler
   ): () => void {
+    console.log("[AUDIO WS] Adding message handler. Total handlers:", this.messageHandlers.length + 1);
     this.messageHandlers.push(handler);
     return () => {
+      console.log("[AUDIO WS] Removing message handler. Handlers before removal:", this.messageHandlers.length);
       this.messageHandlers = this.messageHandlers.filter((h) => h !== handler);
+      console.log("[AUDIO WS] Handlers after removal:", this.messageHandlers.length);
     };
   }
 
@@ -282,7 +290,16 @@ class AudioWebSocketService {
 
   // Notify all message handlers
   private notifyMessageHandlers(notification: AudioNotification): void {
-    this.messageHandlers.forEach((handler) => handler(notification));
+    console.log("[AUDIO WS] Notifying", this.messageHandlers.length, "message handlers with:", notification);
+    this.messageHandlers.forEach((handler, index) => {
+      console.log("[AUDIO WS] Calling handler", index);
+      try {
+        handler(notification);
+        console.log("[AUDIO WS] Handler", index, "completed successfully");
+      } catch (error) {
+        console.error("[AUDIO WS] Handler", index, "threw error:", error);
+      }
+    });
   }
 
   // Notify all connection status handlers

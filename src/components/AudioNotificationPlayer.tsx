@@ -29,27 +29,51 @@ const AudioNotificationPlayer: React.FC<AudioNotificationPlayerProps> = ({
     autoConnect: true,
     persistConnection: true,
     onAudioNotification: (notification) => {
-      console.log('Received audio notification:', notification);
-      setNotificationCount(prev => prev + 1);
+      console.log('[AUDIO PLAYER] Received audio notification:', notification);
+      setNotificationCount(prev => {
+        const newCount = prev + 1;
+        console.log('[AUDIO PLAYER] Notification count updated to:', newCount);
+        return newCount;
+      });
       
       // Show a visual notification
-      toast.info(`New audio notification for ${notification.data.metadata?.ticker || 'stock'}`, {
+      const ticker = notification.data.metadata?.ticker || 'stock';
+      console.log('[AUDIO PLAYER] Showing toast for ticker:', ticker);
+      toast.info(`New audio notification for ${ticker}`, {
         position: 'top-right',
         autoClose: 3000
       });
       
       // Add the notification to the queue
-      setAudioQueue(prevQueue => [...prevQueue, notification]);
+      setAudioQueue(prevQueue => {
+        const newQueue = [...prevQueue, notification];
+        console.log('[AUDIO PLAYER] Audio queue updated. New length:', newQueue.length);
+        return newQueue;
+      });
     }
   });
   
+  // Add component debugging
+  console.log('[AUDIO PLAYER] Component rendering');
+  console.log('[AUDIO PLAYER] Connected:', connected);
+  console.log('[AUDIO PLAYER] Current audio:', currentAudio);
+  console.log('[AUDIO PLAYER] Audio queue length:', audioQueue.length);
+  console.log('[AUDIO PLAYER] User has interacted:', userHasInteracted);
+  console.log('[AUDIO PLAYER] Notification count:', notificationCount);
+  
   // Handle audio playback when new notifications arrive
   useEffect(() => {
+    console.log('[AUDIO PLAYER] Audio queue effect triggered. Queue length:', audioQueue.length, 'Is playing:', isPlaying);
     if (audioQueue.length > 0 && !isPlaying) {
       // Play the next audio in the queue
       const nextAudio = audioQueue[0];
+      console.log('[AUDIO PLAYER] Setting current audio:', nextAudio);
       setCurrentAudio(nextAudio);
-      setAudioQueue(prevQueue => prevQueue.slice(1));
+      setAudioQueue(prevQueue => {
+        const newQueue = prevQueue.slice(1);
+        console.log('[AUDIO PLAYER] Removed audio from queue. New length:', newQueue.length);
+        return newQueue;
+      });
     }
   }, [audioQueue, isPlaying]);
   
