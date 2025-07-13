@@ -1,6 +1,5 @@
 import { toast } from 'react-toastify';
 import { Message } from '../types';
-import audioWebsocketService from './audioWebsocket';
 
 const WS_ENDPOINT = import.meta.env.VITE_WS_ENDPOINT;
 // Event types
@@ -140,19 +139,11 @@ class WebSocketService {
       this.socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log('[REGULAR WS] Raw WebSocket message received:', data);
-          console.log('[REGULAR WS] Message properties:', Object.keys(data));
+          console.log('WebSocket message received:', data);
           
           // Handle pong response
           if (data.type === 'pong' || data.action === 'pong') {
             this.handlePong();
-            return;
-          }
-          
-          // Check if this is an audio message first
-          if (this.isAudioMessage(data)) {
-            console.log('[REGULAR WS] Detected audio message, routing to audio service:', data);
-            this.routeToAudioService(data);
             return;
           }
           
@@ -169,12 +160,6 @@ class WebSocketService {
               if (bodyData.message) {
                 this.notifyMessageHandlers(bodyData.message);
               } else if (bodyData.message_id) {
-                // Check if this parsed data is an audio message
-                if (this.isAudioMessage(bodyData)) {
-                  console.log('[REGULAR WS] Detected audio message in body, routing to audio service:', bodyData);
-                  this.routeToAudioService(bodyData);
-                  return;
-                }
                 // bodyData itself is a Message
                 this.notifyMessageHandlers(bodyData);
               } else {
@@ -447,112 +432,6 @@ class WebSocketService {
     if (this.pingTimeout) {
       clearTimeout(this.pingTimeout);
       this.pingTimeout = null;
-    }
-  }
-  
-  // Check if a message is an audio message
-  private isAudioMessage(data: unknown): boolean {
-    const obj = data as Record<string, unknown>;
-    
-    // Check nested data too
-    const nestedData = obj.data as Record<string, unknown> || {};
-    let bodyData = {};
-    if (obj.body) {
-      try {
-        bodyData = typeof obj.body === 'string' ? JSON.parse(obj.body) : obj.body;
-      } catch {
-        bodyData = {};
-      }
-    }
-    
-    console.log('[REGULAR WS] Checking if audio message:', {
-      topLevel: { hasAudioUrl: !!obj.audio_url, hasBucket: !!obj.bucket, messageId: obj.message_id },
-      nested: { hasAudioUrl: !!nestedData.audio_url, hasBucket: !!nestedData.bucket },
-      body: { hasAudioUrl: !!(bodyData as Record<string, unknown>).audio_url, hasBucket: !!(bodyData as Record<string, unknown>).bucket }
-    });
-    
-    // Check for audio_url or any audio-related properties at multiple levels
-    const isAudio = !!(
-      obj.audio_url || 
-      obj.bucket ||
-      nestedData.audio_url ||
-      nestedData.bucket ||
-      (bodyData as Record<string, unknown>).audio_url ||
-      (bodyData as Record<string, unknown>).bucket ||
-      (typeof obj.message_id === 'string' && obj.message_id.includes('audio'))
-    );
-    
-    console.log('[REGULAR WS] Is audio message:', isAudio);
-    return isAudio;
-  }
-  
-  // Route audio message to audio service
-  private routeToAudioService(data: unknown): void {
-    try {
-      const obj = data as Record<string, unknown>;
-      
-      // Find audio_url from any level
-      let audioUrl = obj.audio_url as string;
-      let messageId = obj.message_id as string;
-      let ticker = obj.company_name as string || obj.ticker as string;
-      
-      // Check nested data if not found at top level
-      if (!audioUrl && obj.data) {
-        const nested = obj.data as Record<string, unknown>;
-        audioUrl = nested.audio_url as string;
-        messageId = messageId || nested.message_id as string;
-        ticker = ticker || nested.company_name as string || nested.ticker as string;
-      }
-      
-      // Check body if still not found
-      if (!audioUrl && obj.body) {
-        try {
-          const bodyData = typeof obj.body === 'string' ? JSON.parse(obj.body) : obj.body;
-          audioUrl = audioUrl || (bodyData as Record<string, unknown>).audio_url as string;
-          messageId = messageId || (bodyData as Record<string, unknown>).message_id as string;
-          ticker = ticker || (bodyData as Record<string, unknown>).company_name as string || (bodyData as Record<string, unknown>).ticker as string;
-        } catch (e) {
-          console.warn('[REGULAR WS] Could not parse body:', e);
-        }
-      }
-      
-      // Transform the message to AudioNotification format
-      const audioNotification = {
-        type: 'new_audio',
-        timestamp: (obj.timestamp as string) || new Date().toISOString(),
-        data: {
-          message_id: messageId || 'audio-' + Date.now(),
-          audio_url: audioUrl || '',
-          bucket: (obj.bucket as string) || 'earnings-audio',
-          key: (obj.key as string) || messageId || 'unknown-key',
-          content_type: (obj.content_type as string) || 'audio/mp3',
-          size: (obj.size as number) || 0,
-          metadata: {
-            ticker: ticker || 'UNKNOWN',
-            ...(obj.metadata as Record<string, string> || {})
-          }
-        }
-      };
-      
-      console.log('[REGULAR WS] Transformed audio notification:', audioNotification);
-      
-      // Manually trigger audio handlers
-      const audioService = audioWebsocketService as unknown as { messageHandlers: ((notification: unknown) => void)[] };
-      if (audioService.messageHandlers && audioService.messageHandlers.length > 0) {
-        console.log('[REGULAR WS] Triggering', audioService.messageHandlers.length, 'audio handlers');
-        audioService.messageHandlers.forEach((handler: (notification: unknown) => void, index: number) => {
-          try {
-            handler(audioNotification);
-            console.log('[REGULAR WS] Audio handler', index, 'completed successfully');
-          } catch (error) {
-            console.error('[REGULAR WS] Audio handler', index, 'threw error:', error);
-          }
-        });
-      } else {
-        console.warn('[REGULAR WS] No audio handlers registered');
-      }
-    } catch (error) {
-      console.error('[REGULAR WS] Error routing to audio service:', error);
     }
   }
 }
