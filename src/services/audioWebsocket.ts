@@ -125,13 +125,14 @@ class AudioWebSocketService {
       }
 
       console.log(
-        "Creating new Audio WebSocket connection to",
+        "[AUDIO WS] 🔗 Creating new Audio WebSocket connection to:",
         AUDIO_WS_ENDPOINT
       );
       this.socket = new WebSocket(AUDIO_WS_ENDPOINT);
 
       this.socket.onopen = () => {
-        console.log("Audio WebSocket connection established");
+        console.log("[AUDIO WS] ✅ Audio WebSocket connection established successfully!");
+        console.log("[AUDIO WS] 👥 Current message handlers:", this.messageHandlers.length);
         this.reconnectAttempts = 0;
         this.reconnectDelay = 2000; // Reset reconnect delay
         this.isConnecting = false;
@@ -142,24 +143,49 @@ class AudioWebSocketService {
 
       this.socket.onmessage = (event) => {
         try {
-          console.log("[AUDIO WS] Raw message received:", event.data);
+          console.log("[AUDIO WS] 🔔 Raw message received:", event.data);
           const data = JSON.parse(event.data);
-          console.log("[AUDIO WS] Parsed message:", data);
-          console.log("[AUDIO WS] Message handlers count:", this.messageHandlers.length);
+          console.log("[AUDIO WS] 📦 Parsed message:", data);
+          console.log("[AUDIO WS] 👥 Message handlers count:", this.messageHandlers.length);
 
-          if (data.type === "new_audio") {
-            console.log("[AUDIO WS] Notifying message handlers for new_audio");
-            this.notifyMessageHandlers(data);
+          // Handle any message that has audio_url, regardless of type
+          if (data.type === "new_audio" || data.audio_url || (data.data && data.data.audio_url)) {
+            console.log("[AUDIO WS] ✅ Detected audio message, notifying handlers");
+            
+            // Transform if needed
+            let audioNotification = data;
+            if (data.audio_url && !data.type) {
+              // Transform direct audio message to proper format
+              audioNotification = {
+                type: "new_audio",
+                timestamp: data.timestamp || new Date().toISOString(),
+                data: {
+                  message_id: data.message_id || 'audio-' + Date.now(),
+                  audio_url: data.audio_url,
+                  bucket: data.bucket || 'unknown-bucket',
+                  key: data.key || data.message_id || 'unknown-key',
+                  content_type: data.content_type || 'audio/mp3',
+                  size: data.size || 0,
+                  metadata: {
+                    ticker: data.company_name || data.ticker || 'UNKNOWN',
+                    ...data.metadata
+                  }
+                }
+              };
+              console.log("[AUDIO WS] 🔄 Transformed message:", audioNotification);
+            }
+            
+            this.notifyMessageHandlers(audioNotification);
           } else {
             console.warn(
-              "[AUDIO WS] Received message with unknown type. Expected 'new_audio', got:",
-              data.type,
+              "[AUDIO WS] ❌ Received message with unknown format. Expected 'new_audio' or audio_url, got:",
+              { type: data.type, hasAudioUrl: !!data.audio_url, keys: Object.keys(data) },
               "Full message:",
               data
             );
           }
         } catch (error) {
-          console.error("[AUDIO WS] Error parsing message:", error, "Raw data:", event.data);
+          console.error("[AUDIO WS] 💥 Error parsing message:", error, "Raw data:", event.data);
         }
       };
 
