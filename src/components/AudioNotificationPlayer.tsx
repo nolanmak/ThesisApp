@@ -30,25 +30,31 @@ const AudioNotificationPlayer: React.FC<AudioNotificationPlayerProps> = ({
     autoConnect: true,
     persistConnection: true,
     onAudioNotification: (notification) => {
-      console.log('[AUDIO PLAYER] Received audio notification:', notification);
+      console.log('[AUDIO PLAYER] 🎉 Received audio notification:', notification);
       setNotificationCount(prev => {
         const newCount = prev + 1;
-        console.log('[AUDIO PLAYER] Notification count updated to:', newCount);
+        console.log('[AUDIO PLAYER] 📊 Notification count updated to:', newCount);
         return newCount;
       });
       
       // Show a visual notification
-      const ticker = notification.data.metadata?.ticker || 'stock';
-      console.log('[AUDIO PLAYER] Showing toast for ticker:', ticker);
-      toast.info(`New audio notification for ${ticker}`, {
+      const ticker = notification.data?.metadata?.ticker || notification.data?.metadata?.company_name || 'Unknown Stock';
+      console.log('[AUDIO PLAYER] 🎆 Showing toast for ticker:', ticker);
+      
+      // Enhanced toast notification
+      toast.success(`🔊 New Earnings Audio: ${ticker}`, {
         position: 'top-right',
-        autoClose: 3000
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true
       });
       
       // Add the notification to the queue
       setAudioQueue(prevQueue => {
         const newQueue = [...prevQueue, notification];
-        console.log('[AUDIO PLAYER] Audio queue updated. New length:', newQueue.length);
+        console.log('[AUDIO PLAYER] 🎧 Audio queue updated. New length:', newQueue.length);
         return newQueue;
       });
     }
