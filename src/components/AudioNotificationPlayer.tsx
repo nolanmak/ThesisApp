@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { useAudioWebSocket } from '../hooks/useAudioWebSocket';
 import { AudioNotification } from '../services/audioWebsocket';
+import audioWebsocketService from '../services/audioWebsocket';
 
 interface AudioNotificationPlayerProps {
   autoPlay?: boolean;
@@ -142,6 +143,56 @@ const AudioNotificationPlayer: React.FC<AudioNotificationPlayerProps> = ({
     setUserHasInteracted(true);
   };
   
+  const testAudioNotification = () => {
+    console.log('[AUDIO PLAYER] Testing audio notification manually');
+    const testNotification: AudioNotification = {
+      type: 'new_audio',
+      timestamp: new Date().toISOString(),
+      data: {
+        message_id: 'test-' + Date.now(),
+        audio_url: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+        bucket: 'test-bucket',
+        key: 'test/audio.wav',
+        content_type: 'audio/wav',
+        size: 1024,
+        metadata: { ticker: 'TEST' }
+      }
+    };
+    
+    setNotificationCount(prev => prev + 1);
+    toast.info('Test audio notification for TEST', {
+      position: 'top-right',
+      autoClose: 3000
+    });
+    setAudioQueue(prevQueue => [...prevQueue, testNotification]);
+  };
+  
+  const testWebSocketMessage = () => {
+    console.log('[AUDIO PLAYER] Testing WebSocket message simulation');
+    // Simulate receiving a WebSocket message
+    const testMessage = {
+      type: 'new_audio',
+      timestamp: new Date().toISOString(),
+      data: {
+        message_id: 'ws-test-' + Date.now(),
+        audio_url: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+        bucket: 'test-bucket',
+        key: 'test/ws-audio.wav',
+        content_type: 'audio/wav',
+        size: 1024,
+        metadata: { ticker: 'WSTEST' }
+      }
+    };
+    
+    // Manually trigger the message handlers (simulating WebSocket reception)
+    const handlers = (audioWebsocketService as unknown as { messageHandlers: ((notification: AudioNotification) => void)[] }).messageHandlers;
+    console.log('[AUDIO PLAYER] Manually triggering', handlers.length, 'handlers');
+    handlers.forEach((handler: (notification: AudioNotification) => void, index: number) => {
+      console.log('[AUDIO PLAYER] Calling handler', index);
+      handler(testMessage);
+    });
+  };
+  
   return (
     <div className="border border-gray-200 rounded-lg p-4 my-4 max-w-2xl">
       <div className="flex items-center justify-between mb-4">
@@ -159,18 +210,32 @@ const AudioNotificationPlayer: React.FC<AudioNotificationPlayerProps> = ({
       {connected && !userHasInteracted && (
         <div className="mt-4 p-3 bg-yellow-50 rounded border-l-4 border-yellow-500">
           <p className="m-0 text-gray-600 text-sm mb-2">⚠️ Audio autoplay requires user interaction. Click below to enable audio notifications.</p>
-          <button 
-            onClick={enableUserInteraction}
-            className="px-3 py-1 bg-yellow-500 text-white rounded text-sm hover:bg-yellow-600"
-          >
-            Enable Audio
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={enableUserInteraction}
+              className="px-3 py-1 bg-yellow-500 text-white rounded text-sm hover:bg-yellow-600"
+            >
+              Enable Audio
+            </button>
+            <button 
+              onClick={testAudioNotification}
+              className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+            >
+              Test Notification
+            </button>
+          </div>
         </div>
       )}
       
       {connected && !currentAudio && userHasInteracted && (
         <div className="mt-4 p-3 bg-gray-50 rounded border-l-4 border-blue-500">
-          <p className="m-0 text-gray-600 text-sm">✅ Audio enabled and ready for notifications.</p>
+          <p className="m-0 text-gray-600 text-sm mb-2">✅ Audio enabled and ready for notifications.</p>
+          <button 
+            onClick={testAudioNotification}
+            className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+          >
+            Test Notification
+          </button>
         </div>
       )}
       
@@ -220,6 +285,37 @@ const AudioNotificationPlayer: React.FC<AudioNotificationPlayerProps> = ({
           </ul>
         </div>
       )}
+      
+      {/* Debug section - always visible */}
+      <div className="mt-4 border-t border-gray-200 pt-4">
+        <h4 className="text-md font-medium mb-2">Debug Controls</h4>
+        <div className="flex gap-2 mb-2">
+          <button 
+            onClick={testAudioNotification}
+            className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600"
+          >
+            Test Local Notification
+          </button>
+          <button 
+            onClick={testWebSocketMessage}
+            className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"
+          >
+            Test WebSocket Handlers
+          </button>
+          <button 
+            onClick={enableUserInteraction}
+            className="px-3 py-1 bg-purple-500 text-white rounded text-sm hover:bg-purple-600"
+          >
+            Enable User Interaction
+          </button>
+        </div>
+        <div className="text-xs text-gray-600">
+          <p>Connected: {connected ? 'Yes' : 'No'}</p>
+          <p>User Interacted: {userHasInteracted ? 'Yes' : 'No'}</p>
+          <p>Notifications: {notificationCount}</p>
+          <p>Queue Length: {audioQueue.length}</p>
+        </div>
+      </div>
       
     </div>
   );

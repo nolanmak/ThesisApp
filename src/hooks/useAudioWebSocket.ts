@@ -187,7 +187,8 @@ export const useAudioWebSocket = (options: UseAudioWebSocketOptions = {}): UseAu
         }, 2000);
       }
     };
-  }, [autoConnect, connect, disconnect, handleConnectionChange, handleAudioNotification, onAudioNotification, enabled, persistConnection]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoConnect, enabled, persistConnection]); // Removed callbacks from deps to prevent re-mounting
 
   return {
     connected,
