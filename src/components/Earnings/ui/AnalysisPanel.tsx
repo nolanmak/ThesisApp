@@ -132,8 +132,8 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                         { ['Additional Metrics', 'Company Highlights'].includes(section) ? (
                           <ul className="space-y-1 list-disc pl-5">
                             {items.map((item, idx) => (
-                              <li key={idx} className="flex flex-wrap gap-1 items-center list-item">
-                                <span className="text-neutral-600">{item}</span>
+                              <li key={idx} className="text-neutral-600">
+                                {typeof item === 'string' ? item : item.text || item.label}
                               </li>
                             ))}
                           </ul>
@@ -141,7 +141,9 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                           <div className="space-y-1">
                           {items.map((item, idx: number) => (
                             <div key={idx} className="flex flex-wrap gap-2 items-center">
-                              <span className="text-neutral-600">{item.text}</span>
+                              <span className="text-neutral-600">
+                                {typeof item === 'string' ? item : item.text || item.label}
+                              </span>
                             </div>
                           ))}
                         </div>
