@@ -361,7 +361,7 @@ class WebSocketService {
   }
 
   // Send a message to the WebSocket server
-  public sendMessage(message: any): boolean {
+  public sendMessage(message: Record<string, unknown>): boolean {
     if (!this.isConnected()) {
       console.error('Cannot send message: WebSocket is not connected');
       return false;
@@ -453,17 +453,34 @@ class WebSocketService {
   // Check if a message is an audio message
   private isAudioMessage(data: unknown): boolean {
     const obj = data as Record<string, unknown>;
+    
+    // Check nested data too
+    const nestedData = obj.data as Record<string, unknown> || {};
+    let bodyData = {};
+    if (obj.body) {
+      try {
+        bodyData = typeof obj.body === 'string' ? JSON.parse(obj.body) : obj.body;
+      } catch {
+        bodyData = {};
+      }
+    }
+    
     console.log('[REGULAR WS] Checking if audio message:', {
-      hasAudioUrl: !!obj.audio_url,
-      hasBucket: !!obj.bucket,
-      messageId: obj.message_id,
-      messageIdIncludesAudio: typeof obj.message_id === 'string' && obj.message_id.includes('audio')
+      topLevel: { hasAudioUrl: !!obj.audio_url, hasBucket: !!obj.bucket, messageId: obj.message_id },
+      nested: { hasAudioUrl: !!nestedData.audio_url, hasBucket: !!nestedData.bucket },
+      body: { hasAudioUrl: !!(bodyData as Record<string, unknown>).audio_url, hasBucket: !!(bodyData as Record<string, unknown>).bucket }
     });
     
-    // Check for audio_url or any audio-related properties
-    const isAudio = !!(obj.audio_url || 
-                      obj.bucket ||
-                      (typeof obj.message_id === 'string' && obj.message_id.includes('audio')));
+    // Check for audio_url or any audio-related properties at multiple levels
+    const isAudio = !!(
+      obj.audio_url || 
+      obj.bucket ||
+      nestedData.audio_url ||
+      nestedData.bucket ||
+      (bodyData as Record<string, unknown>).audio_url ||
+      (bodyData as Record<string, unknown>).bucket ||
+      (typeof obj.message_id === 'string' && obj.message_id.includes('audio'))
+    );
     
     console.log('[REGULAR WS] Is audio message:', isAudio);
     return isAudio;
@@ -473,19 +490,45 @@ class WebSocketService {
   private routeToAudioService(data: unknown): void {
     try {
       const obj = data as Record<string, unknown>;
+      
+      // Find audio_url from any level
+      let audioUrl = obj.audio_url as string;
+      let messageId = obj.message_id as string;
+      let ticker = obj.company_name as string || obj.ticker as string;
+      
+      // Check nested data if not found at top level
+      if (!audioUrl && obj.data) {
+        const nested = obj.data as Record<string, unknown>;
+        audioUrl = nested.audio_url as string;
+        messageId = messageId || nested.message_id as string;
+        ticker = ticker || nested.company_name as string || nested.ticker as string;
+      }
+      
+      // Check body if still not found
+      if (!audioUrl && obj.body) {
+        try {
+          const bodyData = typeof obj.body === 'string' ? JSON.parse(obj.body) : obj.body;
+          audioUrl = audioUrl || (bodyData as Record<string, unknown>).audio_url as string;
+          messageId = messageId || (bodyData as Record<string, unknown>).message_id as string;
+          ticker = ticker || (bodyData as Record<string, unknown>).company_name as string || (bodyData as Record<string, unknown>).ticker as string;
+        } catch (e) {
+          console.warn('[REGULAR WS] Could not parse body:', e);
+        }
+      }
+      
       // Transform the message to AudioNotification format
       const audioNotification = {
         type: 'new_audio',
         timestamp: (obj.timestamp as string) || new Date().toISOString(),
         data: {
-          message_id: (obj.message_id as string) || 'audio-' + Date.now(),
-          audio_url: (obj.audio_url as string) || '',
-          bucket: (obj.bucket as string) || 'unknown-bucket',
-          key: (obj.key as string) || (obj.message_id as string) || 'unknown-key',
+          message_id: messageId || 'audio-' + Date.now(),
+          audio_url: audioUrl || '',
+          bucket: (obj.bucket as string) || 'earnings-audio',
+          key: (obj.key as string) || messageId || 'unknown-key',
           content_type: (obj.content_type as string) || 'audio/mp3',
           size: (obj.size as number) || 0,
           metadata: {
-            ticker: (obj.ticker as string) || (obj.company_name as string) || 'UNKNOWN',
+            ticker: ticker || 'UNKNOWN',
             ...(obj.metadata as Record<string, string> || {})
           }
         }
