@@ -53,7 +53,13 @@ const useEarningsData = (
   // Handle toggling active status for an earnings item
   const handleToggleActive = useCallback(async (item: EarningsItem) => {
     try {
-      const updatedItem = { ...item, is_active: !item.is_active };
+      const updatedItem = { 
+        ...item, 
+        is_active: !item.is_active,
+        // Set WireActive and IRActive to true when activating a stock
+        WireActive: !item.is_active ? true : item.WireActive,
+        IRActive: !item.is_active ? true : item.IRActive
+      };
       await updateEarningsItem(updatedItem);
       
       setState(prev => ({
