@@ -50,6 +50,8 @@ const Calendar: React.FC = () => {
     earningsLoading,
     addEarningsItem,
     handleToggleActive,
+    handleToggleWireActive,
+    handleToggleIRActive,
     updateEarningsFilters: updateFilters
   } = useGlobalData();
   
@@ -156,6 +158,8 @@ const Calendar: React.FC = () => {
             items={filteredEarningsItems}
             loading={earningsLoading}
             onToggleActive={handleToggleActive}
+            onToggleWireActive={handleToggleWireActive}
+            onToggleIRActive={handleToggleIRActive}
             onOpenConfigModal={handleOpenConfigModal}
             configExists={configExists}
             isMobile={isMobile}

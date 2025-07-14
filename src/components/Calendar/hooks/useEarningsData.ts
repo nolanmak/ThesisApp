@@ -76,6 +76,52 @@ const useEarningsData = (
     }
   }, []);
 
+  // Handle toggling just WireActive
+  const handleToggleWireActive = useCallback(async (item: EarningsItem) => {
+    try {
+      const updatedItem = { 
+        ...item,                     // Include all existing properties 
+        WireActive: !item.WireActive // Only toggle WireActive
+      };
+      await updateEarningsItem(updatedItem);
+      
+      setState(prev => ({
+        ...prev,
+        earningsItems: prev.earningsItems.map(i => 
+          i.ticker === item.ticker && i.date === item.date ? updatedItem : i
+        )
+      }));
+      
+      toast.success(`${item.ticker} Wire is now ${!item.WireActive ? 'active' : 'inactive'}`);
+    } catch (error) {
+      console.error('Failed to update WireActive:', error);
+      toast.error('Failed to update Wire status');
+    }
+  }, []);
+
+  // Handle toggling just IRActive
+  const handleToggleIRActive = useCallback(async (item: EarningsItem) => {
+    try {
+      const updatedItem = { 
+        ...item,                   // Include all existing properties 
+        IRActive: !item.IRActive   // Only toggle IRActive
+      };
+      await updateEarningsItem(updatedItem);
+      
+      setState(prev => ({
+        ...prev,
+        earningsItems: prev.earningsItems.map(i => 
+          i.ticker === item.ticker && i.date === item.date ? updatedItem : i
+        )
+      }));
+      
+      toast.success(`${item.ticker} IR is now ${!item.IRActive ? 'active' : 'inactive'}`);
+    } catch (error) {
+      console.error('Failed to update IRActive:', error);
+      toast.error('Failed to update IR status');
+    }
+  }, []);
+
   // Add new earnings item
   const addEarningsItem = useCallback(async (data: EarningsItem) => {
     try {
@@ -164,6 +210,8 @@ const useEarningsData = (
     releaseTime: state.releaseTime,
     fetchEarningsItems,
     handleToggleActive,
+    handleToggleWireActive,
+    handleToggleIRActive,
     addEarningsItem,
     updateFilters
   };

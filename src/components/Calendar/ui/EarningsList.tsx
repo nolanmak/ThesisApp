@@ -7,6 +7,8 @@ interface EarningsListProps {
   loading: boolean;
   configExists: (ticker: string) => boolean;
   onToggleActive: (item: EarningsItem) => void;
+  onToggleWireActive: (item: EarningsItem) => void;
+  onToggleIRActive: (item: EarningsItem) => void;
   onOpenConfigModal: (item: EarningsItem) => void;
   isMobile?: boolean;
 }
@@ -16,6 +18,8 @@ const EarningsList: React.FC<EarningsListProps> = ({
   loading,
   configExists,
   onToggleActive,
+  onToggleWireActive,
+  onToggleIRActive,
   onOpenConfigModal,
   isMobile = false
 }) => {
@@ -144,6 +148,65 @@ const EarningsList: React.FC<EarningsListProps> = ({
             <p>{item.release_time === 'before' ? 'Before Market' : 
                 item.release_time === 'after' ? 'After Market' : 'During Market'}</p>
           </div>
+          
+          {/* Wire and IR toggles - only show when stock is active */}
+          {item.is_active && (
+            <div 
+              className="flex items-center space-x-3 mb-3"
+              style={{
+                marginBottom: isMobile ? '8px' : '12px',
+                width: '100%',
+                maxWidth: '100%',
+                overflow: 'hidden'
+              }}
+            >
+              <div className="flex items-center space-x-1">
+                <span 
+                  className="text-neutral-600 text-xs font-medium"
+                  style={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}
+                >
+                  Wire:
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleWireActive(item);
+                  }}
+                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                    item.WireActive 
+                      ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                      : 'bg-red-100 text-red-700 hover:bg-red-200'
+                  }`}
+                  style={{ fontSize: isMobile ? '0.65rem' : '0.7rem' }}
+                >
+                  {item.WireActive ? 'ON' : 'OFF'}
+                </button>
+              </div>
+              
+              <div className="flex items-center space-x-1">
+                <span 
+                  className="text-neutral-600 text-xs font-medium"
+                  style={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}
+                >
+                  IR:
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleIRActive(item);
+                  }}
+                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                    item.IRActive 
+                      ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                      : 'bg-red-100 text-red-700 hover:bg-red-200'
+                  }`}
+                  style={{ fontSize: isMobile ? '0.65rem' : '0.7rem' }}
+                >
+                  {item.IRActive ? 'ON' : 'OFF'}
+                </button>
+              </div>
+            </div>
+          )}
           
           {/* Placeholder for future chart */}
           <div 
