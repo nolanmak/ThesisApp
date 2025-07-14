@@ -23,6 +23,8 @@ interface GlobalDataContextType {
   earningsLoading: boolean;
   refreshEarningsItems: () => Promise<void>;
   handleToggleActive: (item: EarningsItem) => Promise<void>;
+  handleToggleWireActive: (item: EarningsItem) => Promise<void>;
+  handleToggleIRActive: (item: EarningsItem) => Promise<void>;
   addEarningsItem: (data: EarningsItem) => Promise<boolean>;
   updateEarningsFilters: (
     searchTicker?: string,
@@ -63,6 +65,8 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     loading: earningsLoading,
     fetchEarningsItems: refreshEarningsItems,
     handleToggleActive,
+    handleToggleWireActive,
+    handleToggleIRActive,
     addEarningsItem,
     updateFilters: updateEarningsFilters
   } = useEarningsData(searchTicker, filterActive, releaseTime);
@@ -114,6 +118,8 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return Promise.resolve();
     },
     handleToggleActive,
+    handleToggleWireActive,
+    handleToggleIRActive,
     addEarningsItem,
     updateEarningsFilters: async (searchTicker?: string, filterActive?: boolean | null, selectedDate?: string, releaseTime?: string | null) => {
       updateEarningsFilters(searchTicker, filterActive, selectedDate, releaseTime);
