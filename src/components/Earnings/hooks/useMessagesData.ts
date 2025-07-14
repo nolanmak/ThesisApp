@@ -51,7 +51,7 @@ const useMessagesData = (initialSearchTicker: string = '') => {
         }
       }
       
-      if (prev.searchTicker !== '' && !newMessage.ticker.toLowerCase().includes(prev.searchTicker.toLowerCase())) {
+      if (prev.searchTicker !== '' && newMessage.ticker && !newMessage.ticker.toLowerCase().includes(prev.searchTicker.toLowerCase())) {
         toast.info(`New message received for ${newMessage.ticker}`);
         return prev;
       }
@@ -162,7 +162,7 @@ const useMessagesData = (initialSearchTicker: string = '') => {
       
       // Otherwise filter the original messages
       const filteredMessages = originalMessagesRef.current.filter((message: Message) => 
-        message.ticker.toLowerCase().includes(searchTerm.toLowerCase())
+        message.ticker && message.ticker.toLowerCase().includes(searchTerm.toLowerCase())
       );
       
       return {
