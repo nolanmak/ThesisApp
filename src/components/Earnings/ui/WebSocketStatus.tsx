@@ -1,5 +1,8 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Search, Wifi, WifiOff, Loader, RefreshCw, Volume2, VolumeX } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { useAudioWebSocket } from '../../../hooks/useAudioWebSocket';
+import { AudioNotification } from '../../../services/audioWebsocket';
 
 
 interface WebSocketStatusProps {
@@ -11,11 +14,6 @@ interface WebSocketStatusProps {
   onSearchChange: (value: string) => void;
   onRefresh: () => void;
   onToggleWebSocket: () => void;
-  // Audio WebSocket props
-  audioEnabled?: boolean;
-  audioConnected?: boolean;
-  audioReconnecting?: boolean;
-  onToggleAudio?: () => void;
 }
 
 const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
@@ -26,12 +24,137 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
   reconnecting,
   onSearchChange,
   onRefresh,
-  onToggleWebSocket,
-  audioEnabled,
-  audioConnected,
-  audioReconnecting,
-  onToggleAudio
+  onToggleWebSocket
 }) => {
+  // Audio playback state
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [currentAudio, setCurrentAudio] = useState<AudioNotification | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioQueue, setAudioQueue] = useState<AudioNotification[]>([]);
+  const [userHasInteracted, setUserHasInteracted] = useState(false);
+  
+  // Audio WebSocket integration
+  const {
+    connected: audioConnected,
+    reconnecting: audioReconnecting,
+    enabled: audioEnabled,
+    enable: enableAudio,
+    disable: disableAudio
+  } = useAudioWebSocket({
+    autoConnect: false,
+    persistConnection: true,
+    onAudioNotification: (notification) => {
+      console.log('[AUDIO PLAYER] 🎉 Received audio notification:', notification);
+      
+      // Show a visual notification
+      const ticker = notification.data?.metadata?.ticker || notification.data?.metadata?.company_name || 'Unknown Stock';
+      console.log('[AUDIO PLAYER] 🎆 Showing toast for ticker:', ticker);
+      
+      // Enhanced toast notification
+      toast.success(`🔊 New Earnings Audio: ${ticker}`, {
+        position: 'top-right',
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true
+      });
+      
+      // Add the notification to the queue
+      setAudioQueue(prevQueue => {
+        const newQueue = [...prevQueue, notification];
+        console.log('[AUDIO PLAYER] 🎧 Audio queue updated. New length:', newQueue.length);
+        return newQueue;
+      });
+    }
+  });
+
+
+  const handleToggleAudio = () => {
+    if (audioEnabled) {
+      disableAudio();
+    } else {
+      enableAudio();
+      // Enable user interaction when audio is enabled
+      setUserHasInteracted(true);
+      
+      // If there's a current audio and it's not playing, try to play it
+      if (currentAudio && !isPlaying && audioRef.current) {
+        console.log('[AUDIO PLAYER] Manual play attempt after enabling audio');
+        audioRef.current.play()
+          .then(() => {
+            setIsPlaying(true);
+            console.log('[AUDIO PLAYER] Manual audio play successful');
+          })
+          .catch(error => {
+            console.error('[AUDIO PLAYER] Manual audio play failed:', error);
+            toast.error(`Audio playback failed: ${error.message}`, {
+              autoClose: 5000,
+              position: 'top-right'
+            });
+          });
+      }
+    }
+  };
+
+  // Handle audio playback when new notifications arrive
+  useEffect(() => {
+    console.log('[AUDIO PLAYER] Audio queue effect triggered. Queue length:', audioQueue.length, 'Is playing:', isPlaying, 'User interacted:', userHasInteracted, 'Audio enabled:', audioEnabled);
+    if (audioQueue.length > 0 && !isPlaying) {
+      // Play the next audio in the queue
+      const nextAudio = audioQueue[0];
+      console.log('[AUDIO PLAYER] Setting current audio:', nextAudio);
+      setCurrentAudio(nextAudio);
+      setAudioQueue(prevQueue => {
+        const newQueue = prevQueue.slice(1);
+        console.log('[AUDIO PLAYER] Removed audio from queue. New length:', newQueue.length);
+        return newQueue;
+      });
+    }
+  }, [audioQueue, isPlaying, userHasInteracted, audioEnabled]);
+  
+  // Set up audio source when currentAudio changes
+  useEffect(() => {
+    if (currentAudio && audioRef.current) {
+      console.log('[AUDIO PLAYER] Setting up audio source:', currentAudio.data.audio_url);
+      audioRef.current.src = currentAudio.data.audio_url;
+      
+      if (audioEnabled && userHasInteracted) {
+        console.log('[AUDIO PLAYER] Attempting to play audio...');
+        audioRef.current.play()
+          .then(() => {
+            setIsPlaying(true);
+            console.log('[AUDIO PLAYER] Audio playing successfully');
+          })
+          .catch(error => {
+            console.error('[AUDIO PLAYER] Error playing audio:', error);
+            setIsPlaying(false);
+            
+            // If autoplay is blocked, show a notification to the user
+            if (error.name === 'NotAllowedError') {
+              console.warn('[AUDIO PLAYER] Autoplay was blocked. User interaction is required to play audio.');
+              toast.info('Audio autoplay blocked. Click the audio button to hear notifications.', {
+                autoClose: 5000,
+                position: 'top-right'
+              });
+            } else {
+              toast.error(`Audio playback failed: ${error.message}`, {
+                autoClose: 5000,
+                position: 'top-right'
+              });
+            }
+          });
+      } else {
+        console.log('[AUDIO PLAYER] Not playing audio - audioEnabled:', audioEnabled, 'userHasInteracted:', userHasInteracted);
+      }
+    }
+  }, [currentAudio, audioEnabled, userHasInteracted]);
+  
+  // Handle audio events
+  const handleAudioEnded = () => {
+    setIsPlaying(false);
+    setCurrentAudio(null);
+  };
   return (
     <div className="mb-3 flex items-center">
       {/* Message search box */}
@@ -83,35 +206,33 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
           </button>
 
           {/* Audio WebSocket button */}
-          {onToggleAudio && (
-            <button
-              onClick={onToggleAudio}
-              className={`flex items-center justify-center rounded-full w-6 h-6 transition-colors duration-150 ease-in-out ${
-                audioEnabled 
-                  ? audioConnected 
-                    ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                    : audioReconnecting 
-                      ? 'bg-amber-500 text-white hover:bg-amber-600' 
-                      : 'bg-neutral-300 text-white hover:bg-neutral-400'
-                  : 'bg-neutral-200 text-neutral-500 hover:bg-neutral-300'
-              }`}
-              title={audioEnabled ? "Disable audio notifications" : "Enable audio notifications"}
-            >
-              {audioEnabled ? (
-                audioConnected ? (
-                  <Volume2 size={12} />
-                ) : (
-                  audioReconnecting ? (
-                    <Loader size={12} className="animate-spin" />
-                  ) : (
-                    <VolumeX size={12} />
-                  )
-                )
+          <button
+            onClick={handleToggleAudio}
+            className={`flex items-center justify-center rounded-full w-6 h-6 transition-colors duration-150 ease-in-out ${
+              audioEnabled 
+                ? audioConnected 
+                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                  : audioReconnecting 
+                    ? 'bg-amber-500 text-white hover:bg-amber-600' 
+                    : 'bg-neutral-300 text-white hover:bg-neutral-400'
+                : 'bg-neutral-200 text-neutral-500 hover:bg-neutral-300'
+            }`}
+            title={audioEnabled ? "Disable audio notifications" : "Enable audio notifications"}
+          >
+            {audioEnabled ? (
+              audioConnected ? (
+                <Volume2 size={12} />
               ) : (
-                <VolumeX size={12} />
-              )}
-            </button>
-          )}
+                audioReconnecting ? (
+                  <Loader size={12} className="animate-spin" />
+                ) : (
+                  <VolumeX size={12} />
+                )
+              )
+            ) : (
+              <VolumeX size={12} />
+            )}
+          </button>
           
           {/* Refresh button */}
           <button
@@ -126,6 +247,15 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
           </button>
         </div>
       </div>
+      
+      {/* Hidden audio element for playback */}
+      <audio 
+        ref={audioRef}
+        onEnded={handleAudioEnded}
+        onPause={() => setIsPlaying(false)}
+        onPlay={() => setIsPlaying(true)}
+        style={{ display: 'none' }}
+      />
     </div>
   );
 };

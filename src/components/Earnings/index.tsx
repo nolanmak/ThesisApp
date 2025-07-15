@@ -3,10 +3,8 @@ import MessagesList from './ui/MessagesList';
 import WebSocketStatus from './ui/WebSocketStatus';
 import AnalysisPanel from './ui/AnalysisPanel';
 import FeedbackModal from './ui/FeedbackModal';
-import AudioNotificationPlayer from '../AudioNotificationPlayer';
 import { Message } from '../../types';
 import useGlobalData from '../../hooks/useGlobalData';
-import { useAudioWebSocket } from '../../hooks/useAudioWebSocket';
 
 const Messages: React.FC = () => {
   const [searchMessageTicker, setSearchMessageTicker] = useState<string>('');
@@ -41,36 +39,6 @@ const Messages: React.FC = () => {
     convertToEasternTime
   } = useGlobalData();
 
-  // Audio WebSocket integration
-  const {
-    connected: audioConnected,
-    reconnecting: audioReconnecting,
-    enabled: audioEnabled,
-    enable: enableAudio,
-    disable: disableAudio
-  } = useAudioWebSocket({
-    onAudioNotification: (notification) => {
-      console.log('[EARNINGS] Audio notification received in Earnings component:', notification);
-      // Delay message refresh to avoid conflicts with audio playback
-      setTimeout(() => {
-        console.log('[EARNINGS] Refreshing messages after audio notification');
-        refreshMessages();
-      }, 1000);
-    },
-    onConnectionChange: (connected) => {
-      console.log('[EARNINGS] Audio WebSocket connection status:', connected);
-    }
-  });
-  
-  console.log('[EARNINGS] Component rendering. Audio connected:', audioConnected, 'Audio enabled:', audioEnabled);
-
-  const handleToggleAudio = () => {
-    if (audioEnabled) {
-      disableAudio();
-    } else {
-      enableAudio();
-    }
-  };
 
   useEffect(() => {
     if (!initialMessageSet && messages.length > 0 && !messagesLoading) {
@@ -146,10 +114,6 @@ const Messages: React.FC = () => {
             onSearchChange={handleMessageSearchChange}
             onRefresh={refreshMessages}
             onToggleWebSocket={toggleEnabled}
-            audioEnabled={audioEnabled}
-            audioConnected={audioConnected}
-            audioReconnecting={audioReconnecting}
-            onToggleAudio={handleToggleAudio}
           />
           
           <MessagesList
@@ -171,10 +135,6 @@ const Messages: React.FC = () => {
           setFeedbackModalOpen={setFeedbackModalOpen}
         />
       </div>
-      
-      {/* Audio Notification Player */}
-      <AudioNotificationPlayer autoPlay={true} />
-      
       {/* Disclaimer banner (bottom) */}
       <div className="bg-gray-50 text-gray-700 px-12 py-3 text-xs leading-tight rounded-md border border-gray-200 mt-6 text-center">
         <b>Disclaimer:</b> This platform offers information and suggestions solely for educational purposes and should not be considered a replacement for professional financial advice. We cover stock investments without guaranteeing the completeness, accuracy, reliability, or suitability of the information, which may incorporate data from third-party sources. Investing in stocks and other financial instruments carries risks, such as potential loss of principal. Users should independently verify all information and consult qualified professionals tailored to their unique financial situations and investment goals. Our content and services are provided "as is," with no express or implied warranties. We are not responsible for any losses or damages resulting from the use of our services. This disclaimer may change; users are encouraged to review it periodically. Using our services indicates acceptance of these terms.
