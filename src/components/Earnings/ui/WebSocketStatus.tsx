@@ -41,7 +41,7 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
     enable: enableAudio,
     disable: disableAudio
   } = useAudioWebSocket({
-    autoConnect: true,
+    autoConnect: false,
     persistConnection: true,
     onAudioNotification: (notification) => {
       console.log('[AUDIO PLAYER] 🎉 Received audio notification:', notification);
@@ -69,6 +69,7 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
     }
   });
 
+
   const handleToggleAudio = () => {
     if (audioEnabled) {
       disableAudio();
@@ -76,12 +77,29 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
       enableAudio();
       // Enable user interaction when audio is enabled
       setUserHasInteracted(true);
+      
+      // If there's a current audio and it's not playing, try to play it
+      if (currentAudio && !isPlaying && audioRef.current) {
+        console.log('[AUDIO PLAYER] Manual play attempt after enabling audio');
+        audioRef.current.play()
+          .then(() => {
+            setIsPlaying(true);
+            console.log('[AUDIO PLAYER] Manual audio play successful');
+          })
+          .catch(error => {
+            console.error('[AUDIO PLAYER] Manual audio play failed:', error);
+            toast.error(`Audio playback failed: ${error.message}`, {
+              autoClose: 5000,
+              position: 'top-right'
+            });
+          });
+      }
     }
   };
 
   // Handle audio playback when new notifications arrive
   useEffect(() => {
-    console.log('[AUDIO PLAYER] Audio queue effect triggered. Queue length:', audioQueue.length, 'Is playing:', isPlaying);
+    console.log('[AUDIO PLAYER] Audio queue effect triggered. Queue length:', audioQueue.length, 'Is playing:', isPlaying, 'User interacted:', userHasInteracted, 'Audio enabled:', audioEnabled);
     if (audioQueue.length > 0 && !isPlaying) {
       // Play the next audio in the queue
       const nextAudio = audioQueue[0];
@@ -93,26 +111,28 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
         return newQueue;
       });
     }
-  }, [audioQueue, isPlaying]);
+  }, [audioQueue, isPlaying, userHasInteracted, audioEnabled]);
   
   // Set up audio source when currentAudio changes
   useEffect(() => {
     if (currentAudio && audioRef.current) {
+      console.log('[AUDIO PLAYER] Setting up audio source:', currentAudio.data.audio_url);
       audioRef.current.src = currentAudio.data.audio_url;
       
       if (audioEnabled && userHasInteracted) {
+        console.log('[AUDIO PLAYER] Attempting to play audio...');
         audioRef.current.play()
           .then(() => {
             setIsPlaying(true);
-            console.log('Audio playing successfully');
+            console.log('[AUDIO PLAYER] Audio playing successfully');
           })
           .catch(error => {
-            console.error('Error playing audio:', error);
+            console.error('[AUDIO PLAYER] Error playing audio:', error);
             setIsPlaying(false);
             
             // If autoplay is blocked, show a notification to the user
             if (error.name === 'NotAllowedError') {
-              console.warn('Autoplay was blocked. User interaction is required to play audio.');
+              console.warn('[AUDIO PLAYER] Autoplay was blocked. User interaction is required to play audio.');
               toast.info('Audio autoplay blocked. Click the audio button to hear notifications.', {
                 autoClose: 5000,
                 position: 'top-right'
@@ -124,6 +144,8 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
               });
             }
           });
+      } else {
+        console.log('[AUDIO PLAYER] Not playing audio - audioEnabled:', audioEnabled, 'userHasInteracted:', userHasInteracted);
       }
     }
   }, [currentAudio, audioEnabled, userHasInteracted]);
