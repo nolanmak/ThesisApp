@@ -32,6 +32,7 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioQueue, setAudioQueue] = useState<AudioNotification[]>([]);
   const [userHasInteracted, setUserHasInteracted] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
   
   // Audio WebSocket integration
   const {
@@ -70,30 +71,47 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
   });
 
 
-  const handleToggleAudio = () => {
-    if (audioEnabled) {
-      disableAudio();
-    } else {
-      enableAudio();
-      // Enable user interaction when audio is enabled
-      setUserHasInteracted(true);
-      
-      // If there's a current audio and it's not playing, try to play it
-      if (currentAudio && !isPlaying && audioRef.current) {
-        console.log('[AUDIO PLAYER] Manual play attempt after enabling audio');
-        audioRef.current.play()
-          .then(() => {
+  const handleToggleAudio = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (isToggling) {
+      console.log('[AUDIO PLAYER] Already toggling, ignoring click');
+      return;
+    }
+    
+    setIsToggling(true);
+    console.log('[AUDIO PLAYER] Audio toggle clicked. Current state - enabled:', audioEnabled, 'connected:', audioConnected);
+    
+    try {
+      if (audioEnabled) {
+        console.log('[AUDIO PLAYER] Disabling audio...');
+        disableAudio();
+      } else {
+        console.log('[AUDIO PLAYER] Enabling audio...');
+        enableAudio();
+        // Enable user interaction when audio is enabled
+        setUserHasInteracted(true);
+        
+        // If there's a current audio and it's not playing, try to play it
+        if (currentAudio && !isPlaying && audioRef.current) {
+          console.log('[AUDIO PLAYER] Manual play attempt after enabling audio');
+          try {
+            await audioRef.current.play();
             setIsPlaying(true);
             console.log('[AUDIO PLAYER] Manual audio play successful');
-          })
-          .catch(error => {
+          } catch (error) {
             console.error('[AUDIO PLAYER] Manual audio play failed:', error);
             toast.error(`Audio playback failed: ${error.message}`, {
               autoClose: 5000,
               position: 'top-right'
             });
-          });
+          }
+        }
       }
+    } finally {
+      // Reset toggle state after a short delay
+      setTimeout(() => setIsToggling(false), 100);
     }
   };
 
@@ -207,8 +225,10 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
 
           {/* Audio WebSocket button */}
           <button
+            type="button"
             onClick={handleToggleAudio}
-            className={`flex items-center justify-center rounded-full w-6 h-6 transition-colors duration-150 ease-in-out ${
+            disabled={isToggling}
+            className={`flex items-center justify-center rounded-full w-6 h-6 transition-colors duration-150 ease-in-out cursor-pointer ${
               audioEnabled 
                 ? audioConnected 
                   ? 'bg-blue-500 text-white hover:bg-blue-600' 
