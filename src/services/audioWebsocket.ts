@@ -31,7 +31,7 @@ class AudioWebSocketService {
   private reconnectDelay = 2000; // Start with 2 seconds
   private isConnecting = false;
   private isManualClose = false;
-  private isEnabled = true; // Flag to enable/disable WebSocket functionality
+  private isEnabled = false; // Flag to enable/disable WebSocket functionality
   private lastConnectionAttempt = 0;
   private minConnectionInterval = 5000; // 5 seconds minimum between connection attempts
 
