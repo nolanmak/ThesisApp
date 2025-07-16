@@ -102,7 +102,7 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
             console.log('[AUDIO PLAYER] Manual audio play successful');
           } catch (error) {
             console.error('[AUDIO PLAYER] Manual audio play failed:', error);
-            toast.error(`Audio playback failed: ${error.message}`, {
+            toast.error(`Audio playback failed: ${error instanceof Error ? error.message : 'Unknown error'}`, {
               autoClose: 5000,
               position: 'top-right'
             });
