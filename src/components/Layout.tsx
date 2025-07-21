@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, Calendar, MessageCircle, Menu, List } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const Layout: React.FC = () => {
+  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  
+  const isAdmin = user?.email === 'nolanmak7@gmail.com';
   
   // Check if the device is mobile based on screen width
   useEffect(() => {
@@ -80,15 +84,17 @@ const Layout: React.FC = () => {
                     <span>Earnings</span>
                   </Link>
                 </li>
-                <li>
-                  <Link
-                    to="/dashboard/calendar"
-                    className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/calendar')}`}
-                  >
-                    <Calendar className="mr-1" size={14} />
-                    <span>Calendar</span>
-                  </Link>
-                </li>
+                {isAdmin && (
+                  <li>
+                    <Link
+                      to="/dashboard/calendar"
+                      className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/calendar')}`}
+                    >
+                      <Calendar className="mr-1" size={14} />
+                      <span>Admin</span>
+                    </Link>
+                  </li>
+                )}
                 <li>
                   <Link
                     to="/dashboard/watchlist"
@@ -141,16 +147,18 @@ const Layout: React.FC = () => {
                       <span>Earnings</span>
                     </Link>
                   </li>
-                  <li>
-                    <Link
-                      to="/dashboard/calendar"
-                      className={`flex items-center px-3 py-2 text-base rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/calendar')}`}
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      <Calendar className="mr-2" size={18} />
-                      <span>Calendar</span>
-                    </Link>
-                  </li>
+                  {isAdmin && (
+                    <li>
+                      <Link
+                        to="/dashboard/calendar"
+                        className={`flex items-center px-3 py-2 text-base rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/calendar')}`}
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        <Calendar className="mr-2" size={18} />
+                        <span>Admin</span>
+                      </Link>
+                    </li>
+                  )}
                   <li>
                     <Link
                       to="/dashboard/watchlist"
