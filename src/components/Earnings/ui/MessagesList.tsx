@@ -4,6 +4,8 @@ import { ExternalLink, BarChart2 } from 'lucide-react';
 import { ParseMessagePayload } from '../utils/messageUtils';
 import RealtimeTicker from './RealtimeTicker';
 import { useAlpacaMarketData } from '../../../hooks/useAlpacaMarketData';
+import { useAuth } from '../../../contexts/AuthContext';
+import { getUserProfile } from '../../../services/api';
 
 interface MessagesListProps {
   messages: Message[];
@@ -85,10 +87,11 @@ const MessagesList: React.FC<MessagesListProps> = ({
   convertToEasternTime,
   onSelectMessage,
 }) => {
-
+  const { user } = useAuth();
   const [newMessageIds, setNewMessageIds] = useState<Set<string>>(new Set());
   const [searchMessageTicker, setSearchMessageTicker] = useState<string>('');
   const [deduplicatedMessages, setDeduplicatedMessages] = useState<Message[]>([]);
+  const [userWatchlist, setUserWatchlist] = useState<string[]>([]);
   
   const allSeenMessageIdsRef = useRef<Set<string>>(new Set());
   const prevMessagesRef = useRef<Message[]>([]);
@@ -113,6 +116,24 @@ const MessagesList: React.FC<MessagesListProps> = ({
       setSearchMessageTicker(searchParam);
     }
   }, []);
+
+  // Load user watchlist
+  useEffect(() => {
+    const loadWatchlist = async () => {
+      if (!user?.email) return;
+      
+      try {
+        const profile = await getUserProfile(user.email);
+        if (profile?.watchlist) {
+          setUserWatchlist(profile.watchlist);
+        }
+      } catch (error) {
+        console.error('Error loading user watchlist:', error);
+      }
+    };
+
+    loadWatchlist();
+  }, [user?.email]);
   
   useEffect(() => {
     if (!messages || messages.length === 0) {
@@ -123,8 +144,8 @@ const MessagesList: React.FC<MessagesListProps> = ({
     // Create a map for deduplication
     const uniqueMessagesMap = new Map<string, Message>();
     
-    // First pass: filter out invalid timestamps, then sort by timestamp (oldest first)
-    const validMessages = messages.filter(message => {
+    // First pass: filter out invalid timestamps, then filter by watchlist if available
+    let validMessages = messages.filter(message => {
       const messageTimestamp = new Date(message.timestamp);
       const isValid = !isNaN(messageTimestamp.getTime());
       if (!isValid) {
@@ -132,6 +153,13 @@ const MessagesList: React.FC<MessagesListProps> = ({
       }
       return isValid;
     });
+
+    // Filter by watchlist if user has one and is authenticated
+    if (user?.email && userWatchlist.length > 0) {
+      validMessages = validMessages.filter(message => 
+        userWatchlist.includes(message.ticker.toUpperCase())
+      );
+    }
 
     const sortedMessages = validMessages.sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -160,7 +188,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
     );
     
     setDeduplicatedMessages(sortedDeduplicated);
-  }, [messages]);
+  }, [messages, user?.email, userWatchlist]);
 
   // Set initial messages after first load
   useEffect(() => {
