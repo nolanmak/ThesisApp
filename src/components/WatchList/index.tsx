@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { List, Upload } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { getUserProfile, updateUserProfile } from '../../services/api';
 
 const WatchList: React.FC = () => {
   const { user } = useAuth();
@@ -12,13 +13,10 @@ const WatchList: React.FC = () => {
     if (!user?.email) return;
     
     try {
-      const response = await fetch(`/user-profile?email=${encodeURIComponent(user.email)}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.watchlist) {
-          setCurrentWatchlist(data.watchlist);
-          setTickers(data.watchlist.join('\n'));
-        }
+      const profile = await getUserProfile(user.email);
+      if (profile?.watchlist) {
+        setCurrentWatchlist(profile.watchlist);
+        setTickers(profile.watchlist.join('\n'));
       }
     } catch (error) {
       console.error('Error loading watchlist:', error);
@@ -37,24 +35,14 @@ const WatchList: React.FC = () => {
     
     setIsLoading(true);
     try {
-      const response = await fetch('/user-profile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: user.email,
-          watchlist: watchlistArray,
-          settings: {} // Keep existing settings or add new ones as needed
-        }),
+      await updateUserProfile({
+        email: user.email,
+        watchlist: watchlistArray,
+        settings: {} // Keep existing settings or add new ones as needed
       });
       
-      if (response.ok) {
-        setCurrentWatchlist(watchlistArray);
-        console.log('Watchlist updated successfully');
-      } else {
-        console.error('Failed to update watchlist');
-      }
+      setCurrentWatchlist(watchlistArray);
+      console.log('Watchlist updated successfully');
     } catch (error) {
       console.error('Error updating watchlist:', error);
     } finally {
