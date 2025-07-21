@@ -131,18 +131,26 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
     }
   }, [audioQueue, isPlaying, userHasInteracted, audioEnabled]);
   
+  // Set default playback speed to 1.5x
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = 1.5;
+    }
+  }, []);
+
   // Set up audio source when currentAudio changes
   useEffect(() => {
     if (currentAudio && audioRef.current) {
       console.log('[AUDIO PLAYER] Setting up audio source:', currentAudio.data.audio_url);
       audioRef.current.src = currentAudio.data.audio_url;
+      audioRef.current.playbackRate = 1.5; // Ensure 1.5x speed is maintained
       
       if (audioEnabled && userHasInteracted) {
         console.log('[AUDIO PLAYER] Attempting to play audio...');
         audioRef.current.play()
           .then(() => {
             setIsPlaying(true);
-            console.log('[AUDIO PLAYER] Audio playing successfully');
+            console.log('[AUDIO PLAYER] Audio playing successfully at 1.5x speed');
           })
           .catch(error => {
             console.error('[AUDIO PLAYER] Error playing audio:', error);
