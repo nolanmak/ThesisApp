@@ -4,7 +4,7 @@ import { cache, CACHE_KEYS } from "./cache";
 // Base URLs - Use local proxy in development mode
 
 // API Keys and endpoints
-const { VITE_API_BASE_URL, VITE_API_KEY, VITE_AUDIO_WS_ENDPOINT } = import.meta
+const { VITE_API_BASE_URL, VITE_API_KEY, VITE_AUDIO_WS_ENDPOINT, VITE_USER_PROFILE_API_URL, VITE_USER_PROFILE_API_KEY } = import.meta
   .env;
 
 // Export WebSocket endpoints for use in services
@@ -269,6 +269,75 @@ export const createOrUpdateCompanyConfig = async (
     return data;
   } catch (error) {
     console.error("Error creating/updating company config:", error);
+    throw error;
+  }
+};
+
+// UserProfile API
+interface UserProfile {
+  email: string;
+  watchlist?: string[];
+  settings?: Record<string, unknown>;
+}
+
+export const getUserProfile = async (email: string): Promise<UserProfile | null> => {
+  try {
+    const headers = new Headers();
+    headers.set("x-api-key", VITE_USER_PROFILE_API_KEY);
+
+    const response = await fetch(`${VITE_USER_PROFILE_API_URL}?email=${encodeURIComponent(email)}`, {
+      headers,
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null;
+      }
+      const errorText = await response.text();
+      throw new Error(
+        `UserProfile API request failed: ${response.status} ${response.statusText} - ${errorText}`
+      );
+    }
+
+    const text = await response.text();
+    if (!text) {
+      return null;
+    }
+
+    return JSON.parse(text) as UserProfile;
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    throw error;
+  }
+};
+
+export const updateUserProfile = async (profileData: UserProfile): Promise<UserProfile> => {
+  try {
+    const headers = new Headers();
+    headers.set("x-api-key", VITE_USER_PROFILE_API_KEY);
+    headers.set("Content-Type", "application/json");
+
+    const response = await fetch(VITE_USER_PROFILE_API_URL, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(profileData),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `UserProfile API request failed: ${response.status} ${response.statusText} - ${errorText}`
+      );
+    }
+
+    const text = await response.text();
+    if (!text) {
+      throw new Error("Empty response from UserProfile API");
+    }
+
+    return JSON.parse(text) as UserProfile;
+  } catch (error) {
+    console.error("Error updating user profile:", error);
     throw error;
   }
 };
