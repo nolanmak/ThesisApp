@@ -1,32 +1,90 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { List, Upload } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 const WatchList: React.FC = () => {
+  const { user } = useAuth();
   const [tickers, setTickers] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [currentWatchlist, setCurrentWatchlist] = useState<string[]>([]);
 
-  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const pastedText = e.clipboardData.getData('text');
-    setTickers(pastedText);
+  const loadWatchlist = useCallback(async () => {
+    if (!user?.email) return;
     
-    // TODO: Send request to backend to update watchlist
-    // This will be implemented when the API is provided
-    console.log('Pasted tickers:', pastedText);
-  };
+    try {
+      const response = await fetch(`/user-profile?email=${encodeURIComponent(user.email)}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.watchlist) {
+          setCurrentWatchlist(data.watchlist);
+          setTickers(data.watchlist.join('\n'));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading watchlist:', error);
+    }
+  }, [user?.email]);
 
-  const handleSubmit = async () => {
-    if (!tickers.trim()) return;
+  // Load current watchlist on component mount
+  useEffect(() => {
+    if (user?.email) {
+      loadWatchlist();
+    }
+  }, [user?.email, loadWatchlist]);
+
+  const updateWatchlist = async (watchlistArray: string[]) => {
+    if (!user?.email) return;
     
     setIsLoading(true);
     try {
-      // TODO: Replace with actual API call
-      console.log('Submitting tickers:', tickers);
-      // await api.updateWatchlist(tickers);
+      const response = await fetch('/user-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: user.email,
+          watchlist: watchlistArray,
+          settings: {} // Keep existing settings or add new ones as needed
+        }),
+      });
+      
+      if (response.ok) {
+        setCurrentWatchlist(watchlistArray);
+        console.log('Watchlist updated successfully');
+      } else {
+        console.error('Failed to update watchlist');
+      }
     } catch (error) {
       console.error('Error updating watchlist:', error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const parseTickersFromText = (text: string): string[] => {
+    return text
+      .split(/[,\n]/)
+      .map(ticker => ticker.trim().toUpperCase())
+      .filter(ticker => ticker.length > 0);
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const pastedText = e.clipboardData.getData('text');
+    setTickers(pastedText);
+    
+    // Auto-update watchlist on paste
+    const parsedTickers = parseTickersFromText(pastedText);
+    if (parsedTickers.length > 0) {
+      await updateWatchlist(parsedTickers);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!tickers.trim()) return;
+    
+    const parsedTickers = parseTickersFromText(tickers);
+    await updateWatchlist(parsedTickers);
   };
 
   return (
@@ -67,12 +125,26 @@ const WatchList: React.FC = () => {
           </div>
         </div>
         
+        {currentWatchlist.length > 0 && (
+          <div className="mt-6 p-4 bg-blue-50 rounded-md border border-blue-200">
+            <h3 className="text-sm font-medium text-blue-700 mb-2">Current Watch List ({currentWatchlist.length} tickers):</h3>
+            <div className="flex flex-wrap gap-2">
+              {currentWatchlist.map((ticker) => (
+                <span key={ticker} className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-md">
+                  {ticker}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="mt-6 p-4 bg-neutral-50 rounded-md border border-neutral-200">
           <h3 className="text-sm font-medium text-neutral-700 mb-2">Instructions:</h3>
           <ul className="text-sm text-neutral-600 space-y-1">
             <li>• Paste your ticker symbols in the text area above</li>
             <li>• Tickers can be separated by new lines or commas</li>
-            <li>• Click "Update Watch List" to save your changes</li>
+            <li>• Auto-saves on paste, or click "Update Watch List" to save manually</li>
+            <li>• Your current watch list will load automatically when you visit this page</li>
           </ul>
         </div>
       </div>
