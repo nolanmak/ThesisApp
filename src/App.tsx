@@ -5,6 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Layout from './components/Layout';
 import Calendar from './components/Calendar';
 import Earnings from './components/Earnings';
+import WatchList from './components/WatchList';
 import LandingPage from './components/Landing/LandingPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import GlobalDataProvider from './providers/GlobalDataProvider';
@@ -25,6 +26,7 @@ function App() {
                   <Route index element={<Navigate to="/dashboard/earnings" replace />} />
                   <Route path="calendar" element={<Calendar />} />
                   <Route path="earnings" element={<Earnings />} />
+                  <Route path="watchlist" element={<WatchList />} />
                 </Route>
               </Route>
               
