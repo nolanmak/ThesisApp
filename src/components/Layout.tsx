@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, Calendar, MessageCircle, Menu } from 'lucide-react';
+import { LogOut, Calendar, MessageCircle, Menu, List } from 'lucide-react';
 
 const Layout: React.FC = () => {
   const location = useLocation();
@@ -90,6 +90,15 @@ const Layout: React.FC = () => {
                   </Link>
                 </li>
                 <li>
+                  <Link
+                    to="/dashboard/watchlist"
+                    className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/watchlist')}`}
+                  >
+                    <List className="mr-1" size={14} />
+                    <span>Watch List</span>
+                  </Link>
+                </li>
+                <li>
                   <button
                     onClick={handleLogout}
                     className="flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out text-neutral-500 hover:text-red-500"
@@ -140,6 +149,16 @@ const Layout: React.FC = () => {
                     >
                       <Calendar className="mr-2" size={18} />
                       <span>Calendar</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/dashboard/watchlist"
+                      className={`flex items-center px-3 py-2 text-base rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/watchlist')}`}
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <List className="mr-2" size={18} />
+                      <span>Watch List</span>
                     </Link>
                   </li>
                   <li>
