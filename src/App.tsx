@@ -8,6 +8,7 @@ import Earnings from './components/Earnings';
 import WatchList from './components/WatchList';
 import LandingPage from './components/Landing/LandingPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 import GlobalDataProvider from './providers/GlobalDataProvider';
 import { AuthProvider } from './contexts/AuthContext';
 
@@ -24,7 +25,7 @@ function App() {
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<Layout />}>
                   <Route index element={<Navigate to="/dashboard/earnings" replace />} />
-                  <Route path="calendar" element={<Calendar />} />
+                  <Route path="calendar" element={<AdminRoute><Calendar /></AdminRoute>} />
                   <Route path="earnings" element={<Earnings />} />
                   <Route path="watchlist" element={<WatchList />} />
                 </Route>
