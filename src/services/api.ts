@@ -105,7 +105,17 @@ export const getMessages = async (
 
   try {
     const messages = await fetchWithAuth<Message[]>(`/messages`);
-    console.log("messages:", messages);
+    console.log("Total messages fetched:", messages?.length || 0);
+    
+    // Log only PM ticker messages for debugging
+    if (messages && messages.length > 0) {
+      const pmMessages = messages.filter(msg => msg.ticker === 'PM');
+      if (pmMessages.length > 0) {
+        console.log("🔍 PM messages found in API:", pmMessages);
+      } else {
+        console.log("❌ No PM messages found in API response");
+      }
+    }
 
     cache.set(cacheKey, messages, CACHE_EXPIRY.SHORT);
     return messages;
