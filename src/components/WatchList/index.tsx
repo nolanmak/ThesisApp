@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { List, Upload } from 'lucide-react';
+import { List, Upload, Trash2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getUserProfile, updateUserProfile } from '../../services/api';
 
@@ -75,6 +75,16 @@ const WatchList: React.FC = () => {
     await updateWatchlist(parsedTickers);
   };
 
+  const handleClearWatchlist = async () => {
+    if (!user?.email) return;
+    
+    // Confirm with user before clearing
+    if (window.confirm('Are you sure you want to clear your entire watchlist? This action cannot be undone.')) {
+      await updateWatchlist([]);
+      setTickers('');
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
@@ -101,7 +111,15 @@ const WatchList: React.FC = () => {
             />
           </div>
           
-          <div className="flex justify-end">
+          <div className="flex justify-between">
+            <button
+              onClick={handleClearWatchlist}
+              disabled={isLoading || currentWatchlist.length === 0}
+              className="flex items-center px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <Trash2 className="mr-2" size={16} />
+              Clear All
+            </button>
             <button
               onClick={handleSubmit}
               disabled={!tickers.trim() || isLoading}
