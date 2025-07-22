@@ -156,9 +156,21 @@ const MessagesList: React.FC<MessagesListProps> = ({
 
     // Filter by watchlist if user has one and is authenticated
     if (user?.email && userWatchlist.length > 0) {
-      validMessages = validMessages.filter(message => 
-        userWatchlist.includes(message.ticker.toUpperCase())
-      );
+      console.log('Filtering messages by watchlist:', userWatchlist);
+      console.log('Total messages before filtering:', validMessages.length);
+      
+      const filteredMessages = validMessages.filter(message => {
+        const isInWatchlist = userWatchlist.includes(message.ticker.toUpperCase());
+        if (!isInWatchlist) {
+          console.log('Filtering out message for ticker:', message.ticker, 'Message:', message);
+        }
+        return isInWatchlist;
+      });
+      
+      console.log('Messages after watchlist filtering:', filteredMessages.length);
+      validMessages = filteredMessages;
+    } else {
+      console.log('No watchlist filtering applied - showing all messages');
     }
 
     const sortedMessages = validMessages.sort(
