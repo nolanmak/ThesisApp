@@ -190,6 +190,22 @@ const useEarningsData = (
         const matchesReleaseTime = prev.releaseTime === null || 
           item.release_time === prev.releaseTime;
         
+        // Debug logging for filtering
+        console.log(`Filtering ${item.ticker}:`, {
+          date: item.date,
+          selectedDate: prev.selectedDate,
+          matchesDate,
+          searchTicker: prev.searchTicker,
+          matchesSearch,
+          filterActive: prev.filterActive,
+          is_active: item.is_active,
+          matchesActive,
+          releaseTime: prev.releaseTime,
+          item_release_time: item.release_time,
+          matchesReleaseTime,
+          finalResult: matchesDate && matchesSearch && matchesActive && matchesReleaseTime
+        });
+        
         return matchesDate && matchesSearch && matchesActive && matchesReleaseTime;
       })
     }));

@@ -129,34 +129,44 @@ const MessagesList: React.FC<MessagesListProps> = ({
     // Create a map for deduplication
     const uniqueMessagesMap = new Map<string, Message>();
     
+    // Track PM messages through filtering process
+    const pmMessages = messages.filter(m => m.ticker === 'PM');
+    console.log(`🔍 PM messages at start of filtering: ${pmMessages.length}`);
+
     // First pass: filter out invalid timestamps, then filter by watchlist if available
     let validMessages = messages.filter(message => {
       const messageTimestamp = new Date(message.timestamp);
       const isValid = !isNaN(messageTimestamp.getTime());
-      if (!isValid) {
-        console.warn('Invalid timestamp for message:', message);
+      if (!isValid && message.ticker === 'PM') {
+        console.warn('❌ PM message has invalid timestamp:', message);
       }
       return isValid;
     });
 
+    const pmAfterTimestamp = validMessages.filter(m => m.ticker === 'PM');
+    console.log(`🔍 PM messages after timestamp validation: ${pmAfterTimestamp.length}`);
+
+    console.log('Watchlist length:', userWatchlist.length);
+
     // Filter by watchlist if user has one and is authenticated
     if (user?.email && userWatchlist.length > 0) {
       console.log('Filtering messages by watchlist:', userWatchlist);
-      console.log('Total messages before filtering:', validMessages.length);
       
       const filteredMessages = validMessages.filter(message => {
         const isInWatchlist = userWatchlist.includes(message.ticker.toUpperCase());
-        if (!isInWatchlist) {
-          console.log('Filtering out message for ticker:', message.ticker, 'Message:', message);
+        if (!isInWatchlist && message.ticker === 'PM') {
+          console.log('❌ PM message filtered out by watchlist:', message);
         }
         return isInWatchlist;
       });
       
-      console.log('Messages after watchlist filtering:', filteredMessages.length);
       validMessages = filteredMessages;
     } else {
-      console.log('No watchlist filtering applied - showing all messages');
+      console.log('✅ No watchlist filtering - showing all messages');
     }
+
+    const pmAfterWatchlist = validMessages.filter(m => m.ticker === 'PM');
+    console.log(`🔍 PM messages after watchlist filtering: ${pmAfterWatchlist.length}`);
 
     const sortedMessages = validMessages.sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -195,6 +205,9 @@ const MessagesList: React.FC<MessagesListProps> = ({
           timestamp: messageTimestamp.toISOString(),
           message
         });
+        if (message.ticker === 'PM') {
+          console.log('✅ PM message added to final feed:', message);
+        }
       } else {
         skippedMessages.push({
           ticker: message.ticker,
@@ -204,6 +217,9 @@ const MessagesList: React.FC<MessagesListProps> = ({
           reason: `Duplicate ${messageType} for same date`,
           message
         });
+        if (message.ticker === 'PM') {
+          console.log('❌ PM message skipped as duplicate:', message);
+        }
       }
     });
 
