@@ -298,9 +298,7 @@ export const ParseMessagePayload = (message: Message): { [key: string]: MetricIt
       }
     }
   } catch (error) {
-    console.log('Unable to parse metrics for message:', message);
-    console.log('Parse error:', error);
-    console.log('Raw discord_message:', message.discord_message);
+    // Just silently fail for now - we'll log these in a batch elsewhere if needed
   }
   return metrics;
 };
