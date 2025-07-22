@@ -177,6 +177,23 @@ const MessagesList: React.FC<MessagesListProps> = ({
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
     
+    const skippedMessages: Array<{
+      ticker: string;
+      messageType: string;
+      date: string;
+      timestamp: string;
+      reason: string;
+      message: Message;
+    }> = [];
+
+    const addedMessages: Array<{
+      ticker: string;
+      messageType: string;
+      date: string;
+      timestamp: string;
+      message: Message;
+    }> = [];
+
     sortedMessages.forEach(message => {
       const messageType = message.link ? 'link' : 'analysis';
       const messageTimestamp = new Date(message.timestamp);
@@ -186,13 +203,39 @@ const MessagesList: React.FC<MessagesListProps> = ({
       // Only keep the first occurrence (earliest) of each unique key
       if (!uniqueMessagesMap.has(key)) {
         uniqueMessagesMap.set(key, message);
-        // Debug log to verify we're taking the earliest
-        console.log(`Adding earliest ${messageType} for ${message.ticker} on ${messageDate}:`, messageTimestamp.toISOString());
+        addedMessages.push({
+          ticker: message.ticker,
+          messageType,
+          date: messageDate,
+          timestamp: messageTimestamp.toISOString(),
+          message
+        });
       } else {
-        // Debug log to show we're skipping later messages
-        console.log(`Skipping later ${messageType} for ${message.ticker} on ${messageDate}:`, messageTimestamp.toISOString());
+        skippedMessages.push({
+          ticker: message.ticker,
+          messageType,
+          date: messageDate,
+          timestamp: messageTimestamp.toISOString(),
+          reason: `Duplicate ${messageType} for same date`,
+          message
+        });
       }
     });
+
+    // Log summary of processing
+    console.log('Message Processing Summary:');
+    console.log('Total messages received:', messages.length);
+    console.log('Valid messages after timestamp filter:', validMessages.length);
+    console.log('Messages added to feed:', addedMessages.length);
+    console.log('Messages skipped (duplicates):', skippedMessages.length);
+    
+    if (skippedMessages.length > 0) {
+      console.log('Skipped messages detail:', skippedMessages);
+    }
+    
+    if (addedMessages.length > 0) {
+      console.log('Added messages detail:', addedMessages);
+    }
     
     // Get all unique messages and sort them by timestamp (newest first) for display
     const sortedDeduplicated = Array.from(uniqueMessagesMap.values()).sort(
