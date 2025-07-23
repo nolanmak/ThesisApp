@@ -126,16 +126,18 @@ export const useAudioWebSocket = (options: UseAudioWebSocketOptions = {}): UseAu
 
   // Enable WebSocket functionality
   const enable = useCallback(() => {
-    audioWebsocketService.enable();
+    // Update local state first to prevent race conditions
     setEnabled(true);
+    audioWebsocketService.enable();
   }, []);
 
   // Disable WebSocket functionality
   const disable = useCallback(() => {
-    audioWebsocketService.disable();
+    // Update local state first to prevent race conditions
     setEnabled(false);
     setConnected(false);
     setReconnecting(false);
+    audioWebsocketService.disable();
   }, []);
 
   // Send a message to the WebSocket server
