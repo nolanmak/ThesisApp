@@ -109,9 +109,11 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
           }
         }
       }
+    } catch (error) {
+      console.error('[AUDIO PLAYER] Error toggling audio:', error);
     } finally {
       // Reset toggle state after a short delay
-      setTimeout(() => setIsToggling(false), 100);
+      setTimeout(() => setIsToggling(false), 200);
     }
   };
 
