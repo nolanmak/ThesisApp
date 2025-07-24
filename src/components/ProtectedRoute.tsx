@@ -1,17 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const ProtectedRoute = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const { isAuthenticated, isLoading, checkAuthStatus } = useAuth();
+  const [isValidating, setIsValidating] = useState(false);
 
   useEffect(() => {
-    // Check if user has authenticated
-    const hasAccess = localStorage.getItem('user_data') !== null;
-    setIsAuthenticated(hasAccess);
-  }, []);
+    const validateSession = async () => {
+      if (isAuthenticated && !isLoading) {
+        setIsValidating(true);
+        await checkAuthStatus();
+        setIsValidating(false);
+      }
+    };
 
-  // While checking authentication status, show nothing
-  if (isAuthenticated === null) {
+    validateSession();
+  }, [isAuthenticated, isLoading, checkAuthStatus]);
+
+  // While checking authentication status or validating session, show loading
+  if (isLoading || isValidating) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
 

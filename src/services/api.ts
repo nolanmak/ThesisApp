@@ -1,5 +1,6 @@
 import { EarningsItem, CompanyConfig, Message } from "../types";
 import { cache, CACHE_KEYS } from "./cache";
+import { toast } from 'react-toastify';
 
 // Base URLs - Use local proxy in development mode
 
@@ -19,9 +20,6 @@ const CACHE_EXPIRY = {
   LONG: 15 * 60 * 1000, // 15 minutes
 };
 
-/**
- * Helper function to fetch data with authentication
- */
 /**
  * Helper function to fetch data with authentication
  */
@@ -45,6 +43,30 @@ const fetchWithAuth = async <T = Record<string, unknown>>(
     console.log("response:", response);
 
     if (!response.ok) {
+      // Handle authentication/authorization failures
+      if (response.status === 401 || response.status === 403) {
+        console.warn(`Authentication failure detected: ${response.status} for ${endpoint}`);
+        
+        // Show user-friendly message
+        toast.warn('Your session has expired. Redirecting to sign in...', {
+          autoClose: 4000,
+          hideProgressBar: false,
+        });
+        
+        // Clear all auth tokens and user data
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('id_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user_data');
+        
+        // Redirect to landing page
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
+        
+        throw new Error(`Session expired. Please sign in again.`);
+      }
+
       const errorText = await response.text();
       throw new Error(
         `API request failed: ${response.status} ${response.statusText} - ${errorText}`
@@ -121,6 +143,13 @@ export const getMessages = async (
     return messages;
   } catch (error) {
     console.error("Error fetching messages:", error);
+    
+    // If the error is about session expiration, the fetchWithAuth function
+    // has already handled logout and redirect, so we just return empty array
+    if (error instanceof Error && error.message.includes('Session expired')) {
+      return [];
+    }
+    
     return [];
   }
 };
