@@ -24,6 +24,67 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const isExchangingTokenRef = useRef(false);
   const sessionCheckIntervalRef = useRef<number | null>(null);
 
+  const startSessionMonitoring = () => {
+    // Clear any existing interval
+    if (sessionCheckIntervalRef.current) {
+      clearInterval(sessionCheckIntervalRef.current);
+    }
+    
+    // Check session every 15 minutes
+    sessionCheckIntervalRef.current = window.setInterval(() => {
+      checkAuthStatus();
+    }, 15 * 60 * 1000);
+  };
+
+  const checkAuthStatus = async (): Promise<boolean> => {
+    const storedIdToken = localStorage.getItem('id_token');
+    
+    if (!storedIdToken) {
+      return false;
+    }
+    
+    try {
+      const tokenPayload = cognitoAuth.parseJWT(storedIdToken);
+      const isExpired = (tokenPayload.exp as number) * 1000 <= Date.now();
+      
+      if (isExpired) {
+        console.warn('Token has expired, logging out user');
+        toast.info('Your session has expired. Please sign in again.', {
+          autoClose: 5000,
+          hideProgressBar: false,
+        });
+        removeAuthTokens();
+        window.location.href = '/';
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error checking auth status:', error);
+      toast.error('There was an issue with your session. Please sign in again.', {
+        autoClose: 5000,
+        hideProgressBar: false,
+      });
+      removeAuthTokens();
+      window.location.href = '/';
+      return false;
+    }
+  };
+
+  const removeAuthTokens = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('id_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_data');
+    setUser(null);
+    
+    // Clear session check interval when tokens are removed
+    if (sessionCheckIntervalRef.current) {
+      clearInterval(sessionCheckIntervalRef.current);
+      sessionCheckIntervalRef.current = null;
+    }
+  };
+
   useEffect(() => {
     const initializeAuth = async () => {
       try {
@@ -94,67 +155,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
   }, []);
-
-  const removeAuthTokens = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('id_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user_data');
-    setUser(null);
-    
-    // Clear session check interval when tokens are removed
-    if (sessionCheckIntervalRef.current) {
-      clearInterval(sessionCheckIntervalRef.current);
-      sessionCheckIntervalRef.current = null;
-    }
-  };
-
-  const checkAuthStatus = async (): Promise<boolean> => {
-    const storedIdToken = localStorage.getItem('id_token');
-    
-    if (!storedIdToken) {
-      return false;
-    }
-    
-    try {
-      const tokenPayload = cognitoAuth.parseJWT(storedIdToken);
-      const isExpired = (tokenPayload.exp as number) * 1000 <= Date.now();
-      
-      if (isExpired) {
-        console.warn('Token has expired, logging out user');
-        toast.info('Your session has expired. Please sign in again.', {
-          autoClose: 5000,
-          hideProgressBar: false,
-        });
-        removeAuthTokens();
-        window.location.href = '/';
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Error checking auth status:', error);
-      toast.error('There was an issue with your session. Please sign in again.', {
-        autoClose: 5000,
-        hideProgressBar: false,
-      });
-      removeAuthTokens();
-      window.location.href = '/';
-      return false;
-    }
-  };
-
-  const startSessionMonitoring = () => {
-    // Clear any existing interval
-    if (sessionCheckIntervalRef.current) {
-      clearInterval(sessionCheckIntervalRef.current);
-    }
-    
-    // Check session every 15 minutes
-    sessionCheckIntervalRef.current = window.setInterval(() => {
-      checkAuthStatus();
-    }, 15 * 60 * 1000);
-  };
 
   const signIn = () => {
     const redirectUri = window.location.origin + '/';
