@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { cognitoAuth, AuthUser } from '../lib/auth';
 
 interface AuthContextType {
@@ -8,6 +10,7 @@ interface AuthContextType {
   signOut: () => void;
   isAuthenticated: boolean;
   removeAuthTokens: () => void;
+  checkAuthStatus: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,6 +23,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const isExchangingTokenRef = useRef(false);
+  const sessionCheckIntervalRef = useRef<number | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -44,6 +50,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             localStorage.setItem('user_data', JSON.stringify(userData));
             
             setUser(userData);
+            startSessionMonitoring();
             
             // Immediately redirect to dashboard after successful authentication
             window.location.href = '/dashboard';
@@ -64,6 +71,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               
               if ((tokenPayload.exp as number) * 1000 > Date.now()) {
                 setUser(userData);
+                startSessionMonitoring();
               } else {
                 removeAuthTokens();
               }
@@ -81,6 +89,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     initializeAuth();
+
+    // Cleanup interval on unmount
+    return () => {
+      if (sessionCheckIntervalRef.current) {
+        clearInterval(sessionCheckIntervalRef.current);
+      }
+    };
   }, []);
 
   const removeAuthTokens = () => {
@@ -89,6 +104,59 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user_data');
     setUser(null);
+    
+    // Clear session check interval when tokens are removed
+    if (sessionCheckIntervalRef.current) {
+      clearInterval(sessionCheckIntervalRef.current);
+      sessionCheckIntervalRef.current = null;
+    }
+  };
+
+  const checkAuthStatus = async (): Promise<boolean> => {
+    const storedIdToken = localStorage.getItem('id_token');
+    
+    if (!storedIdToken) {
+      return false;
+    }
+    
+    try {
+      const tokenPayload = cognitoAuth.parseJWT(storedIdToken);
+      const isExpired = (tokenPayload.exp as number) * 1000 <= Date.now();
+      
+      if (isExpired) {
+        console.warn('Token has expired, logging out user');
+        toast.info('Your session has expired. Please sign in again.', {
+          autoClose: 5000,
+          hideProgressBar: false,
+        });
+        removeAuthTokens();
+        navigate('/', { replace: true });
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error checking auth status:', error);
+      toast.error('There was an issue with your session. Please sign in again.', {
+        autoClose: 5000,
+        hideProgressBar: false,
+      });
+      removeAuthTokens();
+      navigate('/', { replace: true });
+      return false;
+    }
+  };
+
+  const startSessionMonitoring = () => {
+    // Clear any existing interval
+    if (sessionCheckIntervalRef.current) {
+      clearInterval(sessionCheckIntervalRef.current);
+    }
+    
+    // Check session every 15 minutes
+    sessionCheckIntervalRef.current = window.setInterval(() => {
+      checkAuthStatus();
+    }, 15 * 60 * 1000);
   };
 
   const signIn = () => {
@@ -101,9 +169,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signOut = () => {
     removeAuthTokens();
+    toast.success('You have been signed out successfully.', {
+      autoClose: 3000,
+      hideProgressBar: false,
+    });
     
-    // Redirect to landing page after sign out
-    window.location.href = '/';
+    // Navigate to landing page after sign out
+    navigate('/', { replace: true });
   };
 
   const value: AuthContextType = {
@@ -112,7 +184,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signIn,
     signOut,
     isAuthenticated: !!user,
-    removeAuthTokens
+    removeAuthTokens,
+    checkAuthStatus
   };
 
   return (
