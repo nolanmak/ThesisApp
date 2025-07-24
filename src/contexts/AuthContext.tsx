@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { cognitoAuth, AuthUser } from '../lib/auth';
 
@@ -24,8 +23,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const isExchangingTokenRef = useRef(false);
   const sessionCheckIntervalRef = useRef<number | null>(null);
-  const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -130,7 +127,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           hideProgressBar: false,
         });
         removeAuthTokens();
-        navigate('/', { replace: true });
+        window.location.href = '/';
         return false;
       }
       
@@ -142,7 +139,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         hideProgressBar: false,
       });
       removeAuthTokens();
-      navigate('/', { replace: true });
+      window.location.href = '/';
       return false;
     }
   };
@@ -174,8 +171,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       hideProgressBar: false,
     });
     
-    // Navigate to landing page after sign out
-    navigate('/', { replace: true });
+    // Redirect to landing page after sign out
+    window.location.href = '/';
   };
 
   const value: AuthContextType = {

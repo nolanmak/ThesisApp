@@ -12,6 +12,9 @@ const ProtectedRoute = () => {
         setIsValidating(true);
         await checkAuthStatus();
         setIsValidating(false);
+        
+        // If session is invalid, checkAuthStatus will handle the redirect
+        // so we don't need to do anything here
       }
     };
 
