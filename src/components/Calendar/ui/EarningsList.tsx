@@ -1,6 +1,8 @@
 import React from 'react';
 import { EarningsItem } from '../../../types';
 import { Loader, Settings } from 'lucide-react';
+import MessageAnalysis from './MessageAnalysis';
+import { useGlobalData } from '../../../hooks/useGlobalData';
 
 interface EarningsListProps {
   items: EarningsItem[];
@@ -23,6 +25,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
   onOpenConfigModal,
   isMobile = false
 }) => {
+  const { messages } = useGlobalData();
 
   if (loading) {
     return (
@@ -208,6 +211,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
             </div>
           )}
           
+          {/* Message Analysis Section */}
           <div 
             className="flex-grow bg-neutral-50 rounded-md border border-dashed border-neutral-200 flex items-center justify-center"
             style={{
@@ -218,14 +222,23 @@ const EarningsList: React.FC<EarningsListProps> = ({
               boxSizing: 'border-box'
             }}
           >
-            <div className="flex flex-col items-center">
-              <p 
-                className="text-neutral-400" 
-                style={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}
-              >
-                {item.is_active ? 'Market data moved to Messages' : 'Activate to enable features'}
-              </p>
-            </div>
+            {item.is_active ? (
+              <MessageAnalysis
+                ticker={item.ticker}
+                date={item.date}
+                messages={messages}
+                isMobile={isMobile}
+              />
+            ) : (
+              <div className="flex flex-col items-center">
+                <p 
+                  className="text-neutral-400" 
+                  style={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}
+                >
+                  Activate to enable features
+                </p>
+              </div>
+            )}
           </div>
         </div>
       ))}
