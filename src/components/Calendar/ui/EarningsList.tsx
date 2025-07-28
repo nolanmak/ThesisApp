@@ -1,6 +1,8 @@
 import React from 'react';
 import { EarningsItem } from '../../../types';
 import { Loader, Settings } from 'lucide-react';
+import MessageAnalysis from './MessageAnalysis';
+import { useGlobalData } from '../../../hooks/useGlobalData';
 
 interface EarningsListProps {
   items: EarningsItem[];
@@ -23,6 +25,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
   onOpenConfigModal,
   isMobile = false
 }) => {
+  const { messages } = useGlobalData();
 
   if (loading) {
     return (
@@ -208,9 +211,9 @@ const EarningsList: React.FC<EarningsListProps> = ({
             </div>
           )}
           
-          {/* Placeholder for future chart */}
+          {/* Message Analysis Section */}
           <div 
-            className="flex-grow bg-neutral-50 rounded-md border border-dashed border-neutral-200 flex items-center justify-center"
+            className="flex-grow bg-neutral-50 rounded-md border border-neutral-200 p-2"
             style={{
               marginTop: isMobile ? '8px' : '8px',
               minHeight: isMobile ? '60px' : '80px',
@@ -219,20 +222,12 @@ const EarningsList: React.FC<EarningsListProps> = ({
               boxSizing: 'border-box'
             }}
           >
-            <div className="flex flex-col items-center">
-              <p 
-                className="text-neutral-400" 
-                style={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}
-              >
-                No metrics added
-              </p>
-              <p 
-                className="text-neutral-400" 
-                style={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}
-              >
-                Click chart button to add
-              </p>
-            </div>
+            <MessageAnalysis
+              ticker={item.ticker}
+              date={item.date}
+              messages={messages}
+              isMobile={isMobile}
+            />
           </div>
         </div>
       ))}
