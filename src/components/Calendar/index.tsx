@@ -53,8 +53,7 @@ const Calendar: React.FC = () => {
     handleToggleWireActive,
     handleToggleIRActive,
     updateEarningsFilters: updateFilters,
-    fetchCompanyNamesForDate,
-    companyNamesLoading
+    fetchCompanyNamesForDate
   } = useGlobalData();
   
   const {
