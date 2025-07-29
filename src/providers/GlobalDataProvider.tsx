@@ -174,9 +174,8 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     handleToggleWireActive,
     handleToggleIRActive,
     addEarningsItem,
-    updateEarningsFilters: async (searchTicker?: string, filterActive?: boolean | null, selectedDate?: string, releaseTime?: string | null) => {
+    updateEarningsFilters: (searchTicker?: string, filterActive?: boolean | null, selectedDate?: string, releaseTime?: string | null) => {
       updateEarningsFilters(searchTicker, filterActive, selectedDate, releaseTime);
-      return Promise.resolve();
     },
     
     // Company names data
