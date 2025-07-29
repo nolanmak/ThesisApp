@@ -44,7 +44,9 @@ const Calendar: React.FC = () => {
     handleToggleActive,
     handleToggleWireActive,
     handleToggleIRActive,
-    updateEarningsFilters: updateFilters
+    updateEarningsFilters: updateFilters,
+    fetchCompanyNamesForDate,
+    companyNamesLoading
   } = useGlobalData();
   
   const {
@@ -61,6 +63,13 @@ const Calendar: React.FC = () => {
   useEffect(() => {
     fetchConfigStatus();
   }, [fetchConfigStatus]);
+
+  // Fetch company names for the initial/current selected date
+  useEffect(() => {
+    if (selectedDate) {
+      fetchCompanyNamesForDate(selectedDate);
+    }
+  }, [selectedDate, fetchCompanyNamesForDate]);
 
   // Modal states
   const [showEarningsModal, setShowEarningsModal] = useState<boolean>(false);
@@ -85,6 +94,8 @@ const Calendar: React.FC = () => {
   const handleDateChange = (value: string) => {
     setSelectedDate(value);
     updateFilters(undefined, undefined, value, undefined);
+    // Fetch company names for the new date
+    fetchCompanyNamesForDate(value);
   };
 
   const handleFilterChange = (value: boolean | null) => {
