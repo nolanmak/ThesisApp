@@ -25,7 +25,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
   onOpenConfigModal,
   isMobile = false
 }) => {
-  const { messages } = useGlobalData();
+  const { messages, companyNames } = useGlobalData();
 
   if (loading) {
     return (
@@ -61,12 +61,13 @@ const EarningsList: React.FC<EarningsListProps> = ({
           key={`${item.ticker}-${item.date}`} 
           className="bg-white border border-neutral-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col"
           style={{
-            aspectRatio: isMobile ? 'auto' : '1/1',
+            aspectRatio: isMobile ? 'auto' : 'auto', // Remove fixed aspect ratio to allow dynamic sizing
             padding: isMobile ? '12px 10px' : '16px',
             width: '100%',
             maxWidth: '100%',
             boxSizing: 'border-box',
-            overflowX: 'hidden'
+            overflowX: 'hidden',
+            minHeight: isMobile ? '200px' : '300px' // Set minimum height instead of fixed aspect ratio
           }}
         >
           <div 
@@ -211,11 +212,46 @@ const EarningsList: React.FC<EarningsListProps> = ({
             </div>
           )}
           
+          {/* Company Names Section */}
+          {companyNames[item.ticker] && companyNames[item.ticker].company_names.length > 0 && (
+            <div 
+              className="bg-blue-50 rounded-md border border-blue-200 p-2 mb-2"
+              style={{
+                marginBottom: isMobile ? '8px' : '8px',
+                width: '100%',
+                maxWidth: '100%',
+                boxSizing: 'border-box'
+              }}
+            >
+              <div 
+                className="font-semibold text-blue-800 mb-1"
+                style={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}
+              >
+                Company Name Variations ({companyNames[item.ticker].company_names.length})
+              </div>
+              <div 
+                className="max-h-24 overflow-y-auto text-blue-700"
+                style={{ fontSize: isMobile ? '0.65rem' : '0.7rem' }}
+              >
+                {companyNames[item.ticker].company_names.slice(0, 10).map((name, index) => (
+                  <div key={index} className="truncate" title={name}>
+                    • {name}
+                  </div>
+                ))}
+                {companyNames[item.ticker].company_names.length > 10 && (
+                  <div className="text-blue-600 font-medium">
+                    +{companyNames[item.ticker].company_names.length - 10} more...
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
           {/* Message Analysis Section */}
           <div 
             className="flex-grow bg-neutral-50 rounded-md border border-neutral-200 p-2"
             style={{
-              marginTop: isMobile ? '8px' : '8px',
+              marginTop: isMobile ? '4px' : '4px',
               minHeight: isMobile ? '60px' : '80px',
               width: '100%',
               maxWidth: '100%',

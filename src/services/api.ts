@@ -387,6 +387,7 @@ export interface CompanyNameData {
   company_names: string[];
 }
 
+
 export const getCompanyNames = async (ticker: string): Promise<CompanyNameData | null> => {
   try {
     const cacheKey = `company_names_${ticker}`;
@@ -411,7 +412,39 @@ export const getCompanyNames = async (ticker: string): Promise<CompanyNameData |
       throw new Error(`Failed to fetch company names for ${ticker}: ${response.status}`);
     }
 
-    const data = await response.json() as CompanyNameData;
+    const rawData = await response.json();
+    
+    // Parse the response format: array of objects with "S" keys
+    let company_names: string[] = [];
+    
+    if (Array.isArray(rawData)) {
+      // Handle array format: [{ "S": "name1" }, { "S": "name2" }]
+      company_names = rawData
+        .filter(item => item && typeof item === 'object' && item.S)
+        .map(item => item.S)
+        .filter(name => typeof name === 'string' && name.trim().length > 0);
+    } else if (rawData && typeof rawData === 'object') {
+      // Handle object format: { "ticker": [...], "company_names": [...] }
+      if (rawData.company_names && Array.isArray(rawData.company_names)) {
+        company_names = rawData.company_names;
+      } else {
+        // Look for any array property in the response
+        const arrayValue = Object.values(rawData).find(value => Array.isArray(value));
+        if (arrayValue) {
+          company_names = arrayValue
+            .filter(item => item && typeof item === 'object' && item.S)
+            .map(item => item.S)
+            .filter(name => typeof name === 'string' && name.trim().length > 0);
+        }
+      }
+    }
+    
+    const data: CompanyNameData = {
+      ticker,
+      company_names
+    };
+    
+    console.log(`Parsed company names for ${ticker}:`, company_names);
     
     // Cache the result for 30 minutes
     cache.set(cacheKey, data, 30 * 60 * 1000);
