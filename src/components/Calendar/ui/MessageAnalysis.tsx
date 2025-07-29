@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Message } from '../../../types';
+import { Info } from 'lucide-react';
 
 interface MessageAnalysisProps {
   ticker: string;
@@ -26,8 +27,61 @@ interface AnalysisResult {
     total: number;
     messages: Message[];
     hasDifferences: boolean;
+    differences?: string[];
   };
 }
+
+const compareAnalysisMessages = (messages: Message[]): { hasDifferences: boolean; differences: string[] } => {
+  if (messages.length <= 1) {
+    return { hasDifferences: false, differences: [] };
+  }
+
+  const differences: string[] = [];
+  const firstMessage = messages[0];
+  
+  for (let i = 1; i < messages.length; i++) {
+    const currentMessage = messages[i];
+    
+    // Compare message content length
+    const firstLength = firstMessage.discord_message?.length || 0;
+    const currentLength = currentMessage.discord_message?.length || 0;
+    const lengthDiff = Math.abs(firstLength - currentLength);
+    
+    if (lengthDiff > 50) { // Significant difference in content length
+      differences.push(`Message ${i + 1} has ${lengthDiff > 0 ? 'significantly more' : 'significantly less'} content`);
+    }
+    
+    // Compare timestamps (if more than 5 minutes apart, they might be different versions)
+    const firstTime = new Date(firstMessage.timestamp).getTime();
+    const currentTime = new Date(currentMessage.timestamp).getTime();
+    const timeDiff = Math.abs(firstTime - currentTime);
+    
+    if (timeDiff > 5 * 60 * 1000) { // More than 5 minutes apart
+      differences.push(`Message ${i + 1} published ${Math.round(timeDiff / (60 * 1000))} minutes apart`);
+    }
+    
+    // Compare source if available
+    if (firstMessage.source !== currentMessage.source) {
+      differences.push(`Different sources: "${firstMessage.source || 'unknown'}" vs "${currentMessage.source || 'unknown'}"`);
+    }
+    
+    // Simple content comparison (check for key differences)
+    if (firstMessage.discord_message && currentMessage.discord_message) {
+      const firstWords = firstMessage.discord_message.toLowerCase().split(/\s+/);
+      const currentWords = currentMessage.discord_message.toLowerCase().split(/\s+/);
+      
+      // Check for significantly different word counts
+      if (Math.abs(firstWords.length - currentWords.length) > 10) {
+        differences.push(`Message ${i + 1} has ${Math.abs(firstWords.length - currentWords.length)} more/fewer words`);
+      }
+    }
+  }
+  
+  return {
+    hasDifferences: differences.length > 0,
+    differences
+  };
+};
 
 const analyzeMessages = (messages: Message[], ticker: string, date: string): AnalysisResult => {
   // Filter messages for the specific ticker and date
@@ -86,7 +140,7 @@ const analyzeMessages = (messages: Message[], ticker: string, date: string): Ana
   });
 
   // Check for differences in analysis messages
-  const hasDifferences = analysisMessages.length > 1;
+  const comparisonResult = compareAnalysisMessages(analysisMessages);
 
   return {
     totalMessages: relevantMessages.length,
@@ -99,7 +153,8 @@ const analyzeMessages = (messages: Message[], ticker: string, date: string): Ana
     analysisMessages: {
       total: analysisMessages.length,
       messages: analysisMessages,
-      hasDifferences
+      hasDifferences: comparisonResult.hasDifferences,
+      differences: comparisonResult.differences
     }
   };
 };
@@ -110,6 +165,8 @@ const MessageAnalysis: React.FC<MessageAnalysisProps> = ({
   messages,
   isMobile = false
 }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  
   try {
     // Ensure messages is an array and has valid data
     if (!Array.isArray(messages)) {
@@ -188,14 +245,45 @@ const MessageAnalysis: React.FC<MessageAnalysisProps> = ({
 
       {/* Analysis Messages Section */}
       {analysis.analysisMessages.total > 0 && (
-        <div className="bg-green-50 border border-green-200 rounded p-2">
-          <div className="font-semibold text-green-800 mb-1">
-            Analysis Messages ({analysis.analysisMessages.total})
+        <div className="bg-green-50 border border-green-200 rounded p-2 relative">
+          <div className="font-semibold text-green-800 mb-1 flex items-center justify-between">
+            <span>Analysis Messages ({analysis.analysisMessages.total})</span>
+            {analysis.analysisMessages.hasDifferences && analysis.analysisMessages.differences && (
+              <div className="relative">
+                <button
+                  onMouseEnter={() => setShowTooltip(true)}
+                  onMouseLeave={() => setShowTooltip(false)}
+                  className="text-orange-600 hover:text-orange-800"
+                >
+                  <Info size={14} />
+                </button>
+                {showTooltip && (
+                  <div className="absolute right-0 top-6 z-10 w-64 bg-white border border-gray-300 rounded shadow-lg p-3 text-xs">
+                    <div className="font-semibold text-gray-800 mb-2">Analysis Differences:</div>
+                    <ul className="text-gray-700 space-y-1">
+                      {analysis.analysisMessages.differences.map((diff, index) => (
+                        <li key={index} className="flex items-start">
+                          <span className="text-orange-500 mr-1">•</span>
+                          <span>{diff}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           
           {analysis.analysisMessages.hasDifferences && analysis.analysisMessages.total > 1 && (
+            <div className="text-orange-700 flex items-center">
+              <span className="mr-1">⚠️</span>
+              <span>Multiple analyses with differences detected</span>
+            </div>
+          )}
+          
+          {!analysis.analysisMessages.hasDifferences && analysis.analysisMessages.total > 1 && (
             <div className="text-green-700">
-              ⚠️ Multiple analyses found - review differences
+              ✓ Multiple consistent analyses
             </div>
           )}
           
