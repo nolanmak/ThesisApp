@@ -380,3 +380,63 @@ export const updateUserProfile = async (profileData: UserProfile): Promise<UserP
     throw error;
   }
 };
+
+// Company Names API
+export interface CompanyNameData {
+  ticker: string;
+  company_names: string[];
+}
+
+export const getCompanyNames = async (ticker: string): Promise<CompanyNameData | null> => {
+  try {
+    const cacheKey = `company_names_${ticker}`;
+    const cachedData = cache.get<CompanyNameData>(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+
+    // Use direct API call to the specific endpoint
+    const response = await fetch(`https://47mvxdbu6f.execute-api.us-east-1.amazonaws.com/stock-names/${ticker}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log(`No company names found for ticker: ${ticker}`);
+        return null;
+      }
+      throw new Error(`Failed to fetch company names for ${ticker}: ${response.status}`);
+    }
+
+    const data = await response.json() as CompanyNameData;
+    
+    // Cache the result for 30 minutes
+    cache.set(cacheKey, data, 30 * 60 * 1000);
+    
+    return data;
+  } catch (error) {
+    console.error(`Error fetching company names for ${ticker}:`, error);
+    return null;
+  }
+};
+
+export const getBatchCompanyNames = async (tickers: string[]): Promise<CompanyNameData[]> => {
+  try {
+    // Fetch all company names in parallel
+    const promises = tickers.map(ticker => getCompanyNames(ticker));
+    const results = await Promise.allSettled(promises);
+    
+    // Filter out failed requests and null results
+    return results
+      .filter((result): result is PromiseFulfilledResult<CompanyNameData> => 
+        result.status === 'fulfilled' && result.value !== null
+      )
+      .map(result => result.value);
+  } catch (error) {
+    console.error('Error fetching batch company names:', error);
+    return [];
+  }
+};
