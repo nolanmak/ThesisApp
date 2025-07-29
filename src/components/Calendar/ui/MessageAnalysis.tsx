@@ -31,6 +31,37 @@ interface AnalysisResult {
   };
 }
 
+const extractMetrics = (message: Message) => {
+  const content = message.discord_message?.toLowerCase() || '';
+  const metrics: any = {};
+  
+  // Revenue patterns
+  const revenueMatch = content.match(/(?:revenue|sales).*?([\d.,]+)\s*(?:billion|million|thousand|b|m|k)?/i);
+  if (revenueMatch) {
+    metrics.revenue = revenueMatch[1];
+  }
+  
+  // EPS patterns
+  const epsMatch = content.match(/(?:eps|earnings per share).*?\$?([\d.-]+)/i);
+  if (epsMatch) {
+    metrics.eps = epsMatch[1];
+  }
+  
+  // Guidance patterns
+  const guidanceMatch = content.match(/(?:guidance|outlook|forecast).*?([\d.,]+)/i);
+  if (guidanceMatch) {
+    metrics.guidance = guidanceMatch[1];
+  }
+  
+  // Beat/Miss patterns
+  const beatMiss = content.match(/(?:beat|miss|exceeded|fell short)/i);
+  if (beatMiss) {
+    metrics.performance = beatMiss[0];
+  }
+  
+  return metrics;
+};
+
 const compareAnalysisMessages = (messages: Message[]): { hasDifferences: boolean; differences: string[] } => {
   if (messages.length <= 1) {
     return { hasDifferences: false, differences: [] };
@@ -38,17 +69,37 @@ const compareAnalysisMessages = (messages: Message[]): { hasDifferences: boolean
 
   const differences: string[] = [];
   const firstMessage = messages[0];
+  const firstMetrics = extractMetrics(firstMessage);
   
   for (let i = 1; i < messages.length; i++) {
     const currentMessage = messages[i];
+    const currentMetrics = extractMetrics(currentMessage);
+    
+    // Compare extracted metrics
+    if (firstMetrics.revenue && currentMetrics.revenue && firstMetrics.revenue !== currentMetrics.revenue) {
+      differences.push(`Revenue differs: ${firstMetrics.revenue} vs ${currentMetrics.revenue}`);
+    }
+    
+    if (firstMetrics.eps && currentMetrics.eps && firstMetrics.eps !== currentMetrics.eps) {
+      differences.push(`EPS differs: $${firstMetrics.eps} vs $${currentMetrics.eps}`);
+    }
+    
+    if (firstMetrics.guidance && currentMetrics.guidance && firstMetrics.guidance !== currentMetrics.guidance) {
+      differences.push(`Guidance differs: ${firstMetrics.guidance} vs ${currentMetrics.guidance}`);
+    }
+    
+    if (firstMetrics.performance && currentMetrics.performance && firstMetrics.performance !== currentMetrics.performance) {
+      differences.push(`Performance assessment differs: ${firstMetrics.performance} vs ${currentMetrics.performance}`);
+    }
     
     // Compare message content length
     const firstLength = firstMessage.discord_message?.length || 0;
     const currentLength = currentMessage.discord_message?.length || 0;
     const lengthDiff = Math.abs(firstLength - currentLength);
     
-    if (lengthDiff > 50) { // Significant difference in content length
-      differences.push(`Message ${i + 1} has ${lengthDiff > 0 ? 'significantly more' : 'significantly less'} content`);
+    if (lengthDiff > 100) { // Significant difference in content length
+      const percentage = Math.round((lengthDiff / Math.max(firstLength, currentLength)) * 100);
+      differences.push(`Message ${i + 1} has ${percentage}% ${currentLength > firstLength ? 'more' : 'less'} content`);
     }
     
     // Compare timestamps (if more than 5 minutes apart, they might be different versions)
@@ -57,23 +108,13 @@ const compareAnalysisMessages = (messages: Message[]): { hasDifferences: boolean
     const timeDiff = Math.abs(firstTime - currentTime);
     
     if (timeDiff > 5 * 60 * 1000) { // More than 5 minutes apart
-      differences.push(`Message ${i + 1} published ${Math.round(timeDiff / (60 * 1000))} minutes apart`);
+      const minutesDiff = Math.round(timeDiff / (60 * 1000));
+      differences.push(`${minutesDiff} minute${minutesDiff !== 1 ? 's' : ''} time difference`);
     }
     
     // Compare source if available
     if (firstMessage.source !== currentMessage.source) {
-      differences.push(`Different sources: "${firstMessage.source || 'unknown'}" vs "${currentMessage.source || 'unknown'}"`);
-    }
-    
-    // Simple content comparison (check for key differences)
-    if (firstMessage.discord_message && currentMessage.discord_message) {
-      const firstWords = firstMessage.discord_message.toLowerCase().split(/\s+/);
-      const currentWords = currentMessage.discord_message.toLowerCase().split(/\s+/);
-      
-      // Check for significantly different word counts
-      if (Math.abs(firstWords.length - currentWords.length) > 10) {
-        differences.push(`Message ${i + 1} has ${Math.abs(firstWords.length - currentWords.length)} more/fewer words`);
-      }
+      differences.push(`Different sources: ${firstMessage.source || 'unknown'} vs ${currentMessage.source || 'unknown'}`);
     }
   }
   
@@ -258,16 +299,22 @@ const MessageAnalysis: React.FC<MessageAnalysisProps> = ({
                   <Info size={14} />
                 </button>
                 {showTooltip && (
-                  <div className="absolute right-0 top-6 z-10 w-64 bg-white border border-gray-300 rounded shadow-lg p-3 text-xs">
-                    <div className="font-semibold text-gray-800 mb-2">Analysis Differences:</div>
-                    <ul className="text-gray-700 space-y-1">
+                  <div className="absolute right-0 bottom-6 z-50 w-72 bg-white border border-gray-300 rounded-lg shadow-xl p-4 text-xs">
+                    <div className="font-semibold text-gray-800 mb-3 flex items-center">
+                      <Info size={12} className="mr-1 text-orange-500" />
+                      Analysis Differences
+                    </div>
+                    <div className="max-h-40 overflow-y-auto space-y-2">
                       {analysis.analysisMessages.differences.map((diff, index) => (
-                        <li key={index} className="flex items-start">
-                          <span className="text-orange-500 mr-1">•</span>
-                          <span>{diff}</span>
-                        </li>
+                        <div key={index} className="flex items-start p-2 bg-orange-50 rounded border-l-2 border-orange-200">
+                          <span className="text-orange-500 mr-2 font-bold">•</span>
+                          <span className="text-gray-700 leading-tight">{diff}</span>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
+                      {analysis.analysisMessages.total} analysis message{analysis.analysisMessages.total !== 1 ? 's' : ''} compared
+                    </div>
                   </div>
                 )}
               </div>
