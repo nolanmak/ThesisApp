@@ -27,9 +27,6 @@ const EarningsList: React.FC<EarningsListProps> = ({
 }) => {
   const { messages, companyNames } = useGlobalData();
   
-  // Debug logging
-  console.log('🎯 EarningsList render - Company names available:', Object.keys(companyNames));
-  console.log('📋 Items to render:', items.map(item => item.ticker));
 
   if (loading) {
     return (
