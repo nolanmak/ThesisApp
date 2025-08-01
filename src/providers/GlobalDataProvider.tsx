@@ -2,7 +2,7 @@ import React, { createContext, useMemo, useState, useCallback } from 'react';
 import useMessagesData from '../components/Earnings/hooks/useMessagesData';
 import useEarningsData from '../components/Calendar/hooks/useEarningsData';
 import { Message, EarningsItem } from '../types';
-import { getBatchCompanyNames, CompanyNameData } from '../services/api';
+import { CompanyNameData } from '../services/api';
 
 // Define the context shape
 interface GlobalDataContextType {
@@ -52,7 +52,7 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const releaseTime = null;
   
   // Company names state
-  const [companyNames, setCompanyNames] = useState<Record<string, CompanyNameData>>({});
+  const [companyNames] = useState<Record<string, CompanyNameData>>({});
   const [companyNamesLoading, setCompanyNamesLoading] = useState(false);
   
   // Initialize data hooks with persistent connection
@@ -93,7 +93,7 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [earningsItems]);
 
   // Function to fetch company names for all tickers on a specific date
-  const fetchCompanyNamesForDate = useCallback(async (date: string) => {
+  const fetchCompanyNamesForDate = useCallback(async () => {
     // TEMPORARILY DISABLED - API calls failing with CORS errors
     /*
     try {
@@ -151,7 +151,7 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     
     // Just set loading to false since we're not making the call
     setCompanyNamesLoading(false);
-  }, [earningsItems, companyNames]);
+  }, []);
 
   // Enrich messages with company names
   const messages = useMemo(() => {
@@ -173,7 +173,7 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     webSocketEnabled,
     refreshMessages: async () => {
       // Call the renamed fetchMessages function
-      await refreshMessages();
+      refreshMessages();
       return Promise.resolve();
     },
     toggleWebSocket,
@@ -185,7 +185,7 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     filteredEarningsItems,
     earningsLoading,
     refreshEarningsItems: async () => {
-      await refreshEarningsItems();
+      refreshEarningsItems();
       return Promise.resolve();
     },
     handleToggleActive,
