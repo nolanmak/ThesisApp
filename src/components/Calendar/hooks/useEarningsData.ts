@@ -160,27 +160,13 @@ const useEarningsData = (
     selectedDate?: string,
     releaseTime?: string | null
   ) => {
-    console.log('🔧 updateFilters called with:', { searchTicker, filterActive, selectedDate, releaseTime });
-    
-    setState(prev => {
-      const newState = {
-        ...prev,
-        ...(searchTicker !== undefined ? { searchTicker } : {}),
-        ...(filterActive !== undefined ? { filterActive } : {}),
-        ...(selectedDate !== undefined ? { selectedDate } : {}),
-        ...(releaseTime !== undefined ? { releaseTime } : {})
-      };
-      
-      console.log('🔧 New filter state:', {
-        searchTicker: newState.searchTicker,
-        filterActive: newState.filterActive,
-        selectedDate: newState.selectedDate,
-        releaseTime: newState.releaseTime,
-        totalItems: prev.earningsItems.length
-      });
-      
-      return newState;
-    });
+    setState(prev => ({
+      ...prev,
+      ...(searchTicker !== undefined ? { searchTicker } : {}),
+      ...(filterActive !== undefined ? { filterActive } : {}),
+      ...(selectedDate !== undefined ? { selectedDate } : {}),
+      ...(releaseTime !== undefined ? { releaseTime } : {})
+    }));
   }, []);
 
   // Function to apply filters immediately
@@ -188,8 +174,6 @@ const useEarningsData = (
     setState(prev => {
       // First, get items for the selected date
       const itemsForDate = prev.earningsItems.filter(item => item.date === prev.selectedDate);
-      
-      console.log(`📅 Items for ${prev.selectedDate}:`, itemsForDate.length);
       
       // Then apply other filters only to those items
       const filtered = itemsForDate.filter(item => {
@@ -211,23 +195,8 @@ const useEarningsData = (
         const matchesReleaseTime = prev.releaseTime === null || 
           item.release_time === prev.releaseTime;
         
-        // Debug logging for filtering - only show items for selected date when filtering active list
-        if (prev.filterActive === true) {
-          console.log(`🔍 Active List Filtering ${item.ticker} (already on ${prev.selectedDate}):`, {
-            '⚡ IS_ACTIVE RAW': item.is_active,
-            '⚡ IS_ACTIVE TYPE': typeof item.is_active,
-            '⚡ IS_ACTIVE === true': item.is_active === true,
-            '⚡ IS_ACTIVE == true': item.is_active == true,
-            '✅ ACTIVE MATCH': matchesActive,
-            '🎯 FINAL RESULT': matchesSearch && matchesActive && matchesReleaseTime,
-            '❌ FAILING BECAUSE': !matchesSearch ? 'SEARCH MISMATCH' : !matchesActive ? 'ACTIVE TYPE MISMATCH' : !matchesReleaseTime ? 'TIME MISMATCH' : 'SHOULD PASS'
-          });
-        }
-        
         return matchesSearch && matchesActive && matchesReleaseTime;
       });
-      
-      console.log(`✅ Final filtered items:`, filtered.length);
       
       return {
         ...prev,
