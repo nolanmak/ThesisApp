@@ -33,7 +33,7 @@ const useEarningsData = (
     releaseTime: initialReleaseTime
   });
 
-  // Fetch earnings items
+  // Fetch earnings items (can be called to refresh after bulk uploads)
   const fetchEarningsItems = useCallback(async () => {
     setState(prev => ({ ...prev, loading: true }));
     try {
@@ -62,6 +62,7 @@ const useEarningsData = (
       };
       await updateEarningsItem(updatedItem);
       
+      // Update local state instead of refetching
       setState(prev => ({
         ...prev,
         earningsItems: prev.earningsItems.map(i => 
@@ -85,6 +86,7 @@ const useEarningsData = (
       };
       await updateEarningsItem(updatedItem);
       
+      // Update local state instead of refetching
       setState(prev => ({
         ...prev,
         earningsItems: prev.earningsItems.map(i => 
@@ -108,6 +110,7 @@ const useEarningsData = (
       };
       await updateEarningsItem(updatedItem);
       
+      // Update local state instead of refetching
       setState(prev => ({
         ...prev,
         earningsItems: prev.earningsItems.map(i => 
@@ -134,10 +137,13 @@ const useEarningsData = (
       };
       
       await createEarningsItem(newItem);
+      
+      // Add to local state instead of refetching
       setState(prev => ({
         ...prev,
         earningsItems: [...prev.earningsItems, newItem]
       }));
+      
       toast.success(`Added ${newItem.ticker} for ${formattedDate}`);
       return true;
     } catch (error) {
@@ -163,53 +169,46 @@ const useEarningsData = (
     }));
   }, []);
 
-  // Apply filters to earnings items
-  useEffect(() => {
-    setState(prev => ({
-      ...prev,
-      filteredEarningsItems: prev.earningsItems.filter(item => {
-        const matchesDate = item.date === prev.selectedDate;
-        
-        // More robust string type check
+  // Function to apply filters immediately
+  const applyFilters = useCallback(() => {
+    setState(prev => {
+      // First, get items for the selected date
+      const itemsForDate = prev.earningsItems.filter(item => item.date === prev.selectedDate);
+      
+      // Then apply other filters only to those items
+      const filtered = itemsForDate.filter(item => {
         const searchTickerStr = typeof prev.searchTicker === 'string' ? prev.searchTicker : '';
         const searchLower = searchTickerStr.toLowerCase();
         
-        // Check if search starts with $ to search only by ticker
         const isTickerOnlySearch = searchTickerStr.startsWith('$');
-        // If starts with $, remove it for the actual search
         const searchTermLower = isTickerOnlySearch ? searchLower.substring(1) : searchLower;
         
-        // Search in ticker only if starts with $, otherwise search in both ticker and company name
         const matchesSearch = searchTickerStr === '' || 
           item.ticker.toLowerCase().includes(searchTermLower) || 
           (!isTickerOnlySearch && item.company_name && item.company_name.toLowerCase().includes(searchTermLower));
           
+        // Handle both boolean and string values for is_active
         const matchesActive = prev.filterActive === null || 
-          item.is_active === prev.filterActive;
+          (prev.filterActive === true && (item.is_active === true || item.is_active === "true")) ||
+          (prev.filterActive === false && (item.is_active === false || item.is_active === "false"));
         
         const matchesReleaseTime = prev.releaseTime === null || 
           item.release_time === prev.releaseTime;
         
-        // Debug logging for filtering
-        console.log(`Filtering ${item.ticker}:`, {
-          date: item.date,
-          selectedDate: prev.selectedDate,
-          matchesDate,
-          searchTicker: prev.searchTicker,
-          matchesSearch,
-          filterActive: prev.filterActive,
-          is_active: item.is_active,
-          matchesActive,
-          releaseTime: prev.releaseTime,
-          item_release_time: item.release_time,
-          matchesReleaseTime,
-          finalResult: matchesDate && matchesSearch && matchesActive && matchesReleaseTime
-        });
-        
-        return matchesDate && matchesSearch && matchesActive && matchesReleaseTime;
-      })
-    }));
-  }, [state.earningsItems, state.searchTicker, state.filterActive, state.selectedDate, state.releaseTime]);
+        return matchesSearch && matchesActive && matchesReleaseTime;
+      });
+      
+      return {
+        ...prev,
+        filteredEarningsItems: filtered
+      };
+    });
+  }, []);
+
+  // Apply filters when data or filters change
+  useEffect(() => {
+    applyFilters();
+  }, [state.earningsItems, state.searchTicker, state.filterActive, state.selectedDate, state.releaseTime, applyFilters]);
 
   // Initial data fetch
   useEffect(() => {

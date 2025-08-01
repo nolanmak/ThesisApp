@@ -26,6 +26,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
   isMobile = false
 }) => {
   const { messages, companyNames } = useGlobalData();
+  
 
   if (loading) {
     return (
@@ -213,7 +214,11 @@ const EarningsList: React.FC<EarningsListProps> = ({
           )}
           
           {/* Company Names Section */}
-          {companyNames[item.ticker] && companyNames[item.ticker].company_names.length > 0 && (
+          {(() => {
+            const hasCompanyNames = companyNames[item.ticker] && companyNames[item.ticker].company_names.length > 0;
+            console.log(`🏢 ${item.ticker} - Has company names:`, hasCompanyNames, companyNames[item.ticker]?.company_names?.length || 0);
+            return hasCompanyNames;
+          })() && (
             <div 
               className="bg-blue-50 rounded-md border border-blue-200 p-2 mb-2"
               style={{

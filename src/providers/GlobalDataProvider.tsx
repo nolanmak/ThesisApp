@@ -2,7 +2,7 @@ import React, { createContext, useMemo, useState, useCallback } from 'react';
 import useMessagesData from '../components/Earnings/hooks/useMessagesData';
 import useEarningsData from '../components/Calendar/hooks/useEarningsData';
 import { Message, EarningsItem } from '../types';
-import { getBatchCompanyNames, CompanyNameData } from '../services/api';
+import { CompanyNameData } from '../services/api';
 
 // Define the context shape
 interface GlobalDataContextType {
@@ -52,7 +52,7 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const releaseTime = null;
   
   // Company names state
-  const [companyNames, setCompanyNames] = useState<Record<string, CompanyNameData>>({});
+  const [companyNames] = useState<Record<string, CompanyNameData>>({});
   const [companyNamesLoading, setCompanyNamesLoading] = useState(false);
   
   // Initialize data hooks with persistent connection
@@ -93,47 +93,65 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [earningsItems]);
 
   // Function to fetch company names for all tickers on a specific date
-  const fetchCompanyNamesForDate = useCallback(async (date: string) => {
+  const fetchCompanyNamesForDate = useCallback(async () => {
+    // TEMPORARILY DISABLED - API calls failing with CORS errors
+    /*
     try {
       setCompanyNamesLoading(true);
+      console.log(`🔍 fetchCompanyNamesForDate called for date: ${date}`);
       
       // Get all tickers for the selected date
       const tickersForDate = earningsItems
         .filter(item => item.date === date)
         .map(item => item.ticker);
       
+      console.log(`📊 Found ${tickersForDate.length} tickers for ${date}:`, tickersForDate);
+      
       if (tickersForDate.length === 0) {
+        console.log('❌ No tickers found for date, returning early');
         return;
       }
       
       // Filter out tickers we already have data for
       const tickersToFetch = tickersForDate.filter(ticker => !companyNames[ticker]);
       
+      console.log(`💾 Current cached tickers:`, Object.keys(companyNames));
+      console.log(`🆕 Tickers to fetch: ${tickersToFetch.length}`, tickersToFetch);
+      
       if (tickersToFetch.length === 0) {
+        console.log('✅ All tickers already cached, returning early');
         return;
       }
       
-      console.log(`Fetching company names for ${tickersToFetch.length} tickers on ${date}:`, tickersToFetch);
+      console.log(`🌐 Fetching company names for ${tickersToFetch.length} tickers on ${date}:`, tickersToFetch);
       
       // Fetch company names for all tickers
       const companyNamesData = await getBatchCompanyNames(tickersToFetch);
+      
+      console.log(`📥 Received company names data:`, companyNamesData);
       
       // Update state with new company names
       setCompanyNames(prev => {
         const updated = { ...prev };
         companyNamesData.forEach(data => {
+          console.log(`💾 Caching data for ${data.ticker}:`, data.company_names.length, 'names');
           updated[data.ticker] = data;
         });
+        console.log(`📚 Updated company names state:`, Object.keys(updated));
         return updated;
       });
       
-      console.log(`Successfully fetched company names for ${companyNamesData.length} tickers`);
+      console.log(`✅ Successfully fetched company names for ${companyNamesData.length} tickers`);
     } catch (error) {
-      console.error('Error fetching company names for date:', error);
+      console.error('❌ Error fetching company names for date:', error);
     } finally {
       setCompanyNamesLoading(false);
     }
-  }, [earningsItems, companyNames]);
+    */
+    
+    // Just set loading to false since we're not making the call
+    setCompanyNamesLoading(false);
+  }, []);
 
   // Enrich messages with company names
   const messages = useMemo(() => {
@@ -155,7 +173,7 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     webSocketEnabled,
     refreshMessages: async () => {
       // Call the renamed fetchMessages function
-      await refreshMessages();
+      refreshMessages();
       return Promise.resolve();
     },
     toggleWebSocket,
