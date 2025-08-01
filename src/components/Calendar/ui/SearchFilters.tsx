@@ -141,7 +141,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
                   : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
               } transition-colors duration-150 ease-in-out flex-1`}
             >
-              Watchlist
+              Active List
             </button>
           </div>
         </div>
