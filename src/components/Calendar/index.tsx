@@ -92,7 +92,8 @@ const Calendar: React.FC = () => {
 
   const handleDateChange = (value: string) => {
     setSelectedDate(value);
-    updateFilters(undefined, undefined, value, undefined);
+    // Keep the current filter active state when changing dates
+    updateFilters(undefined, filterActive, value, undefined);
     // Fetch company names for the new date
     fetchCompanyNamesForDate(value);
   };
