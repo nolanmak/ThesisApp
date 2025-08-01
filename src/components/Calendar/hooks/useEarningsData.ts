@@ -9,7 +9,6 @@ import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 
 interface EarningsDataState {
-  earningsItems: EarningsItem[];
   filteredEarningsItems: EarningsItem[];
   loading: boolean;
   searchTicker: string;
@@ -24,7 +23,6 @@ const useEarningsData = (
   initialReleaseTime: string | null = null
 ) => {
   const [state, setState] = useState<EarningsDataState>({
-    earningsItems: [],
     filteredEarningsItems: [],
     loading: true,
     searchTicker: initialSearchTicker,
@@ -33,14 +31,38 @@ const useEarningsData = (
     releaseTime: initialReleaseTime
   });
 
-  // Fetch earnings items
-  const fetchEarningsItems = useCallback(async () => {
+  // Fetch and filter earnings items
+  const fetchAndFilterEarningsItems = useCallback(async () => {
     setState(prev => ({ ...prev, loading: true }));
     try {
       const items = await getEarningsItems();
+      
+      // Apply filters to fresh data
+      const filtered = items.filter(item => {
+        const matchesDate = item.date === state.selectedDate;
+        
+        const searchTickerStr = typeof state.searchTicker === 'string' ? state.searchTicker : '';
+        const searchLower = searchTickerStr.toLowerCase();
+        
+        const isTickerOnlySearch = searchTickerStr.startsWith('$');
+        const searchTermLower = isTickerOnlySearch ? searchLower.substring(1) : searchLower;
+        
+        const matchesSearch = searchTickerStr === '' || 
+          item.ticker.toLowerCase().includes(searchTermLower) || 
+          (!isTickerOnlySearch && item.company_name && item.company_name.toLowerCase().includes(searchTermLower));
+          
+        const matchesActive = state.filterActive === null || 
+          item.is_active === state.filterActive;
+        
+        const matchesReleaseTime = state.releaseTime === null || 
+          item.release_time === state.releaseTime;
+        
+        return matchesDate && matchesSearch && matchesActive && matchesReleaseTime;
+      });
+
       setState(prev => ({
         ...prev,
-        earningsItems: items,
+        filteredEarningsItems: filtered,
         loading: false
       }));
     } catch (error) {
@@ -48,7 +70,7 @@ const useEarningsData = (
       toast.error('Failed to fetch earnings items');
       setState(prev => ({ ...prev, loading: false }));
     }
-  }, []);
+  }, [state.searchTicker, state.filterActive, state.selectedDate, state.releaseTime]);
 
   // Handle toggling active status for an earnings item
   const handleToggleActive = useCallback(async (item: EarningsItem) => {
@@ -62,19 +84,15 @@ const useEarningsData = (
       };
       await updateEarningsItem(updatedItem);
       
-      setState(prev => ({
-        ...prev,
-        earningsItems: prev.earningsItems.map(i => 
-          i.ticker === item.ticker && i.date === item.date ? updatedItem : i
-        )
-      }));
+      // Refetch fresh data instead of updating state
+      await fetchAndFilterEarningsItems();
       
       toast.success(`${item.ticker} is now ${!item.is_active ? 'active' : 'inactive'}`);
     } catch (error) {
       console.error('Failed to update item:', error);
       toast.error('Failed to update item');
     }
-  }, []);
+  }, [fetchAndFilterEarningsItems]);
 
   // Handle toggling just WireActive
   const handleToggleWireActive = useCallback(async (item: EarningsItem) => {
@@ -85,19 +103,15 @@ const useEarningsData = (
       };
       await updateEarningsItem(updatedItem);
       
-      setState(prev => ({
-        ...prev,
-        earningsItems: prev.earningsItems.map(i => 
-          i.ticker === item.ticker && i.date === item.date ? updatedItem : i
-        )
-      }));
+      // Refetch fresh data instead of updating state
+      await fetchAndFilterEarningsItems();
       
       toast.success(`${item.ticker} Wire is now ${!item.WireActive ? 'active' : 'inactive'}`);
     } catch (error) {
       console.error('Failed to update WireActive:', error);
       toast.error('Failed to update Wire status');
     }
-  }, []);
+  }, [fetchAndFilterEarningsItems]);
 
   // Handle toggling just IRActive
   const handleToggleIRActive = useCallback(async (item: EarningsItem) => {
@@ -108,19 +122,15 @@ const useEarningsData = (
       };
       await updateEarningsItem(updatedItem);
       
-      setState(prev => ({
-        ...prev,
-        earningsItems: prev.earningsItems.map(i => 
-          i.ticker === item.ticker && i.date === item.date ? updatedItem : i
-        )
-      }));
+      // Refetch fresh data instead of updating state
+      await fetchAndFilterEarningsItems();
       
       toast.success(`${item.ticker} IR is now ${!item.IRActive ? 'active' : 'inactive'}`);
     } catch (error) {
       console.error('Failed to update IRActive:', error);
       toast.error('Failed to update IR status');
     }
-  }, []);
+  }, [fetchAndFilterEarningsItems]);
 
   // Add new earnings item
   const addEarningsItem = useCallback(async (data: EarningsItem) => {
@@ -134,10 +144,10 @@ const useEarningsData = (
       };
       
       await createEarningsItem(newItem);
-      setState(prev => ({
-        ...prev,
-        earningsItems: [...prev.earningsItems, newItem]
-      }));
+      
+      // Refetch fresh data instead of updating state
+      await fetchAndFilterEarningsItems();
+      
       toast.success(`Added ${newItem.ticker} for ${formattedDate}`);
       return true;
     } catch (error) {
@@ -145,9 +155,9 @@ const useEarningsData = (
       toast.error('Failed to add item');
       return false;
     }
-  }, []);
+  }, [fetchAndFilterEarningsItems]);
 
-  // Update filters
+  // Update filters and refetch data
   const updateFilters = useCallback((
     searchTicker?: string,
     filterActive?: boolean | null,
@@ -163,68 +173,20 @@ const useEarningsData = (
     }));
   }, []);
 
-  // Apply filters to earnings items
+  // Fetch fresh data when filters change
   useEffect(() => {
-    setState(prev => ({
-      ...prev,
-      filteredEarningsItems: prev.earningsItems.filter(item => {
-        const matchesDate = item.date === prev.selectedDate;
-        
-        // More robust string type check
-        const searchTickerStr = typeof prev.searchTicker === 'string' ? prev.searchTicker : '';
-        const searchLower = searchTickerStr.toLowerCase();
-        
-        // Check if search starts with $ to search only by ticker
-        const isTickerOnlySearch = searchTickerStr.startsWith('$');
-        // If starts with $, remove it for the actual search
-        const searchTermLower = isTickerOnlySearch ? searchLower.substring(1) : searchLower;
-        
-        // Search in ticker only if starts with $, otherwise search in both ticker and company name
-        const matchesSearch = searchTickerStr === '' || 
-          item.ticker.toLowerCase().includes(searchTermLower) || 
-          (!isTickerOnlySearch && item.company_name && item.company_name.toLowerCase().includes(searchTermLower));
-          
-        const matchesActive = prev.filterActive === null || 
-          item.is_active === prev.filterActive;
-        
-        const matchesReleaseTime = prev.releaseTime === null || 
-          item.release_time === prev.releaseTime;
-        
-        // Debug logging for filtering
-        console.log(`Filtering ${item.ticker}:`, {
-          date: item.date,
-          selectedDate: prev.selectedDate,
-          matchesDate,
-          searchTicker: prev.searchTicker,
-          matchesSearch,
-          filterActive: prev.filterActive,
-          is_active: item.is_active,
-          matchesActive,
-          releaseTime: prev.releaseTime,
-          item_release_time: item.release_time,
-          matchesReleaseTime,
-          finalResult: matchesDate && matchesSearch && matchesActive && matchesReleaseTime
-        });
-        
-        return matchesDate && matchesSearch && matchesActive && matchesReleaseTime;
-      })
-    }));
-  }, [state.earningsItems, state.searchTicker, state.filterActive, state.selectedDate, state.releaseTime]);
-
-  // Initial data fetch
-  useEffect(() => {
-    fetchEarningsItems();
-  }, [fetchEarningsItems]);
+    fetchAndFilterEarningsItems();
+  }, [fetchAndFilterEarningsItems]);
 
   return {
-    earningsItems: state.earningsItems,
+    earningsItems: state.filteredEarningsItems, // Return filtered items as earningsItems for compatibility
     filteredEarningsItems: state.filteredEarningsItems,
     loading: state.loading,
     searchTicker: state.searchTicker,
     filterActive: state.filterActive,
     selectedDate: state.selectedDate,
     releaseTime: state.releaseTime,
-    fetchEarningsItems,
+    fetchEarningsItems: fetchAndFilterEarningsItems,
     handleToggleActive,
     handleToggleWireActive,
     handleToggleIRActive,
