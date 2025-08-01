@@ -94,6 +94,8 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // Function to fetch company names for all tickers on a specific date
   const fetchCompanyNamesForDate = useCallback(async (date: string) => {
+    // TEMPORARILY DISABLED - API calls failing with CORS errors
+    /*
     try {
       setCompanyNamesLoading(true);
       console.log(`🔍 fetchCompanyNamesForDate called for date: ${date}`);
@@ -145,6 +147,10 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } finally {
       setCompanyNamesLoading(false);
     }
+    */
+    
+    // Just set loading to false since we're not making the call
+    setCompanyNamesLoading(false);
   }, [earningsItems, companyNames]);
 
   // Enrich messages with company names
