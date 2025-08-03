@@ -34,10 +34,10 @@ const useEarningsData = (
   });
 
   // Fetch earnings items (can be called to refresh after bulk uploads)
-  const fetchEarningsItems = useCallback(async () => {
+  const fetchEarningsItems = useCallback(async (bypassCache: boolean = false) => {
     setState(prev => ({ ...prev, loading: true }));
     try {
-      const items = await getEarningsItems();
+      const items = await getEarningsItems(bypassCache);
       setState(prev => ({
         ...prev,
         earningsItems: items,
@@ -187,10 +187,10 @@ const useEarningsData = (
           item.ticker.toLowerCase().includes(searchTermLower) || 
           (!isTickerOnlySearch && item.company_name && item.company_name.toLowerCase().includes(searchTermLower));
           
-        // Handle both boolean and string values for is_active
+        // Handle is_active filtering
         const matchesActive = prev.filterActive === null || 
-          (prev.filterActive === true && (item.is_active === true || item.is_active === "true")) ||
-          (prev.filterActive === false && (item.is_active === false || item.is_active === "false"));
+          (prev.filterActive === true && Boolean(item.is_active)) ||
+          (prev.filterActive === false && !item.is_active);
         
         const matchesReleaseTime = prev.releaseTime === null || 
           item.release_time === prev.releaseTime;

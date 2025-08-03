@@ -22,7 +22,7 @@ interface GlobalDataContextType {
   earningsItems: EarningsItem[];
   filteredEarningsItems: EarningsItem[];
   earningsLoading: boolean;
-  refreshEarningsItems: () => Promise<void>;
+  refreshEarningsItems: (bypassCache?: boolean) => Promise<void>;
   handleToggleActive: (item: EarningsItem) => Promise<void>;
   handleToggleWireActive: (item: EarningsItem) => Promise<void>;
   handleToggleIRActive: (item: EarningsItem) => Promise<void>;
@@ -63,7 +63,7 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     connected: webSocketConnected,
     reconnecting: webSocketReconnecting,
     enabled: webSocketEnabled,
-    fetchMessages: refreshMessages,
+    fetchMessages: fetchMessagesFromHook,
     toggleEnabled: toggleWebSocket,
     updateSearchTicker: updateMessagesSearchTicker,
     convertToEasternTime,
@@ -73,7 +73,7 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     earningsItems,
     filteredEarningsItems,
     loading: earningsLoading,
-    fetchEarningsItems: refreshEarningsItems,
+    fetchEarningsItems: fetchEarningsItemsFromHook,
     handleToggleActive,
     handleToggleWireActive,
     handleToggleIRActive,
@@ -171,9 +171,9 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     webSocketConnected,
     webSocketReconnecting,
     webSocketEnabled,
-    refreshMessages: async () => {
-      // Call the renamed fetchMessages function
-      refreshMessages();
+    refreshMessages: async (bypassCache?: boolean) => {
+      // Call the fetchMessages function from the hook
+      fetchMessagesFromHook(bypassCache);
       return Promise.resolve();
     },
     toggleWebSocket,
@@ -184,8 +184,8 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     earningsItems,
     filteredEarningsItems,
     earningsLoading,
-    refreshEarningsItems: async () => {
-      refreshEarningsItems();
+    refreshEarningsItems: async (bypassCache?: boolean) => {
+      fetchEarningsItemsFromHook(bypassCache);
       return Promise.resolve();
     },
     handleToggleActive,
