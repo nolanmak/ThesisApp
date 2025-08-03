@@ -34,10 +34,10 @@ const useEarningsData = (
   });
 
   // Fetch earnings items (can be called to refresh after bulk uploads)
-  const fetchEarningsItems = useCallback(async () => {
+  const fetchEarningsItems = useCallback(async (bypassCache: boolean = false) => {
     setState(prev => ({ ...prev, loading: true }));
     try {
-      const items = await getEarningsItems();
+      const items = await getEarningsItems(bypassCache);
       setState(prev => ({
         ...prev,
         earningsItems: items,
