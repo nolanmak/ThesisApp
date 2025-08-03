@@ -63,7 +63,7 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     connected: webSocketConnected,
     reconnecting: webSocketReconnecting,
     enabled: webSocketEnabled,
-    fetchMessages: refreshMessages,
+    fetchMessages: fetchMessagesFromHook,
     toggleEnabled: toggleWebSocket,
     updateSearchTicker: updateMessagesSearchTicker,
     convertToEasternTime,
@@ -73,7 +73,7 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     earningsItems,
     filteredEarningsItems,
     loading: earningsLoading,
-    fetchEarningsItems: refreshEarningsItems,
+    fetchEarningsItems: fetchEarningsItemsFromHook,
     handleToggleActive,
     handleToggleWireActive,
     handleToggleIRActive,
@@ -172,8 +172,8 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     webSocketReconnecting,
     webSocketEnabled,
     refreshMessages: async (bypassCache?: boolean) => {
-      // Call the renamed fetchMessages function
-      refreshMessages(bypassCache);
+      // Call the fetchMessages function from the hook
+      fetchMessagesFromHook(bypassCache);
       return Promise.resolve();
     },
     toggleWebSocket,
@@ -185,7 +185,7 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     filteredEarningsItems,
     earningsLoading,
     refreshEarningsItems: async (bypassCache?: boolean) => {
-      refreshEarningsItems(bypassCache);
+      fetchEarningsItemsFromHook(bypassCache);
       return Promise.resolve();
     },
     handleToggleActive,
