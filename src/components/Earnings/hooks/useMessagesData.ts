@@ -135,10 +135,10 @@ const useMessagesData = (initialSearchTicker: string = '') => {
   }, [state.messages, state.searchTicker]);
 
   // Handle manual refresh with toast notification
-  const handleRefreshWithToast = useCallback(() => {
-    fetchMessages(true); // Bypass cache to get fresh data
+  const handleRefreshWithToast = useCallback((bypassCache: boolean = true) => {
+    fetchMessages(bypassCache); // Bypass cache to get fresh data
     toast.info('Feed refreshed');
-  }, [fetchMessages, convertToEasternTime]);
+  }, [fetchMessages]);
 
   // Track original unfiltered messages
   const originalMessagesRef = useRef<Message[]>([]);
