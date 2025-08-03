@@ -6,8 +6,8 @@ export interface EarningsItem {
   release_time: string;
   year: number;
   company_name?: string;
-  WireActive?: boolean;
-  IRActive?: boolean;
+  WireActive?: boolean | string;
+  IRActive?: boolean | string;
 }
 
 export type MetricItem = {
