@@ -27,6 +27,14 @@ const EarningsList: React.FC<EarningsListProps> = ({
 }) => {
   const { messages, companyNames } = useGlobalData();
   
+  // Helper function to normalize boolean/string values
+  const normalizeBooleanValue = (value: boolean | string | undefined): boolean => {
+    if (typeof value === 'string') {
+      return value.toLowerCase() === 'true';
+    }
+    return Boolean(value);
+  };
+  
 
   if (loading) {
     return (
@@ -178,13 +186,13 @@ const EarningsList: React.FC<EarningsListProps> = ({
                     onToggleWireActive(item);
                   }}
                   className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                    item.WireActive 
+                    normalizeBooleanValue(item.WireActive) 
                       ? 'bg-green-100 text-green-700 hover:bg-green-200' 
                       : 'bg-red-100 text-red-700 hover:bg-red-200'
                   }`}
                   style={{ fontSize: isMobile ? '0.65rem' : '0.7rem' }}
                 >
-                  {item.WireActive ? 'ON' : 'OFF'}
+                  {normalizeBooleanValue(item.WireActive) ? 'ON' : 'OFF'}
                 </button>
               </div>
               
@@ -201,13 +209,13 @@ const EarningsList: React.FC<EarningsListProps> = ({
                     onToggleIRActive(item);
                   }}
                   className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                    item.IRActive 
+                    normalizeBooleanValue(item.IRActive) 
                       ? 'bg-green-100 text-green-700 hover:bg-green-200' 
                       : 'bg-red-100 text-red-700 hover:bg-red-200'
                   }`}
                   style={{ fontSize: isMobile ? '0.65rem' : '0.7rem' }}
                 >
-                  {item.IRActive ? 'ON' : 'OFF'}
+                  {normalizeBooleanValue(item.IRActive) ? 'ON' : 'OFF'}
                 </button>
               </div>
             </div>
