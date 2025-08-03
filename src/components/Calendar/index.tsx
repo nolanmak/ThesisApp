@@ -45,7 +45,9 @@ const Calendar: React.FC = () => {
     handleToggleWireActive,
     handleToggleIRActive,
     updateEarningsFilters: updateFilters,
-    fetchCompanyNamesForDate
+    fetchCompanyNamesForDate,
+    refreshEarningsItems,
+    refreshMessages
   } = useGlobalData();
   
   const {
@@ -73,6 +75,9 @@ const Calendar: React.FC = () => {
   // Modal states
   const [showEarningsModal, setShowEarningsModal] = useState<boolean>(false);
   const [currentEarningsItem, setCurrentEarningsItem] = useState<EarningsItem | null>(null);
+  
+  // Refresh state
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   // Handlers for earnings modal
   const handleAddEarningsClick = () => {
@@ -111,6 +116,31 @@ const Calendar: React.FC = () => {
   const handleCloseConfigModal = () => {
     console.log('Closing config modal');
     closeConfigModal();
+  };
+
+  // Handler for cache refresh
+  const handleRefreshCache = async () => {
+    try {
+      setIsRefreshing(true);
+      console.log('🔄 Refreshing cache for earnings and messages data...');
+      
+      // Refresh both earnings and messages data with cache bypass
+      await Promise.all([
+        refreshEarningsItems(true),
+        refreshMessages(true)
+      ]);
+      
+      // Also refresh company names for current date
+      if (selectedDate) {
+        await fetchCompanyNamesForDate(selectedDate);
+      }
+      
+      console.log('✅ Cache refresh completed');
+    } catch (error) {
+      console.error('❌ Error refreshing cache:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   return (
@@ -154,6 +184,8 @@ const Calendar: React.FC = () => {
             onFilterChange={handleFilterChange}
             onReleaseTimeChange={handleReleaseTimeChange}
             onAddClick={handleAddEarningsClick}
+            onRefreshClick={handleRefreshCache}
+            isRefreshing={isRefreshing}
             isMobile={isMobile}
           />
           

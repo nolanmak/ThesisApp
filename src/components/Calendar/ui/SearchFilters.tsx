@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, CalendarIcon, Plus, Clock } from 'lucide-react';
+import { Search, CalendarIcon, Plus, Clock, RefreshCw } from 'lucide-react';
 
 interface SearchFiltersProps {
   searchTicker: string;
@@ -11,6 +11,8 @@ interface SearchFiltersProps {
   onFilterChange: (value: boolean | null) => void;
   onReleaseTimeChange: (value: string | null) => void;
   onAddClick: () => void;
+  onRefreshClick: () => void;
+  isRefreshing?: boolean;
   isMobile?: boolean;
 }
 
@@ -24,6 +26,8 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
   onFilterChange,
   onReleaseTimeChange,
   onAddClick,
+  onRefreshClick,
+  isRefreshing = false,
   isMobile = false
 }) => {
   return (
@@ -179,14 +183,32 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
         </div>
       </div>
       
-      {/* Add Item Button (just a plus icon) */}
+      {/* Action Buttons */}
       <div 
-        className="flex items-center"
+        className="flex items-center space-x-2"
         style={{
           alignSelf: isMobile ? 'flex-end' : undefined,
           marginTop: isMobile ? '4px' : '0'
         }}
       >
+        {/* Refresh Button */}
+        <button
+          onClick={onRefreshClick}
+          disabled={isRefreshing}
+          className="p-1.5 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-orange-400 transition-colors duration-150 ease-in-out shadow-sm flex items-center justify-center"
+          aria-label="Refresh Data"
+          style={{
+            height: '32px',
+            width: '32px'
+          }}
+        >
+          <RefreshCw 
+            size={16} 
+            className={isRefreshing ? 'animate-spin' : ''} 
+          />
+        </button>
+        
+        {/* Add Item Button */}
         <button
           onClick={onAddClick}
           className="p-1.5 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors duration-150 ease-in-out shadow-sm flex items-center justify-center"

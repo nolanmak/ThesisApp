@@ -22,7 +22,7 @@ interface GlobalDataContextType {
   earningsItems: EarningsItem[];
   filteredEarningsItems: EarningsItem[];
   earningsLoading: boolean;
-  refreshEarningsItems: () => Promise<void>;
+  refreshEarningsItems: (bypassCache?: boolean) => Promise<void>;
   handleToggleActive: (item: EarningsItem) => Promise<void>;
   handleToggleWireActive: (item: EarningsItem) => Promise<void>;
   handleToggleIRActive: (item: EarningsItem) => Promise<void>;
@@ -171,9 +171,9 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     webSocketConnected,
     webSocketReconnecting,
     webSocketEnabled,
-    refreshMessages: async () => {
+    refreshMessages: async (bypassCache?: boolean) => {
       // Call the renamed fetchMessages function
-      refreshMessages();
+      refreshMessages(bypassCache);
       return Promise.resolve();
     },
     toggleWebSocket,
@@ -184,8 +184,8 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     earningsItems,
     filteredEarningsItems,
     earningsLoading,
-    refreshEarningsItems: async () => {
-      refreshEarningsItems();
+    refreshEarningsItems: async (bypassCache?: boolean) => {
+      refreshEarningsItems(bypassCache);
       return Promise.resolve();
     },
     handleToggleActive,
