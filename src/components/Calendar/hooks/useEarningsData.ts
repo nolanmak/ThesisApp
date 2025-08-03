@@ -39,6 +39,15 @@ const useEarningsData = (
       setState((prev) => ({ ...prev, loading: true }));
       try {
         const items = await getEarningsItems(bypassCache);
+        
+        // Log IRActive values from database
+        console.log(`📊 Fetched ${items.length} earnings items from database:`);
+        items.forEach(item => {
+          if (item.IRActive !== undefined) {
+            console.log(`   ${item.ticker}: IRActive = ${item.IRActive} (type: ${typeof item.IRActive})`);
+          }
+        });
+        
         setState((prev) => ({
           ...prev,
           earningsItems: items,
@@ -120,7 +129,13 @@ const useEarningsData = (
   // Handle toggling just IRActive
   const handleToggleIRActive = useCallback(async (item: EarningsItem) => {
     try {
+      console.log(`🔍 IRActive toggle for ${item.ticker}:`);
+      console.log(`   Raw IRActive value:`, item.IRActive, `(type: ${typeof item.IRActive})`);
+      
       const currentIRActive = normalizeBooleanValue(item.IRActive);
+      console.log(`   Normalized IRActive:`, currentIRActive);
+      console.log(`   Will toggle to:`, !currentIRActive);
+      
       const updatedItem = {
         ...item, // Include all existing properties
         IRActive: !currentIRActive, // Only toggle IRActive
