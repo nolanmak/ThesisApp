@@ -208,7 +208,6 @@ const EarningsList: React.FC<EarningsListProps> = ({
             </div>
           )}
           
-          {/* Placeholder for future chart */}
           <div 
             className="flex-grow bg-neutral-50 rounded-md border border-dashed border-neutral-200 flex items-center justify-center"
             style={{
@@ -224,13 +223,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
                 className="text-neutral-400" 
                 style={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}
               >
-                No metrics added
-              </p>
-              <p 
-                className="text-neutral-400" 
-                style={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}
-              >
-                Click chart button to add
+                {item.is_active ? 'Market data moved to Messages' : 'Activate to enable features'}
               </p>
             </div>
           </div>

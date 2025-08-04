@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Message, MetricItem } from '../../../types';
 import { ExternalLink, BarChart2 } from 'lucide-react';
 import { ParseMessagePayload } from '../utils/messageUtils';
+import RealtimeTicker from './RealtimeTicker';
+import { useAlpacaMarketData } from '../../../hooks/useAlpacaMarketData';
 
 interface MessagesListProps {
   messages: Message[];
@@ -91,6 +93,19 @@ const MessagesList: React.FC<MessagesListProps> = ({
   const allSeenMessageIdsRef = useRef<Set<string>>(new Set());
   const prevMessagesRef = useRef<Message[]>([]);
   const initialLoadCompletedRef = useRef<boolean>(false);
+  
+  // Extract unique ticker symbols from messages for market data
+  const uniqueTickers = React.useMemo(() => {
+    const tickerSet = new Set<string>();
+    deduplicatedMessages.forEach(message => {
+      if (message.ticker) {
+        tickerSet.add(message.ticker);
+      }
+    });
+    return Array.from(tickerSet);
+  }, [deduplicatedMessages]);
+
+  const { marketData, isConnected, resetAllCumulativeVolume } = useAlpacaMarketData(uniqueTickers);
   
   useEffect(() => {
     const searchParam = new URLSearchParams(window.location.search).get('search');
@@ -229,14 +244,36 @@ const MessagesList: React.FC<MessagesListProps> = ({
   }
 
   return (
-    <div 
-      className="max-h-[calc(100vh-120px)] overflow-auto scrollbar-hide"
-      style={{
-        width: '100%',
-        maxWidth: '100%',
-        overflowX: 'hidden'
-      }}
-    >
+    <div className="flex flex-col">
+      {/* Market Data Controls */}
+      {uniqueTickers.length > 0 && (
+        <div className="bg-white border-b border-neutral-100 px-3 py-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className="text-xs text-neutral-600">
+                {isConnected ? 'Market data connected' : 'Market data disconnected'}
+              </span>
+            </div>
+            <button
+              onClick={resetAllCumulativeVolume}
+              className="text-xs px-2 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
+              title="Reset session volume tracking for all symbols"
+            >
+              Reset Volume
+            </button>
+          </div>
+        </div>
+      )}
+      
+      <div 
+        className="max-h-[calc(100vh-120px)] overflow-auto scrollbar-hide"
+        style={{
+          width: '100%',
+          maxWidth: '100%',
+          overflowX: 'hidden'
+        }}
+      >
       {deduplicatedMessages.map((message, index) => (
         <div 
           key={message.message_id}
@@ -256,86 +293,88 @@ const MessagesList: React.FC<MessagesListProps> = ({
         >
           {message.link ? (
             /* Link message - show on a single line like analysis messages */
-            <div
-              className="flex justify-between items-center cursor-pointer transition-colors"
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: '0',
-                width: '100%',
-                maxWidth: '100%',
-                overflow: 'hidden',
-              }}
-            >
+            <div className="flex flex-col">
               <div
-                className="flex items-center"
+                className="flex justify-between items-center cursor-pointer transition-colors"
                 style={{
-                  flexWrap: 'nowrap',
-                  gap: '4px',
-                  width: isMobile ? 'calc(100% - 30px)' : undefined,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: '0',
+                  width: '100%',
                   maxWidth: '100%',
                   overflow: 'hidden',
                 }}
               >
-                {/* Ticker and company name */}
-                <div 
-                  className="flex items-center space-x-1 px-1.5 py-0.5 text-xs"
+                <div
+                  className="flex items-center"
                   style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    padding: '2px 6px',
-                    width: 'auto',
-                    maxWidth: isMobile ? 'calc(100% - 30px)' : '100%',
-                    boxSizing: 'border-box',
-                    overflowX: 'hidden'
+                    flexWrap: 'nowrap',
+                    gap: '4px',
+                    width: isMobile ? 'calc(100% - 30px)' : undefined,
+                    maxWidth: '100%',
+                    overflow: 'hidden',
                   }}
                 >
-                  <span 
-                    className="font-medium text-neutral-800"
+                  {/* Ticker and company name */}
+                  <div 
+                    className="flex items-center space-x-1 px-1.5 py-0.5 text-xs"
                     style={{
-                      display: 'flex',
                       flexDirection: 'row',
                       alignItems: 'center',
-                      whiteSpace: 'nowrap'
+                      padding: '2px 6px',
+                      width: 'auto',
+                      maxWidth: isMobile ? 'calc(100% - 30px)' : '100%',
+                      boxSizing: 'border-box',
+                      overflowX: 'hidden'
                     }}
                   >
-                    {message.ticker}
-                  </span>
-                  
-                  {message.company_name && (
-                    <span
-                      className="text-neutral-500"
+                    <span 
+                      className="font-medium text-neutral-800"
                       style={{
-                        maxWidth: isMobile ? '60px' : '200px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
+                        display: 'flex',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        whiteSpace: 'nowrap'
                       }}
                     >
-                      {message.company_name}
+                      {message.ticker}
                     </span>
-                  )}
+                    
+                    {message.company_name && (
+                      <span
+                        className="text-neutral-500"
+                        style={{
+                          maxWidth: isMobile ? '60px' : '200px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {message.company_name}
+                      </span>
+                    )}
+                    
+                    <span className="text-neutral-600 mx-1">
+                      Q{message.quarter}
+                    </span>
+                  </div>
                   
-                  <span className="text-neutral-600 mx-1">
-                    Q{message.quarter}
+                  <span className="text-xs text-neutral-500 ml-1">
+                    {convertToEasternTime(message.timestamp)}
                   </span>
                 </div>
-                
-                <span className="text-xs text-neutral-500 ml-1">
-                  {convertToEasternTime(message.timestamp)}
-                </span>
-              </div>
-              <div
-                className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors"
-                style={{
-                  alignSelf: undefined,
-                  marginTop: '0',
-                  marginLeft: '4px',
-                }}
-              >
-                <a href={message.link} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink size={14} />
-                </a>
+                <div
+                  className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors"
+                  style={{
+                    alignSelf: undefined,
+                    marginTop: '0',
+                    marginLeft: '4px',
+                  }}
+                >
+                  <a href={message.link} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink size={14} />
+                  </a>
+                </div>
               </div>
             </div>
           ) : (
@@ -441,8 +480,18 @@ const MessagesList: React.FC<MessagesListProps> = ({
               )}
             </div>
           )}
+          {/* Add RealtimeTicker for analysis messages */}
+          <div className="mt-2">
+            <RealtimeTicker 
+              symbol={message.ticker}
+              tickData={marketData[message.ticker]}
+              isConnected={isConnected}
+              isMobile={isMobile}
+            />
+          </div>
         </div>
       ))}
+      </div>
     </div>
   );
 };
