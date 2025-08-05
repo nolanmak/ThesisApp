@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Message, MetricItem } from '../../../types';
 import { ExternalLink, BarChart2 } from 'lucide-react';
 import { ParseMessagePayload } from '../utils/messageUtils';
-import RealtimeTicker from './RealtimeTicker';
 import { useAlpacaMarketData } from '../../../hooks/useAlpacaMarketData';
 import { useWatchlist } from '../../../hooks/useWatchlist';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -109,6 +108,30 @@ const MessagesList: React.FC<MessagesListProps> = ({
   }, [deduplicatedMessages]);
 
   const { marketData, isConnected, resetAllCumulativeVolume } = useAlpacaMarketData(uniqueTickers);
+  
+  // Format volume for inline display
+  const formatVolume = (volume: number) => {
+    if (volume >= 1000000) {
+      return `${(volume / 1000000).toFixed(1)}M`;
+    } else if (volume >= 1000) {
+      return `${(volume / 1000).toFixed(1)}K`;
+    }
+    return volume.toLocaleString();
+  };
+
+  // Create inline volume display component
+  const InlineVolume: React.FC<{ ticker: string }> = ({ ticker }) => {
+    const tickData = marketData[ticker];
+    if (!tickData || !isConnected) {
+      return null;
+    }
+    
+    return (
+      <span className="text-xs text-neutral-500 ml-2">
+        • Vol: {formatVolume(tickData.cumulativeVolume)}
+      </span>
+    );
+  };
   
   useEffect(() => {
     const searchParam = new URLSearchParams(window.location.search).get('search');
@@ -444,6 +467,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                   <span className="text-xs text-neutral-500 ml-1">
                     {convertToEasternTime(message.timestamp)}
                   </span>
+                  <InlineVolume ticker={message.ticker} />
                 </div>
                 <div
                   className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors"
@@ -539,6 +563,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                   <span className="text-xs text-neutral-500 ml-1">
                     {convertToEasternTime(message.timestamp)}
                   </span>
+                  <InlineVolume ticker={message.ticker} />
                   <div
                     className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors"
                     style={{
@@ -562,15 +587,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
               )}
             </div>
           )}
-          {/* Add RealtimeTicker for analysis messages */}
-          <div className="mt-2">
-            <RealtimeTicker 
-              symbol={message.ticker}
-              tickData={marketData[message.ticker]}
-              isConnected={isConnected}
-              isMobile={isMobile}
-            />
-          </div>
         </div>
       ))}
       </div>

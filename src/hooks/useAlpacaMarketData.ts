@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { alpacaService, TickData } from '../services/alpacaService';
 
 export interface MarketDataState {
