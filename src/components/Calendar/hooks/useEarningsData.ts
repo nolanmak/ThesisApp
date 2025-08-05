@@ -40,14 +40,6 @@ const useEarningsData = (
       try {
         const items = await getEarningsItems(bypassCache);
         
-        // Log IRActive values from database - only for today's date
-        const todayItems = items.filter(item => item.date === '2025-08-04');
-        console.log(`📊 Fetched ${todayItems.length} earnings items for 2025-08-04:`);
-        todayItems.forEach(item => {
-          if (item.IRActive !== undefined) {
-            console.log(`   ${item.ticker}: IRActive = ${item.IRActive} (type: ${typeof item.IRActive})`);
-          }
-        });
         
         setState((prev) => ({
           ...prev,
@@ -55,7 +47,6 @@ const useEarningsData = (
           loading: false,
         }));
       } catch (error) {
-        console.error("Error fetching earnings items:", error);
         toast.error("Failed to fetch earnings items");
         setState((prev) => ({ ...prev, loading: false }));
       }
@@ -87,7 +78,6 @@ const useEarningsData = (
         `${item.ticker} is now ${!item.is_active ? "active" : "inactive"}`
       );
     } catch (error) {
-      console.error("Failed to update item:", error);
       toast.error("Failed to update item");
     }
   }, []);
@@ -122,7 +112,6 @@ const useEarningsData = (
         `${item.ticker} Wire is now ${!currentWireActive ? "active" : "inactive"}`
       );
     } catch (error) {
-      console.error("Failed to update WireActive:", error);
       toast.error("Failed to update Wire status");
     }
   }, []);
@@ -130,12 +119,7 @@ const useEarningsData = (
   // Handle toggling just IRActive
   const handleToggleIRActive = useCallback(async (item: EarningsItem) => {
     try {
-      console.log(`🔍 IRActive toggle for ${item.ticker}:`);
-      console.log(`   Raw IRActive value:`, item.IRActive, `(type: ${typeof item.IRActive})`);
-      
       const currentIRActive = normalizeBooleanValue(item.IRActive);
-      console.log(`   Normalized IRActive:`, currentIRActive);
-      console.log(`   Will toggle to:`, !currentIRActive);
       
       const updatedItem = {
         ...item, // Include all existing properties
@@ -155,7 +139,6 @@ const useEarningsData = (
         `${item.ticker} IR is now ${!currentIRActive ? "active" : "inactive"}`
       );
     } catch (error) {
-      console.error("Failed to update IRActive:", error);
       toast.error("Failed to update IR status");
     }
   }, []);
@@ -182,7 +165,6 @@ const useEarningsData = (
       toast.success(`Added ${newItem.ticker} for ${formattedDate}`);
       return true;
     } catch (error) {
-      console.error("Failed to add item:", error);
       toast.error("Failed to add item");
       return false;
     }
