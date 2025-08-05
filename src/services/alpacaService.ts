@@ -90,7 +90,7 @@ class AlpacaService {
   private isConnecting = false;
   private isManualClose = false;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
+  private maxReconnectAttempts = 50;
   private reconnectTimeout: number | null = null;
   private reconnectDelay = 2000;
   private connectionFailures = 0;
@@ -206,6 +206,7 @@ class AlpacaService {
         this.reconnectAttempts = 0;
         this.connectionFailures = 0;
         this.reconnectDelay = 2000;
+        console.log('✅ Alpaca WebSocket reconnected successfully');
         this.isConnecting = false;
         
         // For proxy connection, assume we're authenticated after successful connection
@@ -603,8 +604,15 @@ class AlpacaService {
     this.connectionFailures++;
     
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.log(`Maximum reconnection attempts (${this.maxReconnectAttempts}) reached for Alpaca WebSocket`);
-      this.disable();
+      console.log(`Maximum reconnection attempts (${this.maxReconnectAttempts}) reached for Alpaca WebSocket - resetting counter`);
+      this.reconnectAttempts = 0; // Reset counter instead of disabling
+      // Wait longer before trying again
+      const resetDelay = 60000; // 1 minute
+      setTimeout(() => {
+        if (!this.isManualClose && this.isEnabled) {
+          this.connect();
+        }
+      }, resetDelay);
       return;
     }
 

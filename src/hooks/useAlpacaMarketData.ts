@@ -5,11 +5,20 @@ export interface MarketDataState {
   [symbol: string]: TickData;
 }
 
+// Helper function to compare symbol arrays
+const arraysEqual = (a: string[], b: string[]): boolean => {
+  if (a.length !== b.length) return false;
+  const sortedA = [...a].sort();
+  const sortedB = [...b].sort();
+  return sortedA.every((val, index) => val === sortedB[index]);
+};
+
 export const useAlpacaMarketData = (symbols: string[]) => {
   const [marketData, setMarketData] = useState<MarketDataState>({});
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [enabled, setEnabled] = useState(alpacaService.isWebSocketEnabled());
+  const previousSymbolsRef = useRef<string[]>([]);
 
   // Monitor connection status
   useEffect(() => {
@@ -34,9 +43,18 @@ export const useAlpacaMarketData = (symbols: string[]) => {
 
   // Subscribe to symbols
   useEffect(() => {
-    if (!symbols.length || !enabled) return;
+    if (!symbols.length || !enabled) {
+      previousSymbolsRef.current = symbols;
+      return;
+    }
+
+    // Only resubscribe if symbols have actually changed
+    if (arraysEqual(symbols, previousSymbolsRef.current)) {
+      return;
+    }
 
     console.log('Subscribing to Alpaca symbols:', symbols);
+    console.log('Previous symbols were:', previousSymbolsRef.current);
 
     // Subscribe to all symbols at once
     const unsubscribe = alpacaService.subscribe(symbols, (data: TickData) => {
@@ -46,6 +64,9 @@ export const useAlpacaMarketData = (symbols: string[]) => {
         [data.symbol]: data
       }));
     });
+
+    // Update the ref to track current symbols
+    previousSymbolsRef.current = symbols;
 
     return () => {
       console.log('Unsubscribing from Alpaca symbols:', symbols);

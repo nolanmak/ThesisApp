@@ -96,15 +96,34 @@ const MessagesList: React.FC<MessagesListProps> = ({
   const prevMessagesRef = useRef<Message[]>([]);
   const initialLoadCompletedRef = useRef<boolean>(false);
   
-  // Extract unique ticker symbols from messages for market data
+  // Extract unique ticker symbols from messages released in the last 24 hours for market data
   const uniqueTickers = React.useMemo(() => {
     const tickerSet = new Set<string>();
+    const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    
+    let totalMessages = 0;
+    let recentMessages = 0;
+    
     deduplicatedMessages.forEach(message => {
-      if (message.ticker) {
-        tickerSet.add(message.ticker);
+      totalMessages++;
+      if (message.ticker && message.timestamp) {
+        const messageTime = new Date(message.timestamp);
+        // Only include tickers from messages in the last 24 hours
+        if (messageTime >= twentyFourHoursAgo && !isNaN(messageTime.getTime())) {
+          tickerSet.add(message.ticker);
+          recentMessages++;
+        }
       }
     });
-    return Array.from(tickerSet);
+    
+    const uniqueTickerArray = Array.from(tickerSet);
+    console.log(`📊 Market data subscriptions: ${uniqueTickerArray.length} unique tickers from ${recentMessages} recent messages (out of ${totalMessages} total)`);
+    if (uniqueTickerArray.length > 0) {
+      console.log('🔄 Active market data tickers:', uniqueTickerArray.sort().join(', '));
+    }
+    
+    return uniqueTickerArray;
   }, [deduplicatedMessages]);
 
   const { marketData, isConnected, resetAllCumulativeVolume } = useAlpacaMarketData(uniqueTickers);
