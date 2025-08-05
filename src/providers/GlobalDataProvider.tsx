@@ -98,50 +98,39 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     /*
     try {
       setCompanyNamesLoading(true);
-      console.log(`🔍 fetchCompanyNamesForDate called for date: ${date}`);
       
       // Get all tickers for the selected date
       const tickersForDate = earningsItems
         .filter(item => item.date === date)
         .map(item => item.ticker);
       
-      console.log(`📊 Found ${tickersForDate.length} tickers for ${date}:`, tickersForDate);
       
       if (tickersForDate.length === 0) {
-        console.log('❌ No tickers found for date, returning early');
         return;
       }
       
       // Filter out tickers we already have data for
       const tickersToFetch = tickersForDate.filter(ticker => !companyNames[ticker]);
       
-      console.log(`💾 Current cached tickers:`, Object.keys(companyNames));
-      console.log(`🆕 Tickers to fetch: ${tickersToFetch.length}`, tickersToFetch);
       
       if (tickersToFetch.length === 0) {
-        console.log('✅ All tickers already cached, returning early');
         return;
       }
       
-      console.log(`🌐 Fetching company names for ${tickersToFetch.length} tickers on ${date}:`, tickersToFetch);
       
       // Fetch company names for all tickers
       const companyNamesData = await getBatchCompanyNames(tickersToFetch);
       
-      console.log(`📥 Received company names data:`, companyNamesData);
       
       // Update state with new company names
       setCompanyNames(prev => {
         const updated = { ...prev };
         companyNamesData.forEach(data => {
-          console.log(`💾 Caching data for ${data.ticker}:`, data.company_names.length, 'names');
           updated[data.ticker] = data;
         });
-        console.log(`📚 Updated company names state:`, Object.keys(updated));
         return updated;
       });
       
-      console.log(`✅ Successfully fetched company names for ${companyNamesData.length} tickers`);
     } catch (error) {
       console.error('❌ Error fetching company names for date:', error);
     } finally {

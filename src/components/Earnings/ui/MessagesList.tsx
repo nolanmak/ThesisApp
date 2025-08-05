@@ -102,25 +102,20 @@ const MessagesList: React.FC<MessagesListProps> = ({
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     
-    let totalMessages = 0;
-    let recentMessages = 0;
-    
     deduplicatedMessages.forEach(message => {
-      totalMessages++;
       if (message.ticker && message.timestamp) {
         const messageTime = new Date(message.timestamp);
         // Only include tickers from messages in the last 24 hours
         if (messageTime >= twentyFourHoursAgo && !isNaN(messageTime.getTime())) {
           tickerSet.add(message.ticker);
-          recentMessages++;
         }
       }
     });
     
     const uniqueTickerArray = Array.from(tickerSet);
-    console.log(`📊 Market data subscriptions: ${uniqueTickerArray.length} unique tickers from ${recentMessages} recent messages (out of ${totalMessages} total)`);
+    // Keep only Alpaca-related logging
     if (uniqueTickerArray.length > 0) {
-      console.log('🔄 Active market data tickers:', uniqueTickerArray.sort().join(', '));
+      console.log('🔄 Alpaca market data subscriptions:', uniqueTickerArray.sort().join(', '));
     }
     
     return uniqueTickerArray;
@@ -170,43 +165,22 @@ const MessagesList: React.FC<MessagesListProps> = ({
     const uniqueMessagesMap = new Map<string, Message>();
     
     // Track PM messages through filtering process
-    const pmMessages = messages.filter(m => m.ticker === 'PM');
-    console.log(`🔍 PM messages at start of filtering: ${pmMessages.length}`);
 
     // First pass: filter out invalid timestamps, then filter by watchlist if available
     let validMessages = messages.filter(message => {
       const messageTimestamp = new Date(message.timestamp);
-      const isValid = !isNaN(messageTimestamp.getTime());
-      if (!isValid && message.ticker === 'PM') {
-        console.warn('❌ PM message has invalid timestamp:', message);
-      }
-      return isValid;
+      return !isNaN(messageTimestamp.getTime());
     });
 
-    const pmAfterTimestamp = validMessages.filter(m => m.ticker === 'PM');
-    console.log(`🔍 PM messages after timestamp validation: ${pmAfterTimestamp.length}`);
-
-    console.log('Watchlist length:', userWatchlist.length);
 
     // Filter by watchlist if user has one and is authenticated
     if (user?.email && userWatchlist.length > 0) {
-      console.log('Filtering messages by watchlist:', userWatchlist);
-      
       const filteredMessages = validMessages.filter(message => {
-        const isInWatchlist = userWatchlist.includes(message.ticker.toUpperCase());
-        if (!isInWatchlist && message.ticker === 'PM') {
-          console.log('❌ PM message filtered out by watchlist:', message);
-        }
-        return isInWatchlist;
+        return userWatchlist.includes(message.ticker.toUpperCase());
       });
       
       validMessages = filteredMessages;
-    } else {
-      console.log('✅ No watchlist filtering - showing all messages');
     }
-
-    const pmAfterWatchlist = validMessages.filter(m => m.ticker === 'PM');
-    console.log(`🔍 PM messages after watchlist filtering: ${pmAfterWatchlist.length}`);
 
     const sortedMessages = validMessages.sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -245,9 +219,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
           timestamp: messageTimestamp.toISOString(),
           message
         });
-        if (message.ticker === 'PM') {
-          console.log('✅ PM message added to final feed:', message);
-        }
       } else {
         skippedMessages.push({
           ticker: message.ticker,
@@ -257,26 +228,10 @@ const MessagesList: React.FC<MessagesListProps> = ({
           reason: `Duplicate ${messageType} for same date`,
           message
         });
-        if (message.ticker === 'PM') {
-          console.log('❌ PM message skipped as duplicate:', message);
-        }
       }
     });
 
-    // Log summary of processing
-    console.log('Message Processing Summary:');
-    console.log('Total messages received:', messages.length);
-    console.log('Valid messages after timestamp filter:', validMessages.length);
-    console.log('Messages added to feed:', addedMessages.length);
-    console.log('Messages skipped (duplicates):', skippedMessages.length);
-    
-    if (skippedMessages.length > 0) {
-      console.log('Skipped messages detail:', skippedMessages);
-    }
-    
-    if (addedMessages.length > 0) {
-      console.log('Added messages detail:', addedMessages);
-    }
+    // Message processing completed
     
     // Get all unique messages and sort them by timestamp (newest first) for display
     const sortedDeduplicated = Array.from(uniqueMessagesMap.values()).sort(

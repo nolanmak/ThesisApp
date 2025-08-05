@@ -81,7 +81,17 @@ interface AlpacaSuccessMessage {
   msg: string;
 }
 
-type AlpacaMessage = AlpacaTrade | AlpacaQuote | AlpacaBar | AlpacaSubscriptionMessage | AlpacaErrorMessage | AlpacaSuccessMessage;
+// Proxy message interfaces
+interface ProxyTradeMessage {
+  type: 'trade';
+  symbol: string;
+  price: number;
+  size: number;
+  timestamp: string;
+}
+
+// Type definition kept for potential future use
+// type AlpacaMessage = AlpacaTrade | AlpacaQuote | AlpacaBar | AlpacaSubscriptionMessage | AlpacaErrorMessage | AlpacaSuccessMessage;
 
 class AlpacaService {
   private socket: WebSocket | null = null;
@@ -268,7 +278,7 @@ class AlpacaService {
     console.log('Authentication handled by proxy server');
   }
 
-  private handleMessage(message: any): void {
+  private handleMessage(message: Record<string, unknown>): void {
     // Handle proxy message format
     if (message.type) {
       switch (message.type) {
@@ -281,7 +291,7 @@ class AlpacaService {
           break;
 
         case 'trade':
-          this.handleProxyTradeMessage(message);
+          this.handleProxyTradeMessage(message as unknown as ProxyTradeMessage);
           break;
 
         case 'pong':
@@ -313,15 +323,15 @@ class AlpacaService {
         break;
 
       case 't': // trade
-        this.handleTradeMessage(message);
+        this.handleTradeMessage(message as unknown as AlpacaTrade);
         break;
 
       case 'q': // quote
-        this.handleQuoteMessage(message);
+        this.handleQuoteMessage(message as unknown as AlpacaQuote);
         break;
 
       case 'b': // bar
-        this.handleBarMessage(message);
+        this.handleBarMessage(message as unknown as AlpacaBar);
         break;
 
       default:
@@ -329,7 +339,7 @@ class AlpacaService {
     }
   }
 
-  private handleProxyTradeMessage(trade: any): void {
+  private handleProxyTradeMessage(trade: ProxyTradeMessage): void {
     // Handle proxy trade message format
     // Update cumulative volume and trades
     const currentVolume = this.cumulativeVolume.get(trade.symbol) || 0;

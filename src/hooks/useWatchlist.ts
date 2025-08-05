@@ -27,11 +27,9 @@ export const useWatchlist = () => {
       // Update audio service filter
       audioWebsocketService.setWatchlistFilter(userWatchlist);
       
-      console.log('[WATCHLIST HOOK] Updated watchlist:', userWatchlist);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load watchlist';
       setError(errorMessage);
-      console.error('Error loading watchlist:', err);
       
       // On error, clear the filter to avoid blocking all notifications
       setWatchlist([]);
