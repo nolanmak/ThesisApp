@@ -3,6 +3,7 @@ import { Search, Wifi, WifiOff, Loader, RefreshCw, Volume2, VolumeX } from 'luci
 import { toast } from 'react-toastify';
 import { useAudioWebSocket } from '../../../hooks/useAudioWebSocket';
 import { AudioNotification } from '../../../services/audioWebsocket';
+import { useWatchlist } from '../../../hooks/useWatchlist';
 
 
 interface WebSocketStatusProps {
@@ -26,6 +27,9 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
   onRefresh,
   onToggleWebSocket
 }) => {
+  // Watchlist hook (automatically updates audio service filter)
+  useWatchlist();
+  
   // Audio playback state
   const audioRef = useRef<HTMLAudioElement>(null);
   const [currentAudio, setCurrentAudio] = useState<AudioNotification | null>(null);
@@ -69,7 +73,6 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
       });
     }
   });
-
 
   const handleToggleAudio = async (e: React.MouseEvent) => {
     e.preventDefault();

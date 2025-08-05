@@ -86,7 +86,6 @@ type AlpacaMessage = AlpacaTrade | AlpacaQuote | AlpacaBar | AlpacaSubscriptionM
 class AlpacaService {
   private socket: WebSocket | null = null;
   private subscribers: Map<string, Set<(data: TickData) => void>> = new Map();
-  private config: AlpacaConfig | null = null;
   private symbols: Set<string> = new Set();
   private isConnecting = false;
   private isManualClose = false;
@@ -115,22 +114,9 @@ class AlpacaService {
   }
 
   private initializeFromEnv(): void {
-    const key = import.meta.env.VITE_ALPACA_API_KEY;
-    const secret = import.meta.env.VITE_ALPACA_API_SECRET;
-    const paper = import.meta.env.VITE_ALPACA_PAPER_TRADING !== 'false';
-
-    if (key && secret) {
-      this.config = { key, secret, paper };
-      console.log('Alpaca service initialized with environment config');
-      this.connect();
-    } else {
-      console.warn('Alpaca API credentials not found in environment variables');
-    }
-  }
-
-  public initialize(config: AlpacaConfig): void {
-    console.log("Initializing Alpaca service with config", config);
-    this.config = config;
+    // For proxy connection, we don't need Alpaca credentials in the frontend
+    // The proxy handles authentication with Alpaca
+    console.log('Alpaca service initialized for proxy connection');
     this.connect();
   }
 
@@ -151,13 +137,18 @@ class AlpacaService {
   }
 
   private getWebSocketUrl(): string {
-    // Use stock data WebSocket endpoint
-    return 'wss://stream.data.alpaca.markets/v2/sip';
+    // Use proxy WebSocket endpoint instead of direct Alpaca connection
+    const proxyUrl = import.meta.env.VITE_ALPACA_PROXY_WS_URL;
+    if (proxyUrl) {
+      return proxyUrl;
+    }
+    // Fallback to hardcoded proxy URL if env var not set
+    return 'ws://IRAuto-Alpac-6P4vTH9n3JEA-1469477952.us-east-1.elb.amazonaws.com/ws';
   }
 
   public connect(): void {
-    if (!this.isEnabled || !this.config) {
-      console.log('Alpaca WebSocket is disabled or not configured, not connecting');
+    if (!this.isEnabled) {
+      console.log('Alpaca WebSocket is disabled, not connecting');
       return;
     }
 
@@ -201,7 +192,7 @@ class AlpacaService {
   }
 
   private createConnection(): void {
-    if (!this.isEnabled || !this.config) {
+    if (!this.isEnabled) {
       this.isConnecting = false;
       return;
     }
@@ -211,28 +202,34 @@ class AlpacaService {
       this.socket = new WebSocket(this.getWebSocketUrl());
       
       this.socket.onopen = () => {
-        console.log('Alpaca WebSocket connection established');
+        console.log('Alpaca proxy WebSocket connection established');
         this.reconnectAttempts = 0;
         this.connectionFailures = 0;
         this.reconnectDelay = 2000;
         this.isConnecting = false;
-        this.isAuthenticated = false;
         
-        // Authenticate immediately after connection
-        this.authenticate();
+        // For proxy connection, assume we're authenticated after successful connection
+        // The proxy handles Alpaca authentication internally
+        this.isAuthenticated = true;
+        this.startPingInterval();
+        this.subscribeToSymbols();
       };
 
       this.socket.onmessage = (event) => {
         try {
-          const messages: AlpacaMessage[] = JSON.parse(event.data);
-          if (!Array.isArray(messages)) {
-            console.error('Expected array of messages from Alpaca WebSocket');
-            return;
+          const data = JSON.parse(event.data);
+          
+          // Handle both single messages and arrays of messages
+          if (Array.isArray(data)) {
+            // Alpaca format: array of messages
+            data.forEach(message => this.handleMessage(message));
+          } else {
+            // Proxy might send single messages
+            this.handleMessage(data);
           }
-
-          messages.forEach(message => this.handleMessage(message));
         } catch (error) {
-          console.error('Error parsing Alpaca WebSocket message:', error);
+          console.error('Error parsing Alpaca proxy WebSocket message:', error);
+          console.error('Raw message data:', event.data);
         }
       };
 
@@ -265,38 +262,49 @@ class AlpacaService {
   }
 
   private authenticate(): void {
-    if (!this.config || !this.socket || this.socket.readyState !== WebSocket.OPEN) {
-      console.error('Cannot authenticate: no config or socket not ready');
+    // Authentication is handled by the proxy server
+    // This method is kept for compatibility but does nothing
+    console.log('Authentication handled by proxy server');
+  }
+
+  private handleMessage(message: any): void {
+    // Handle proxy message format
+    if (message.type) {
+      switch (message.type) {
+        case 'connected':
+          console.log('Alpaca proxy WebSocket connected:', message.message);
+          break;
+
+        case 'subscription_updated':
+          console.log('Alpaca subscription confirmed:', message.symbols);
+          break;
+
+        case 'trade':
+          this.handleProxyTradeMessage(message);
+          break;
+
+        case 'pong':
+          console.log('Alpaca proxy pong received');
+          break;
+
+        case 'error':
+          console.error('Alpaca proxy WebSocket error:', message.message);
+          break;
+
+        default:
+          console.log('Unhandled proxy message type:', message.type, message);
+      }
       return;
     }
 
-    const authMessage = {
-      action: 'auth',
-      key: this.config.key,
-      secret: this.config.secret
-    };
-
-    console.log('Sending Alpaca authentication message');
-    this.socket.send(JSON.stringify(authMessage));
-  }
-
-  private handleMessage(message: AlpacaMessage): void {
+    // Handle native Alpaca message format (fallback)
     switch (message.T) {
       case 'success':
         console.log('Alpaca WebSocket success:', message.msg);
-        if (message.msg === 'authenticated') {
-          this.isAuthenticated = true;
-          this.startPingInterval();
-          this.subscribeToSymbols();
-        }
         break;
 
       case 'error':
         console.error('Alpaca WebSocket error:', message.code, message.msg);
-        if (message.code === 402) { // auth failed
-          console.error('Alpaca authentication failed - check credentials');
-          this.disable();
-        }
         break;
 
       case 'subscription':
@@ -318,6 +326,38 @@ class AlpacaService {
       default:
         console.log('Unhandled Alpaca message type:', message);
     }
+  }
+
+  private handleProxyTradeMessage(trade: any): void {
+    // Handle proxy trade message format
+    // Update cumulative volume and trades
+    const currentVolume = this.cumulativeVolume.get(trade.symbol) || 0;
+    const currentTrades = this.cumulativeTrades.get(trade.symbol) || 0;
+    const newCumulativeVolume = currentVolume + trade.size;
+    const newCumulativeTrades = currentTrades + 1;
+    
+    this.cumulativeVolume.set(trade.symbol, newCumulativeVolume);
+    this.cumulativeTrades.set(trade.symbol, newCumulativeTrades);
+    
+    // Set session start time if not already set
+    if (!this.sessionStartTime.has(trade.symbol)) {
+      this.sessionStartTime.set(trade.symbol, new Date());
+    }
+
+    const tickData: TickData = {
+      symbol: trade.symbol,
+      close: trade.price,
+      high: trade.price, // Single trade doesn't have high/low, use price
+      low: trade.price,
+      numberOfTrades: newCumulativeTrades,
+      open: trade.price,
+      timestamp: new Date(trade.timestamp),
+      volume: trade.size, // Volume from this specific trade
+      cumulativeVolume: newCumulativeVolume, // Running total
+      volumeWeightedAverage: trade.price
+    };
+
+    this.notifySubscribers(trade.symbol, tickData);
   }
 
   private handleTradeMessage(trade: AlpacaTrade): void {
@@ -430,10 +470,8 @@ class AlpacaService {
     console.log('Subscribing to Alpaca symbols:', symbolsArray);
 
     const subscribeMessage = {
-      action: 'subscribe',
-      trades: symbolsArray,
-      quotes: symbolsArray,
-      bars: symbolsArray
+      type: 'subscribe',
+      symbols: symbolsArray
     };
 
     this.socket.send(JSON.stringify(subscribeMessage));

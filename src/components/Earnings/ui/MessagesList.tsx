@@ -4,8 +4,8 @@ import { ExternalLink, BarChart2 } from 'lucide-react';
 import { ParseMessagePayload } from '../utils/messageUtils';
 import RealtimeTicker from './RealtimeTicker';
 import { useAlpacaMarketData } from '../../../hooks/useAlpacaMarketData';
+import { useWatchlist } from '../../../hooks/useWatchlist';
 import { useAuth } from '../../../contexts/AuthContext';
-import { getUserProfile } from '../../../services/api';
 
 interface MessagesListProps {
   messages: Message[];
@@ -88,10 +88,10 @@ const MessagesList: React.FC<MessagesListProps> = ({
   onSelectMessage,
 }) => {
   const { user } = useAuth();
+  const { watchlist: userWatchlist } = useWatchlist();
   const [newMessageIds, setNewMessageIds] = useState<Set<string>>(new Set());
   const [searchMessageTicker, setSearchMessageTicker] = useState<string>('');
   const [deduplicatedMessages, setDeduplicatedMessages] = useState<Message[]>([]);
-  const [userWatchlist, setUserWatchlist] = useState<string[]>([]);
   
   const allSeenMessageIdsRef = useRef<Set<string>>(new Set());
   const prevMessagesRef = useRef<Message[]>([]);
@@ -117,23 +117,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
     }
   }, []);
 
-  // Load user watchlist
-  useEffect(() => {
-    const loadWatchlist = async () => {
-      if (!user?.email) return;
-      
-      try {
-        const profile = await getUserProfile(user.email);
-        if (profile?.watchlist) {
-          setUserWatchlist(profile.watchlist);
-        }
-      } catch (error) {
-        console.error('Error loading user watchlist:', error);
-      }
-    };
-
-    loadWatchlist();
-  }, [user?.email]);
   
   useEffect(() => {
     if (!messages || messages.length === 0) {

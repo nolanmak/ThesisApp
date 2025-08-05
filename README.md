@@ -16,9 +16,13 @@ Earnings Manager is an internal tool designed to streamline the process of track
 
 - **Messages Dashboard**: View and process earnings-related messages with filtering capabilities.
 
+- **Watchlist Management**: Create and manage a personalized watchlist of stock tickers to filter messages and audio notifications.
+
 - **Earnings Calendar**: Track upcoming and past earnings announcements with detailed information.
 
 - **Historical Metrics**: Access and analyze historical financial metrics for tracked companies.
+
+- **Real-time Audio Notifications**: Receive audio notifications for earnings announcements, filtered by your personal watchlist to ensure you only get notifications for stocks you're tracking.
 
 ## Technical Details
 

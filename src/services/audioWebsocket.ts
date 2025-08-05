@@ -34,6 +34,7 @@ class AudioWebSocketService {
   private isEnabled = false; // Flag to enable/disable WebSocket functionality
   private lastConnectionAttempt = 0;
   private minConnectionInterval = 5000; // 5 seconds minimum between connection attempts
+  private watchlistFilter: string[] = []; // Watchlist filter for notifications
 
   // Enable WebSocket functionality
   public enable(): void {
@@ -59,6 +60,25 @@ class AudioWebSocketService {
   // Check if WebSocket functionality is enabled
   public isWebSocketEnabled(): boolean {
     return this.isEnabled;
+  }
+
+  // Set watchlist filter for notifications
+  public setWatchlistFilter(watchlist: string[]): void {
+    this.watchlistFilter = watchlist.map(ticker => ticker.toUpperCase());
+    console.log("Audio WebSocket watchlist filter updated:", this.watchlistFilter);
+  }
+
+  // Get current watchlist filter
+  public getWatchlistFilter(): string[] {
+    return [...this.watchlistFilter];
+  }
+
+  // Check if a ticker is in the watchlist (returns true if no watchlist filter is set)
+  private isTickerInWatchlist(ticker: string): boolean {
+    if (this.watchlistFilter.length === 0) {
+      return true; // No filter means all tickers are allowed
+    }
+    return this.watchlistFilter.includes(ticker.toUpperCase());
   }
 
   // Connect to WebSocket
@@ -175,7 +195,14 @@ class AudioWebSocketService {
               console.log("[AUDIO WS] 🔄 Transformed message:", audioNotification);
             }
             
-            this.notifyMessageHandlers(audioNotification);
+            // Check watchlist filter before notifying handlers
+            const ticker = audioNotification.data?.metadata?.ticker || audioNotification.data?.metadata?.company_name || 'UNKNOWN';
+            if (this.isTickerInWatchlist(ticker)) {
+              console.log("[AUDIO WS] ✅ Audio notification allowed by watchlist for ticker:", ticker);
+              this.notifyMessageHandlers(audioNotification);
+            } else {
+              console.log("[AUDIO WS] ❌ Audio notification filtered out by watchlist for ticker:", ticker, "Watchlist:", this.watchlistFilter);
+            }
           } else {
             console.warn(
               "[AUDIO WS] ❌ Received message with unknown format. Expected 'new_audio' or audio_url, got:",
