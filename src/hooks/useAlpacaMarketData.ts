@@ -58,7 +58,7 @@ export const useAlpacaMarketData = (symbols: string[]) => {
 
     // Subscribe to all symbols at once
     const unsubscribe = alpacaService.subscribe(symbols, (data: TickData) => {
-      console.log('Received market data:', data);
+      console.log('📊 RT Volume Data:', data.symbol, 'Vol:', data.volume, 'Cumulative:', data.cumulativeVolume);
       setMarketData(prev => ({
         ...prev,
         [data.symbol]: data

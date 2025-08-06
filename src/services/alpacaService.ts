@@ -292,6 +292,7 @@ class AlpacaService {
           break;
 
         case 'trade':
+          console.log('📈 Trade received from proxy:', message);
           this.handleProxyTradeMessage(message as unknown as ProxyTradeMessage);
           break;
 
