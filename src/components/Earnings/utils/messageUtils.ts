@@ -297,7 +297,7 @@ export const ParseMessagePayload = (message: Message): { [key: string]: MetricIt
         metrics["Additional Metrics"] = additionalMetricsData;
       }
     }
-  } catch (error) {
+  } catch {
     // Just silently fail for now - we'll log these in a batch elsewhere if needed
   }
   return metrics;

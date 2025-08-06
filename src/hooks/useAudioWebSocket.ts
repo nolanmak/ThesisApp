@@ -73,26 +73,18 @@ export const useAudioWebSocket = (options: UseAudioWebSocketOptions = {}): UseAu
 
   // Handle audio notifications
   const handleAudioNotification = useCallback((notification: AudioNotification) => {
-    console.log("[AUDIO HOOK] Audio notification received:", notification);
-    console.log("[AUDIO HOOK] Component mounted:", isMounted.current);
-    
     if (!isMounted.current) {
-      console.log("[AUDIO HOOK] Component not mounted, ignoring notification");
       return;
     }
     
     setLastNotification(notification);
     
     if (onAudioNotification) {
-      console.log("[AUDIO HOOK] Calling onAudioNotification callback");
       try {
         onAudioNotification(notification);
-        console.log("[AUDIO HOOK] onAudioNotification callback completed");
       } catch (error) {
-        console.error("[AUDIO HOOK] onAudioNotification callback threw error:", error);
+        console.error("[AUDIO HOOK] Callback error:", error);
       }
-    } else {
-      console.log("[AUDIO HOOK] No onAudioNotification callback provided");
     }
   }, [onAudioNotification]);
 
@@ -160,10 +152,7 @@ export const useAudioWebSocket = (options: UseAudioWebSocketOptions = {}): UseAu
     // Subscribe to audio notifications if handler is provided
     let notificationUnsubscribe = () => {};
     if (onAudioNotification) {
-      console.log("[AUDIO HOOK] Subscribing to audio notifications");
       notificationUnsubscribe = audioWebsocketService.subscribeToAudioNotifications(handleAudioNotification);
-    } else {
-      console.log("[AUDIO HOOK] No onAudioNotification handler provided, not subscribing");
     }
 
     // Cleanup on unmount

@@ -3,6 +3,7 @@ import { Search, Wifi, WifiOff, Loader, RefreshCw, Volume2, VolumeX } from 'luci
 import { toast } from 'react-toastify';
 import { useAudioWebSocket } from '../../../hooks/useAudioWebSocket';
 import { AudioNotification } from '../../../services/audioWebsocket';
+import { useWatchlist } from '../../../hooks/useWatchlist';
 
 
 interface WebSocketStatusProps {
@@ -26,6 +27,9 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
   onRefresh,
   onToggleWebSocket
 }) => {
+  // Watchlist hook (automatically updates audio service filter)
+  useWatchlist();
+  
   // Audio playback state
   const audioRef = useRef<HTMLAudioElement>(null);
   const [currentAudio, setCurrentAudio] = useState<AudioNotification | null>(null);
@@ -45,11 +49,8 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
     autoConnect: false,
     persistConnection: true,
     onAudioNotification: (notification) => {
-      console.log('[AUDIO PLAYER] 🎉 Received audio notification:', notification);
-      
       // Show a visual notification
       const ticker = notification.data?.metadata?.ticker || notification.data?.metadata?.company_name || 'Unknown Stock';
-      console.log('[AUDIO PLAYER] 🎆 Showing toast for ticker:', ticker);
       
       // Enhanced toast notification
       toast.success(`🔊 New Earnings Audio: ${ticker}`, {
@@ -69,7 +70,6 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
       });
     }
   });
-
 
   const handleToggleAudio = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -119,15 +119,12 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
 
   // Handle audio playback when new notifications arrive
   useEffect(() => {
-    console.log('[AUDIO PLAYER] Audio queue effect triggered. Queue length:', audioQueue.length, 'Is playing:', isPlaying, 'User interacted:', userHasInteracted, 'Audio enabled:', audioEnabled);
     if (audioQueue.length > 0 && !isPlaying) {
       // Play the next audio in the queue
       const nextAudio = audioQueue[0];
-      console.log('[AUDIO PLAYER] Setting current audio:', nextAudio);
       setCurrentAudio(nextAudio);
       setAudioQueue(prevQueue => {
         const newQueue = prevQueue.slice(1);
-        console.log('[AUDIO PLAYER] Removed audio from queue. New length:', newQueue.length);
         return newQueue;
       });
     }

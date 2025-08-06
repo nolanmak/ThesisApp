@@ -2,8 +2,9 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Message, MetricItem } from '../../../types';
 import { ExternalLink, BarChart2 } from 'lucide-react';
 import { ParseMessagePayload } from '../utils/messageUtils';
+import { useAlpacaMarketData } from '../../../hooks/useAlpacaMarketData';
+import { useWatchlist } from '../../../hooks/useWatchlist';
 import { useAuth } from '../../../contexts/AuthContext';
-import { getUserProfile } from '../../../services/api';
 
 interface MessagesListProps {
   messages: Message[];
@@ -86,14 +87,69 @@ const MessagesList: React.FC<MessagesListProps> = ({
   onSelectMessage,
 }) => {
   const { user } = useAuth();
+  const { watchlist: userWatchlist } = useWatchlist();
   const [newMessageIds, setNewMessageIds] = useState<Set<string>>(new Set());
   const [searchMessageTicker, setSearchMessageTicker] = useState<string>('');
   const [deduplicatedMessages, setDeduplicatedMessages] = useState<Message[]>([]);
-  const [userWatchlist, setUserWatchlist] = useState<string[]>([]);
   
   const allSeenMessageIdsRef = useRef<Set<string>>(new Set());
   const prevMessagesRef = useRef<Message[]>([]);
   const initialLoadCompletedRef = useRef<boolean>(false);
+  
+  // Calculate 24 hours ago timestamp once
+  const twentyFourHoursAgo = React.useMemo(() => {
+    return Date.now() - 24 * 60 * 60 * 1000;
+  }, []); // Only calculate once
+
+  // Extract unique ticker symbols from messages released in the last 24 hours for market data
+  const uniqueTickers = React.useMemo(() => {
+    const tickerSet = new Set<string>();
+    
+    deduplicatedMessages.forEach(message => {
+      if (message.ticker && message.timestamp) {
+        const messageTime = new Date(message.timestamp).getTime();
+        // Only include tickers from messages in the last 24 hours
+        if (messageTime >= twentyFourHoursAgo && !isNaN(messageTime)) {
+          tickerSet.add(message.ticker);
+        }
+      }
+    });
+    
+    return Array.from(tickerSet).sort();
+  }, [deduplicatedMessages, twentyFourHoursAgo]);
+
+  const { marketData, isConnected, resetAllCumulativeVolume } = useAlpacaMarketData(uniqueTickers);
+  
+  // Format volume for inline display
+  const formatVolume = (volume: number) => {
+    if (volume >= 1000000) {
+      return `${(volume / 1000000).toFixed(1)}M`;
+    } else if (volume >= 1000) {
+      return `${(volume / 1000).toFixed(1)}K`;
+    }
+    return volume.toLocaleString();
+  };
+
+  // Create inline volume display component
+  const InlineVolume: React.FC<{ ticker: string }> = ({ ticker }) => {
+    const tickData = marketData[ticker];
+    
+  
+    
+    if (!tickData || !isConnected) {
+      return (
+        <span className="text-xs text-neutral-400 ml-2">
+          • Vol: --
+        </span>
+      );
+    }
+    
+    return (
+      <span className="text-xs text-neutral-500 ml-2">
+        • Vol: {formatVolume(tickData.cumulativeVolume)}
+      </span>
+    );
+  };
   
   useEffect(() => {
     const searchParam = new URLSearchParams(window.location.search).get('search');
@@ -101,24 +157,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
       setSearchMessageTicker(searchParam);
     }
   }, []);
-
-  // Load user watchlist
-  useEffect(() => {
-    const loadWatchlist = async () => {
-      if (!user?.email) return;
-      
-      try {
-        const profile = await getUserProfile(user.email);
-        if (profile?.watchlist) {
-          setUserWatchlist(profile.watchlist);
-        }
-      } catch (error) {
-        console.error('Error loading user watchlist:', error);
-      }
-    };
-
-    loadWatchlist();
-  }, [user?.email]);
   
   useEffect(() => {
     if (!messages || messages.length === 0) {
@@ -129,45 +167,20 @@ const MessagesList: React.FC<MessagesListProps> = ({
     // Create a map for deduplication
     const uniqueMessagesMap = new Map<string, Message>();
     
-    // Track PM messages through filtering process
-    const pmMessages = messages.filter(m => m.ticker === 'PM');
-    console.log(`🔍 PM messages at start of filtering: ${pmMessages.length}`);
-
     // First pass: filter out invalid timestamps, then filter by watchlist if available
     let validMessages = messages.filter(message => {
       const messageTimestamp = new Date(message.timestamp);
-      const isValid = !isNaN(messageTimestamp.getTime());
-      if (!isValid && message.ticker === 'PM') {
-        console.warn('❌ PM message has invalid timestamp:', message);
-      }
-      return isValid;
+      return !isNaN(messageTimestamp.getTime());
     });
-
-    const pmAfterTimestamp = validMessages.filter(m => m.ticker === 'PM');
-    console.log(`🔍 PM messages after timestamp validation: ${pmAfterTimestamp.length}`);
-
-    console.log('Watchlist length:', userWatchlist.length);
 
     // Filter by watchlist if user has one and is authenticated
     if (user?.email && userWatchlist.length > 0) {
-      console.log('Filtering messages by watchlist:', userWatchlist);
-      
       const filteredMessages = validMessages.filter(message => {
-        const isInWatchlist = userWatchlist.includes(message.ticker.toUpperCase());
-        if (!isInWatchlist && message.ticker === 'PM') {
-          console.log('❌ PM message filtered out by watchlist:', message);
-        }
-        return isInWatchlist;
+        return userWatchlist.includes(message.ticker.toUpperCase());
       });
       
       validMessages = filteredMessages;
-    } else {
-      console.log('✅ No watchlist filtering - showing all messages');
     }
-
-    const pmAfterWatchlist = validMessages.filter(m => m.ticker === 'PM');
-    console.log(`🔍 PM messages after watchlist filtering: ${pmAfterWatchlist.length}`);
-
     const sortedMessages = validMessages.sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
@@ -205,9 +218,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
           timestamp: messageTimestamp.toISOString(),
           message
         });
-        if (message.ticker === 'PM') {
-          console.log('✅ PM message added to final feed:', message);
-        }
       } else {
         skippedMessages.push({
           ticker: message.ticker,
@@ -217,26 +227,8 @@ const MessagesList: React.FC<MessagesListProps> = ({
           reason: `Duplicate ${messageType} for same date`,
           message
         });
-        if (message.ticker === 'PM') {
-          console.log('❌ PM message skipped as duplicate:', message);
-        }
       }
     });
-
-    // Log summary of processing
-    console.log('Message Processing Summary:');
-    console.log('Total messages received:', messages.length);
-    console.log('Valid messages after timestamp filter:', validMessages.length);
-    console.log('Messages added to feed:', addedMessages.length);
-    console.log('Messages skipped (duplicates):', skippedMessages.length);
-    
-    if (skippedMessages.length > 0) {
-      console.log('Skipped messages detail:', skippedMessages);
-    }
-    
-    if (addedMessages.length > 0) {
-      console.log('Added messages detail:', addedMessages);
-    }
     
     // Get all unique messages and sort them by timestamp (newest first) for display
     const sortedDeduplicated = Array.from(uniqueMessagesMap.values()).sort(
@@ -328,14 +320,36 @@ const MessagesList: React.FC<MessagesListProps> = ({
   }
 
   return (
-    <div 
-      className="max-h-[calc(100vh-120px)] overflow-auto scrollbar-hide"
-      style={{
-        width: '100%',
-        maxWidth: '100%',
-        overflowX: 'hidden'
-      }}
-    >
+    <div className="flex flex-col">
+      {/* Market Data Controls */}
+      {uniqueTickers.length > 0 && (
+        <div className="bg-white border-b border-neutral-100 px-3 py-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className="text-xs text-neutral-600">
+                {isConnected ? 'Market data connected' : 'Market data disconnected'}
+              </span>
+            </div>
+            <button
+              onClick={resetAllCumulativeVolume}
+              className="text-xs px-2 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
+              title="Reset session volume tracking for all symbols"
+            >
+              Reset Volume
+            </button>
+          </div>
+        </div>
+      )}
+      
+      <div 
+        className="max-h-[calc(100vh-120px)] overflow-auto scrollbar-hide"
+        style={{
+          width: '100%',
+          maxWidth: '100%',
+          overflowX: 'hidden'
+        }}
+      >
       {deduplicatedMessages.map((message, index) => (
         <div 
           key={message.message_id}
@@ -355,86 +369,89 @@ const MessagesList: React.FC<MessagesListProps> = ({
         >
           {message.link ? (
             /* Link message - show on a single line like analysis messages */
-            <div
-              className="flex justify-between items-center cursor-pointer transition-colors"
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: '0',
-                width: '100%',
-                maxWidth: '100%',
-                overflow: 'hidden',
-              }}
-            >
+            <div className="flex flex-col">
               <div
-                className="flex items-center"
+                className="flex justify-between items-center cursor-pointer transition-colors"
                 style={{
-                  flexWrap: 'nowrap',
-                  gap: '4px',
-                  width: isMobile ? 'calc(100% - 30px)' : undefined,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: '0',
+                  width: '100%',
                   maxWidth: '100%',
                   overflow: 'hidden',
                 }}
               >
-                {/* Ticker and company name */}
-                <div 
-                  className="flex items-center space-x-1 px-1.5 py-0.5 text-xs"
+                <div
+                  className="flex items-center"
                   style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    padding: '2px 6px',
-                    width: 'auto',
-                    maxWidth: isMobile ? 'calc(100% - 30px)' : '100%',
-                    boxSizing: 'border-box',
-                    overflowX: 'hidden'
+                    flexWrap: 'nowrap',
+                    gap: '4px',
+                    width: isMobile ? 'calc(100% - 30px)' : undefined,
+                    maxWidth: '100%',
+                    overflow: 'hidden',
                   }}
                 >
-                  <span 
-                    className="font-medium text-neutral-800"
+                  {/* Ticker and company name */}
+                  <div 
+                    className="flex items-center space-x-1 px-1.5 py-0.5 text-xs"
                     style={{
-                      display: 'flex',
                       flexDirection: 'row',
                       alignItems: 'center',
-                      whiteSpace: 'nowrap'
+                      padding: '2px 6px',
+                      width: 'auto',
+                      maxWidth: isMobile ? 'calc(100% - 30px)' : '100%',
+                      boxSizing: 'border-box',
+                      overflowX: 'hidden'
                     }}
                   >
-                    {message.ticker}
-                  </span>
-                  
-                  {message.company_name && (
-                    <span
-                      className="text-neutral-500"
+                    <span 
+                      className="font-medium text-neutral-800"
                       style={{
-                        maxWidth: isMobile ? '60px' : '200px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
+                        display: 'flex',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        whiteSpace: 'nowrap'
                       }}
                     >
-                      {message.company_name}
+                      {message.ticker}
                     </span>
-                  )}
+                    
+                    {message.company_name && (
+                      <span
+                        className="text-neutral-500"
+                        style={{
+                          maxWidth: isMobile ? '60px' : '200px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {message.company_name}
+                      </span>
+                    )}
+                    
+                    <span className="text-neutral-600 mx-1">
+                      Q{message.quarter}
+                    </span>
+                  </div>
                   
-                  <span className="text-neutral-600 mx-1">
-                    Q{message.quarter}
+                  <span className="text-xs text-neutral-500 ml-1">
+                    {convertToEasternTime(message.timestamp)}
                   </span>
+                  <InlineVolume ticker={message.ticker} />
                 </div>
-                
-                <span className="text-xs text-neutral-500 ml-1">
-                  {convertToEasternTime(message.timestamp)}
-                </span>
-              </div>
-              <div
-                className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors"
-                style={{
-                  alignSelf: undefined,
-                  marginTop: '0',
-                  marginLeft: '4px',
-                }}
-              >
-                <a href={message.link} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink size={14} />
-                </a>
+                <div
+                  className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors"
+                  style={{
+                    alignSelf: undefined,
+                    marginTop: '0',
+                    marginLeft: '4px',
+                  }}
+                >
+                  <a href={message.link} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink size={14} />
+                  </a>
+                </div>
               </div>
             </div>
           ) : (
@@ -517,6 +534,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                   <span className="text-xs text-neutral-500 ml-1">
                     {convertToEasternTime(message.timestamp)}
                   </span>
+                  <InlineVolume ticker={message.ticker} />
                   <div
                     className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors"
                     style={{
@@ -542,6 +560,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
           )}
         </div>
       ))}
+      </div>
     </div>
   );
 };

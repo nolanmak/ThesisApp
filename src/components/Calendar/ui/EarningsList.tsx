@@ -271,12 +271,23 @@ const EarningsList: React.FC<EarningsListProps> = ({
               boxSizing: 'border-box'
             }}
           >
-            <MessageAnalysis
-              ticker={item.ticker}
-              date={item.date}
-              messages={messages}
-              isMobile={isMobile}
-            />
+            {item.is_active ? (
+              <MessageAnalysis
+                ticker={item.ticker}
+                date={item.date}
+                messages={messages}
+                isMobile={isMobile}
+              />
+            ) : (
+              <div className="flex flex-col items-center">
+                <p 
+                  className="text-neutral-400" 
+                  style={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}
+                >
+                  Activate to enable features
+                </p>
+              </div>
+            )}
           </div>
         </div>
       ))}

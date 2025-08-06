@@ -1,4 +1,4 @@
-import { EarningsItem, CompanyConfig } from '../types';
+// Cache service for managing local data storage
 
 interface CacheItem<T> {
   data: T;

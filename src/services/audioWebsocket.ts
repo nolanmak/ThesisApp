@@ -34,12 +34,12 @@ class AudioWebSocketService {
   private isEnabled = false; // Flag to enable/disable WebSocket functionality
   private lastConnectionAttempt = 0;
   private minConnectionInterval = 5000; // 5 seconds minimum between connection attempts
+  private watchlistFilter: string[] = []; // Watchlist filter for notifications
 
   // Enable WebSocket functionality
   public enable(): void {
     if (!this.isEnabled) {
       this.isEnabled = true;
-      console.log("Audio WebSocket functionality enabled");
       this.connect();
     }
   }
@@ -48,7 +48,6 @@ class AudioWebSocketService {
   public disable(): void {
     if (this.isEnabled) {
       this.isEnabled = false;
-      console.log("Audio WebSocket functionality disabled");
       this.disconnect();
 
       // Notify all handlers that the connection is disabled
@@ -61,11 +60,28 @@ class AudioWebSocketService {
     return this.isEnabled;
   }
 
+  // Set watchlist filter for notifications
+  public setWatchlistFilter(watchlist: string[]): void {
+    this.watchlistFilter = watchlist.map(ticker => ticker.toUpperCase());
+  }
+
+  // Get current watchlist filter
+  public getWatchlistFilter(): string[] {
+    return [...this.watchlistFilter];
+  }
+
+  // Check if a ticker is in the watchlist (returns true if no watchlist filter is set)
+  private isTickerInWatchlist(ticker: string): boolean {
+    if (this.watchlistFilter.length === 0) {
+      return true; // No filter means all tickers are allowed
+    }
+    return this.watchlistFilter.includes(ticker.toUpperCase());
+  }
+
   // Connect to WebSocket
   public connect(): void {
     // Don't attempt to connect if WebSocket is disabled
     if (!this.isEnabled) {
-      console.log("Audio WebSocket is disabled, not connecting");
       return;
     }
 
@@ -82,19 +98,14 @@ class AudioWebSocketService {
 
     // Don't attempt to connect if we're already connecting or connected
     if (this.isConnecting) {
-      console.log(
-        "Audio WebSocket already connecting, skipping duplicate connect attempt"
-      );
       return;
     }
 
     if (this.socket?.readyState === WebSocket.OPEN) {
-      console.log("Audio WebSocket already connected");
       return;
     }
 
     if (this.socket?.readyState === WebSocket.CONNECTING) {
-      console.log("Audio WebSocket already in connecting state");
       return;
     }
 
@@ -131,8 +142,6 @@ class AudioWebSocketService {
       this.socket = new WebSocket(AUDIO_WS_ENDPOINT);
 
       this.socket.onopen = () => {
-        console.log("[AUDIO WS] ✅ Audio WebSocket connection established successfully!");
-        console.log("[AUDIO WS] 👥 Current message handlers:", this.messageHandlers.length);
         this.reconnectAttempts = 0;
         this.reconnectDelay = 2000; // Reset reconnect delay
         this.isConnecting = false;
@@ -143,14 +152,10 @@ class AudioWebSocketService {
 
       this.socket.onmessage = (event) => {
         try {
-          console.log("[AUDIO WS] 🔔 Raw message received:", event.data);
           const data = JSON.parse(event.data);
-          console.log("[AUDIO WS] 📦 Parsed message:", data);
-          console.log("[AUDIO WS] 👥 Message handlers count:", this.messageHandlers.length);
 
           // Handle any message that has audio_url, regardless of type
           if (data.type === "new_audio" || data.audio_url || (data.data && data.data.audio_url)) {
-            console.log("[AUDIO WS] ✅ Detected audio message, notifying handlers");
             
             // Transform if needed
             let audioNotification = data;
@@ -172,10 +177,16 @@ class AudioWebSocketService {
                   }
                 }
               };
-              console.log("[AUDIO WS] 🔄 Transformed message:", audioNotification);
             }
             
-            this.notifyMessageHandlers(audioNotification);
+            // Check watchlist filter before notifying handlers
+            const ticker = audioNotification.data?.metadata?.ticker || audioNotification.data?.metadata?.company_name || 'UNKNOWN';
+            if (this.isTickerInWatchlist(ticker)) {
+              console.log("[AUDIO WS] ✅ Audio notification allowed by watchlist for ticker:", ticker);
+              this.notifyMessageHandlers(audioNotification);
+            } else {
+              console.log("[AUDIO WS] ❌ Audio notification filtered out by watchlist for ticker:", ticker, "Watchlist:", this.watchlistFilter);
+            }
           } else {
             console.warn(
               "[AUDIO WS] ❌ Received message with unknown format. Expected 'new_audio' or audio_url, got:",
@@ -192,12 +203,6 @@ class AudioWebSocketService {
       this.socket.onerror = (error) => {
         console.error("Audio WebSocket error:", error);
 
-        // Log additional details about the socket state
-        console.log("Audio WebSocket state at error:", {
-          readyState: this.socket?.readyState,
-          url: this.socket?.url,
-          endpoint: AUDIO_WS_ENDPOINT
-        });
 
         this.isConnecting = false;
 
@@ -212,10 +217,7 @@ class AudioWebSocketService {
         this.notifyConnectionStatus(false);
       };
 
-      this.socket.onclose = (event) => {
-        console.log(
-          `Audio WebSocket connection closed: ${event.code} ${event.reason}`
-        );
+      this.socket.onclose = () => {
         this.isConnecting = false;
         this.notifyConnectionStatus(false);
 
@@ -285,12 +287,9 @@ class AudioWebSocketService {
   public subscribeToAudioNotifications(
     handler: AudioMessageHandler
   ): () => void {
-    console.log("[AUDIO WS] Adding message handler. Total handlers:", this.messageHandlers.length + 1);
     this.messageHandlers.push(handler);
     return () => {
-      console.log("[AUDIO WS] Removing message handler. Handlers before removal:", this.messageHandlers.length);
       this.messageHandlers = this.messageHandlers.filter((h) => h !== handler);
-      console.log("[AUDIO WS] Handlers after removal:", this.messageHandlers.length);
     };
   }
 
@@ -316,14 +315,11 @@ class AudioWebSocketService {
 
   // Notify all message handlers
   private notifyMessageHandlers(notification: AudioNotification): void {
-    console.log("[AUDIO WS] Notifying", this.messageHandlers.length, "message handlers with:", notification);
-    this.messageHandlers.forEach((handler, index) => {
-      console.log("[AUDIO WS] Calling handler", index);
+    this.messageHandlers.forEach((handler) => {
       try {
         handler(notification);
-        console.log("[AUDIO WS] Handler", index, "completed successfully");
       } catch (error) {
-        console.error("[AUDIO WS] Handler", index, "threw error:", error);
+        console.error("[AUDIO WS] Handler error:", error);
       }
     });
   }
