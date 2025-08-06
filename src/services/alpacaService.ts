@@ -104,6 +104,8 @@ class AlpacaService {
   private maxReconnectAttempts = 50;
   private reconnectTimeout: number | null = null;
   private reconnectDelay = 2000;
+  private lastConnectionAttempt = 0;
+  private minConnectionInterval = 5000;
   private connectionFailures = 0;
   private maxConsecutiveFailures = 3;
   private isEnabled = true;
@@ -170,6 +172,15 @@ class AlpacaService {
       return;
     }
 
+    // Prevent connection attempts that are too frequent
+    const now = Date.now();
+    const timeSinceLastAttempt = now - this.lastConnectionAttempt;
+    
+    if (timeSinceLastAttempt < this.minConnectionInterval) {
+      console.log(`Alpaca connection attempt too frequent (${timeSinceLastAttempt}ms since last attempt), minimum interval is ${this.minConnectionInterval}ms`);
+      return;
+    }
+
     if (this.isConnecting) {
       console.log('Alpaca WebSocket already connecting, skipping duplicate connect attempt');
       return;
@@ -185,6 +196,7 @@ class AlpacaService {
       return;
     }
 
+    this.lastConnectionAttempt = now;
     this.isConnecting = true;
     this.isManualClose = false;
 
