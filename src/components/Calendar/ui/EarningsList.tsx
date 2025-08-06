@@ -262,7 +262,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
           
           {/* Message Analysis Section */}
           <div 
-            className="flex-grow bg-neutral-50 rounded-md border border-dashed border-neutral-200 flex items-center justify-center"
+            className="flex-grow bg-neutral-50 rounded-md border border-neutral-200 p-2"
             style={{
               marginTop: isMobile ? '4px' : '4px',
               minHeight: isMobile ? '60px' : '80px',

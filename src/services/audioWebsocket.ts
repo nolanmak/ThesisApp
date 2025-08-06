@@ -217,7 +217,7 @@ class AudioWebSocketService {
         this.notifyConnectionStatus(false);
       };
 
-      this.socket.onclose = (event) => {
+      this.socket.onclose = () => {
         this.isConnecting = false;
         this.notifyConnectionStatus(false);
 

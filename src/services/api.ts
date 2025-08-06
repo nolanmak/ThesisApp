@@ -68,7 +68,6 @@ const fetchWithAuth = async <T = Record<string, unknown>>(
         setTimeout(() => {
           window.location.href = "/";
         }, 1000);
-
         throw new Error(`Session expired. Please sign in again.`);
       }
 
@@ -144,7 +143,6 @@ export const getMessages = async (
     if (error instanceof Error && error.message.includes("Session expired")) {
       return [];
     }
-
     return [];
   }
 };
@@ -460,7 +458,6 @@ export const getCompanyNames = async (
 
     // Cache the result for 30 minutes
     cache.set(cacheKey, data, 30 * 60 * 1000);
-
     return data;
   } catch (error) {
     console.error(`Error fetching company names for ${ticker}:`, error);

@@ -104,7 +104,6 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         .filter(item => item.date === date)
         .map(item => item.ticker);
       
-      
       if (tickersForDate.length === 0) {
         return;
       }
@@ -112,15 +111,12 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       // Filter out tickers we already have data for
       const tickersToFetch = tickersForDate.filter(ticker => !companyNames[ticker]);
       
-      
       if (tickersToFetch.length === 0) {
         return;
       }
       
-      
       // Fetch company names for all tickers
       const companyNamesData = await getBatchCompanyNames(tickersToFetch);
-      
       
       // Update state with new company names
       setCompanyNames(prev => {
@@ -130,7 +126,6 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         });
         return updated;
       });
-      
     } catch (error) {
       console.error('❌ Error fetching company names for date:', error);
     } finally {

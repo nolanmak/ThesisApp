@@ -157,7 +157,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
       setSearchMessageTicker(searchParam);
     }
   }, []);
-
   
   useEffect(() => {
     if (!messages || messages.length === 0) {
@@ -168,14 +167,11 @@ const MessagesList: React.FC<MessagesListProps> = ({
     // Create a map for deduplication
     const uniqueMessagesMap = new Map<string, Message>();
     
-    // Track PM messages through filtering process
-
     // First pass: filter out invalid timestamps, then filter by watchlist if available
     let validMessages = messages.filter(message => {
       const messageTimestamp = new Date(message.timestamp);
       return !isNaN(messageTimestamp.getTime());
     });
-
 
     // Filter by watchlist if user has one and is authenticated
     if (user?.email && userWatchlist.length > 0) {
@@ -185,7 +181,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
       
       validMessages = filteredMessages;
     }
-
     const sortedMessages = validMessages.sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
@@ -234,8 +229,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
         });
       }
     });
-
-    // Message processing completed
     
     // Get all unique messages and sort them by timestamp (newest first) for display
     const sortedDeduplicated = Array.from(uniqueMessagesMap.values()).sort(

@@ -283,11 +283,6 @@ class AlpacaService {
     }
   }
 
-  private authenticate(): void {
-    // Authentication is handled by the proxy server
-    // This method is kept for compatibility but does nothing
-    console.log('Authentication handled by proxy server');
-  }
 
   private handleMessage(message: Record<string, unknown>): void {
     // Handle proxy message format

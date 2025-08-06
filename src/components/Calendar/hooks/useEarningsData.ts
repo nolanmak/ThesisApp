@@ -40,13 +40,12 @@ const useEarningsData = (
       try {
         const items = await getEarningsItems(bypassCache);
         
-        
         setState((prev) => ({
           ...prev,
           earningsItems: items,
           loading: false,
         }));
-      } catch (error) {
+      } catch {
         toast.error("Failed to fetch earnings items");
         setState((prev) => ({ ...prev, loading: false }));
       }
@@ -77,7 +76,7 @@ const useEarningsData = (
       toast.success(
         `${item.ticker} is now ${!item.is_active ? "active" : "inactive"}`
       );
-    } catch (error) {
+    } catch {
       toast.error("Failed to update item");
     }
   }, []);
@@ -111,7 +110,7 @@ const useEarningsData = (
       toast.success(
         `${item.ticker} Wire is now ${!currentWireActive ? "active" : "inactive"}`
       );
-    } catch (error) {
+    } catch {
       toast.error("Failed to update Wire status");
     }
   }, []);
@@ -138,7 +137,7 @@ const useEarningsData = (
       toast.success(
         `${item.ticker} IR is now ${!currentIRActive ? "active" : "inactive"}`
       );
-    } catch (error) {
+    } catch {
       toast.error("Failed to update IR status");
     }
   }, []);
@@ -164,7 +163,7 @@ const useEarningsData = (
 
       toast.success(`Added ${newItem.ticker} for ${formattedDate}`);
       return true;
-    } catch (error) {
+    } catch {
       toast.error("Failed to add item");
       return false;
     }
