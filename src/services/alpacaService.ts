@@ -152,7 +152,13 @@ class AlpacaService {
   private getWebSocketUrl(): string {
     // Use proxy WebSocket endpoint instead of direct Alpaca connection
     const proxyUrl = import.meta.env.VITE_ALPACA_PROXY_WS_URL;
-    const finalUrl = proxyUrl || 'ws://IRAuto-Alpac-6P4vTH9n3JEA-1469477952.us-east-1.elb.amazonaws.com/ws';
+    let finalUrl = proxyUrl || 'ws://IRAuto-Alpac-6P4vTH9n3JEA-1469477952.us-east-1.elb.amazonaws.com/ws';
+    
+    // If running in production (served over HTTPS), ensure we use WSS
+    if (window.location.protocol === 'https:' && finalUrl.startsWith('ws://')) {
+      finalUrl = finalUrl.replace('ws://', 'wss://');
+    }
+    
     console.log('🌐 Alpaca WebSocket URL from env:', proxyUrl, '-> Final URL:', finalUrl);
     return finalUrl;
   }

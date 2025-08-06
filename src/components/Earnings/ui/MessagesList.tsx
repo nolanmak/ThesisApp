@@ -343,7 +343,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
       )}
       
       <div 
-        className="max-h-[calc(100vh-120px)] overflow-auto scrollbar-hide"
+        className="flex-1 overflow-auto scrollbar-hide"
         style={{
           width: '100%',
           maxWidth: '100%',
