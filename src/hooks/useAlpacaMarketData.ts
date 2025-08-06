@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { alpacaService, TickData } from '../services/alpacaService';
 
 export interface MarketDataState {
@@ -19,6 +19,10 @@ export const useAlpacaMarketData = (symbols: string[]) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [enabled, setEnabled] = useState(alpacaService.isWebSocketEnabled());
   const previousSymbolsRef = useRef<string[]>([]);
+  
+  // Memoize symbols to prevent unnecessary re-subscriptions
+  const memoizedSymbols = React.useMemo(() => symbols, [symbols.join(',')]);
+  const unsubscribeFnRef = useRef<(() => void) | null>(null);
 
   // Monitor connection status
   useEffect(() => {
@@ -39,25 +43,33 @@ export const useAlpacaMarketData = (symbols: string[]) => {
     // Check periodically
     const interval = setInterval(checkConnection, 2000);
     return () => clearInterval(interval);
-  }, [symbols.length]);
+  }, [memoizedSymbols.length]);
 
   // Subscribe to symbols
   useEffect(() => {
-    if (!symbols.length || !enabled) {
-      previousSymbolsRef.current = symbols;
+    if (!memoizedSymbols.length || !enabled) {
+      previousSymbolsRef.current = memoizedSymbols;
       return;
     }
 
     // Only resubscribe if symbols have actually changed
-    if (arraysEqual(symbols, previousSymbolsRef.current)) {
+    if (arraysEqual(memoizedSymbols, previousSymbolsRef.current)) {
+      console.log('Symbols unchanged, skipping resubscription');
       return;
     }
 
-    console.log('Subscribing to Alpaca symbols:', symbols);
+    // Clean up previous subscription if it exists
+    if (unsubscribeFnRef.current) {
+      console.log('Cleaning up previous subscription');
+      unsubscribeFnRef.current();
+      unsubscribeFnRef.current = null;
+    }
+
+    console.log('Subscribing to Alpaca symbols:', memoizedSymbols);
     console.log('Previous symbols were:', previousSymbolsRef.current);
 
     // Subscribe to all symbols at once
-    const unsubscribe = alpacaService.subscribe(symbols, (data: TickData) => {
+    const unsubscribe = alpacaService.subscribe(memoizedSymbols, (data: TickData) => {
       console.log('📊 RT Volume Data:', data.symbol, 'Vol:', data.volume, 'Cumulative:', data.cumulativeVolume);
       setMarketData(prev => ({
         ...prev,
@@ -65,16 +77,27 @@ export const useAlpacaMarketData = (symbols: string[]) => {
       }));
     });
 
-    // Update the ref to track current symbols
-    previousSymbolsRef.current = symbols;
+    // Store the unsubscribe function
+    unsubscribeFnRef.current = unsubscribe;
 
+    // Update the ref to track current symbols
+    previousSymbolsRef.current = [...memoizedSymbols];
+
+    // Cleanup function
     return () => {
-      console.log('Unsubscribing from Alpaca symbols:', symbols);
-      unsubscribe();
+      console.log('Effect cleanup: Unsubscribing from Alpaca symbols:', memoizedSymbols);
+      if (unsubscribeFnRef.current) {
+        unsubscribeFnRef.current();
+        unsubscribeFnRef.current = null;
+      }
     };
-  }, [symbols, enabled]);
+  }, [memoizedSymbols, enabled]);
 
   const disconnect = useCallback(() => {
+    if (unsubscribeFnRef.current) {
+      unsubscribeFnRef.current();
+      unsubscribeFnRef.current = null;
+    }
     alpacaService.disconnect();
     setMarketData({});
     setIsConnected(false);

@@ -127,8 +127,10 @@ class AlpacaService {
   private initializeFromEnv(): void {
     // For proxy connection, we don't need Alpaca credentials in the frontend
     // The proxy handles authentication with Alpaca
-    console.log('Alpaca service initialized for proxy connection');
-    this.connect();
+    console.log('Alpaca service initialized for proxy connection. Enabled:', this.isEnabled);
+    if (this.isEnabled) {
+      this.connect();
+    }
   }
 
   public enable(): void {
@@ -150,14 +152,13 @@ class AlpacaService {
   private getWebSocketUrl(): string {
     // Use proxy WebSocket endpoint instead of direct Alpaca connection
     const proxyUrl = import.meta.env.VITE_ALPACA_PROXY_WS_URL;
-    if (proxyUrl) {
-      return proxyUrl;
-    }
-    // Fallback to hardcoded proxy URL if env var not set
-    return 'ws://IRAuto-Alpac-6P4vTH9n3JEA-1469477952.us-east-1.elb.amazonaws.com/ws';
+    const finalUrl = proxyUrl || 'ws://IRAuto-Alpac-6P4vTH9n3JEA-1469477952.us-east-1.elb.amazonaws.com/ws';
+    console.log('🌐 Alpaca WebSocket URL from env:', proxyUrl, '-> Final URL:', finalUrl);
+    return finalUrl;
   }
 
   public connect(): void {
+    console.log('🔌 Alpaca connect() called. Enabled:', this.isEnabled, 'Connecting:', this.isConnecting, 'Socket state:', this.socket?.readyState);
     if (!this.isEnabled) {
       console.log('Alpaca WebSocket is disabled, not connecting');
       return;
@@ -209,8 +210,9 @@ class AlpacaService {
     }
 
     try {
-      console.log('Creating new Alpaca WebSocket connection');
-      this.socket = new WebSocket(this.getWebSocketUrl());
+      const wsUrl = this.getWebSocketUrl();
+      console.log('Creating new Alpaca WebSocket connection to:', wsUrl);
+      this.socket = new WebSocket(wsUrl);
       
       this.socket.onopen = () => {
         console.log('Alpaca proxy WebSocket connection established');
@@ -224,6 +226,14 @@ class AlpacaService {
         // The proxy handles Alpaca authentication internally
         this.isAuthenticated = true;
         this.startPingInterval();
+        
+        // Resubscribe to any pending symbols
+        if (this.pendingSubscriptions.size > 0) {
+          console.log('Resubscribing to pending symbols after reconnection:', Array.from(this.pendingSubscriptions));
+          this.pendingSubscriptions.forEach(symbol => this.symbols.add(symbol));
+          this.pendingSubscriptions.clear();
+        }
+        
         this.subscribeToSymbols();
       };
 
@@ -475,7 +485,8 @@ class AlpacaService {
     }
 
     if (this.symbols.size === 0) {
-      console.log('No symbols to subscribe to');
+      console.log('No symbols to subscribe to. Current symbols:', Array.from(this.symbols));
+      console.log('Pending subscriptions:', Array.from(this.pendingSubscriptions));
       return;
     }
 
@@ -492,6 +503,7 @@ class AlpacaService {
 
   public subscribe(symbols: string | string[], callback: (data: TickData) => void): () => void {
     const symbolsArray = Array.isArray(symbols) ? symbols : [symbols];
+    console.log('📊 Subscribe called with symbols:', symbolsArray, 'Service enabled:', this.isEnabled, 'Connected:', this.isConnected());
 
     // Add to subscribers and symbols to track
     symbolsArray.forEach(symbol => {
@@ -506,11 +518,15 @@ class AlpacaService {
       this.symbols.add(symbol);
     });
 
+    // Add symbols to pending subscriptions for reconnection scenarios
+    symbolsArray.forEach(symbol => this.pendingSubscriptions.add(symbol));
+
     // If authenticated, subscribe immediately
     if (this.isAuthenticated) {
       this.subscribeToSymbols();
     } else if (!this.isConnecting && this.isEnabled) {
       // Not connected, try to connect
+      console.log('Starting connection to subscribe to symbols:', symbolsArray);
       this.connect();
     }
 
