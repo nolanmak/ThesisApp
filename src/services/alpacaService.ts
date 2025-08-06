@@ -57,29 +57,30 @@ interface AlpacaBar {
   vw: number; // volume weighted average price
 }
 
-interface AlpacaSubscriptionMessage {
-  T: 'subscription';
-  trades: string[];
-  quotes: string[];
-  bars: string[];
-  updatedBars: string[];
-  dailyBars: string[];
-  statuses: string[];
-  lulds: string[];
-  corrections: string[];
-  cancelErrors: string[];
-}
+// Interfaces for potential future use
+// interface AlpacaSubscriptionMessage {
+//   T: 'subscription';
+//   trades: string[];
+//   quotes: string[];
+//   bars: string[];
+//   updatedBars: string[];
+//   dailyBars: string[];
+//   statuses: string[];
+//   lulds: string[];
+//   corrections: string[];
+//   cancelErrors: string[];
+// }
 
-interface AlpacaErrorMessage {
-  T: 'error';
-  code: number;
-  msg: string;
-}
+// interface AlpacaErrorMessage {
+//   T: 'error';
+//   code: number;
+//   msg: string;
+// }
 
-interface AlpacaSuccessMessage {
-  T: 'success';
-  msg: string;
-}
+// interface AlpacaSuccessMessage {
+//   T: 'success';
+//   msg: string;
+// }
 
 // Proxy message interfaces
 interface ProxyTradeMessage {

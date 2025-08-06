@@ -96,30 +96,27 @@ const MessagesList: React.FC<MessagesListProps> = ({
   const prevMessagesRef = useRef<Message[]>([]);
   const initialLoadCompletedRef = useRef<boolean>(false);
   
+  // Calculate 24 hours ago timestamp once
+  const twentyFourHoursAgo = React.useMemo(() => {
+    return Date.now() - 24 * 60 * 60 * 1000;
+  }, []); // Only calculate once
+
   // Extract unique ticker symbols from messages released in the last 24 hours for market data
   const uniqueTickers = React.useMemo(() => {
     const tickerSet = new Set<string>();
-    const now = new Date();
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     
     deduplicatedMessages.forEach(message => {
       if (message.ticker && message.timestamp) {
-        const messageTime = new Date(message.timestamp);
+        const messageTime = new Date(message.timestamp).getTime();
         // Only include tickers from messages in the last 24 hours
-        if (messageTime >= twentyFourHoursAgo && !isNaN(messageTime.getTime())) {
+        if (messageTime >= twentyFourHoursAgo && !isNaN(messageTime)) {
           tickerSet.add(message.ticker);
         }
       }
     });
     
-    const uniqueTickerArray = Array.from(tickerSet);
-    // Keep only Alpaca-related logging
-    if (uniqueTickerArray.length > 0) {
-      console.log('🔄 Alpaca market data subscriptions:', uniqueTickerArray.sort().join(', '));
-    }
-    
-    return uniqueTickerArray;
-  }, [deduplicatedMessages]);
+    return Array.from(tickerSet).sort();
+  }, [deduplicatedMessages, twentyFourHoursAgo]);
 
   const { marketData, isConnected, resetAllCumulativeVolume } = useAlpacaMarketData(uniqueTickers);
   
@@ -136,8 +133,15 @@ const MessagesList: React.FC<MessagesListProps> = ({
   // Create inline volume display component
   const InlineVolume: React.FC<{ ticker: string }> = ({ ticker }) => {
     const tickData = marketData[ticker];
+    
+  
+    
     if (!tickData || !isConnected) {
-      return null;
+      return (
+        <span className="text-xs text-neutral-400 ml-2">
+          • Vol: --
+        </span>
+      );
     }
     
     return (
