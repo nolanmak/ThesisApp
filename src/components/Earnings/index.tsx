@@ -79,7 +79,7 @@ const Messages: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col h-full">
       {/* Feedback Modal */}
       {feedbackModalOpen && selectedMessage && (
         <FeedbackModal 
@@ -89,54 +89,60 @@ const Messages: React.FC = () => {
           convertToEasternTime={convertToEasternTime}
         />
       )}
-      <div 
-        className="flex h-[calc(100vh-120px)]"
-        style={{
-          flexDirection: isMobile ? 'column' : 'row'
-        }}
-      >
-        {/* Messages panel */}
+      
+      {/* Main earnings content */}
+      <div className="flex-1 min-h-0">
         <div 
+          className="flex h-full"
           style={{
-            width: isMobile ? '100%' : '65%',
-            display: isMobile && showAnalysisPanel ? 'none' : 'flex',
-            flexDirection: 'column',
-            marginRight: isMobile ? 0 : '1rem',
-            height: isMobile ? '100%' : undefined
+            flexDirection: isMobile ? 'column' : 'row'
           }}
         >
-          <WebSocketStatus
-            searchMessageTicker={searchMessageTicker}
-            refreshing={refreshing}
-            enabled={webSocketEnabled}
-            connected={webSocketConnected}
-            reconnecting={webSocketReconnecting}
-            onSearchChange={handleMessageSearchChange}
-            onRefresh={refreshMessages}
-            onToggleWebSocket={toggleEnabled}
-          />
+          {/* Messages panel */}
+          <div 
+            style={{
+              width: isMobile ? '100%' : '65%',
+              display: isMobile && showAnalysisPanel ? 'none' : 'flex',
+              flexDirection: 'column',
+              marginRight: isMobile ? 0 : '1rem',
+              height: '100%',
+              minHeight: 0
+            }}
+          >
+            <WebSocketStatus
+              searchMessageTicker={searchMessageTicker}
+              refreshing={refreshing}
+              enabled={webSocketEnabled}
+              connected={webSocketConnected}
+              reconnecting={webSocketReconnecting}
+              onSearchChange={handleMessageSearchChange}
+              onRefresh={refreshMessages}
+              onToggleWebSocket={toggleEnabled}
+            />
+            
+            <MessagesList
+              messages={messages}
+              loading={messagesLoading}
+              convertToEasternTime={convertToEasternTime}
+              onSelectMessage={handleMessageSelect}
+              isMobile={isMobile}
+            />
+          </div>
           
-          <MessagesList
-            messages={messages}
-            loading={messagesLoading}
-            convertToEasternTime={convertToEasternTime}
-            onSelectMessage={handleMessageSelect}
+          {/* Analysis panel */}
+          <AnalysisPanel
+            selectedMessage={selectedMessage}
             isMobile={isMobile}
+            showAnalysisPanel={showAnalysisPanel}
+            convertToEasternTime={convertToEasternTime}
+            handleCloseAnalysisPanel={handleCloseAnalysisPanel}
+            setFeedbackModalOpen={setFeedbackModalOpen}
           />
         </div>
-        
-        {/* Analysis panel */}
-        <AnalysisPanel
-          selectedMessage={selectedMessage}
-          isMobile={isMobile}
-          showAnalysisPanel={showAnalysisPanel}
-          convertToEasternTime={convertToEasternTime}
-          handleCloseAnalysisPanel={handleCloseAnalysisPanel}
-          setFeedbackModalOpen={setFeedbackModalOpen}
-        />
       </div>
-      {/* Disclaimer banner (bottom) */}
-      <div className="bg-gray-50 text-gray-700 px-12 py-3 text-xs leading-tight rounded-md border border-gray-200 mt-6 text-center">
+      
+      {/* Disclaimer banner (bottom) - positioned at bottom of page */}
+      <div className="bg-gray-50 text-gray-700 px-4 py-3 text-xs leading-tight rounded-md border border-gray-200 mt-4 text-center flex-shrink-0">
         <b>Disclaimer:</b> This platform offers information and suggestions solely for educational purposes and should not be considered a replacement for professional financial advice. We cover stock investments without guaranteeing the completeness, accuracy, reliability, or suitability of the information, which may incorporate data from third-party sources. Investing in stocks and other financial instruments carries risks, such as potential loss of principal. Users should independently verify all information and consult qualified professionals tailored to their unique financial situations and investment goals. Our content and services are provided "as is," with no express or implied warranties. We are not responsible for any losses or damages resulting from the use of our services. This disclaimer may change; users are encouraged to review it periodically. Using our services indicates acceptance of these terms.
       </div>
     </div>
