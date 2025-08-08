@@ -70,7 +70,7 @@ export const useAlpacaMarketData = (symbols: string[]) => {
 
     // Subscribe to all symbols at once
     const unsubscribe = alpacaService.subscribe(memoizedSymbols, (data: TickData) => {
-      console.log('📊 RT Volume Data:', data.symbol, 'Vol:', data.volume, 'Cumulative:', data.cumulativeVolume);
+      // Remove verbose logging for each trade to reduce console clutter
       setMarketData(prev => ({
         ...prev,
         [data.symbol]: data
@@ -99,7 +99,7 @@ export const useAlpacaMarketData = (symbols: string[]) => {
       unsubscribeFnRef.current = null;
     }
     alpacaService.disconnect();
-    setMarketData({});
+    // Don't clear market data on disconnect - preserve volume data
     setIsConnected(false);
     setIsConnecting(false);
   }, []);
@@ -111,6 +111,7 @@ export const useAlpacaMarketData = (symbols: string[]) => {
 
   const disable = useCallback(() => {
     alpacaService.disable();
+    // Only clear data when explicitly disabling, not on temporary disconnections
     setMarketData({});
     setEnabled(false);
     setIsConnected(false);

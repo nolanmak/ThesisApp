@@ -296,8 +296,8 @@ class WebSocketService {
 
   // Attempt to reconnect with exponential backoff
   private attemptReconnect(): void {
-    if (this.isManualClose) {
-      console.log('Manual close, not attempting to reconnect');
+    if (this.isManualClose || !this.isEnabled) {
+      console.log('Manual close or disabled, not attempting to reconnect');
       return;
     }
     
@@ -306,26 +306,33 @@ class WebSocketService {
     
     // If we've had too many consecutive failures, increase the minimum connection interval
     if (this.connectionFailures > this.maxConsecutiveFailures) {
-      this.minConnectionInterval = Math.min(30000, this.minConnectionInterval * 1.5);
+      this.minConnectionInterval = Math.min(60000, this.minConnectionInterval * 1.5);
       console.log(`Increasing minimum connection interval to ${this.minConnectionInterval}ms due to consecutive failures`);
     }
     
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       console.log(`Maximum reconnection attempts (${this.maxReconnectAttempts}) reached`);
       
-      // Automatically disable WebSocket after too many failures
-      this.disable();
+      // Don't automatically disable - just wait longer and reset
+      this.reconnectAttempts = 0;
+      const resetDelay = 300000; // 5 minutes
       
-      toast.error('Unable to connect to message service. Real-time updates have been disabled. You can re-enable them manually or refresh the page to try again.');
+      console.log(`Resetting reconnection attempts, will try again in ${resetDelay / 60000} minutes`);
+      
+      setTimeout(() => {
+        if (!this.isManualClose && this.isEnabled) {
+          this.connect();
+        }
+      }, resetDelay);
       return;
     }
 
     this.reconnectAttempts++;
     
-    // More aggressive exponential backoff with jitter to prevent thundering herd
-    const baseDelay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-    const jitter = Math.random() * 0.3 * baseDelay; // Add up to 30% random jitter
-    const delay = Math.min(60000, baseDelay + jitter); // Cap at 60 seconds
+    // Less aggressive exponential backoff to prevent connection spam
+    const baseDelay = this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts - 1);
+    const jitter = Math.random() * 0.2 * baseDelay; // Reduced jitter
+    const delay = Math.min(120000, baseDelay + jitter); // Cap at 2 minutes
     
     console.log(`Attempting to reconnect in ${Math.round(delay / 1000)} seconds (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
     
@@ -369,10 +376,10 @@ class WebSocketService {
     // Record the current time as the last pong time
     this.lastPongTime = Date.now();
     
-    // Set up ping interval
+    // Set up ping interval - less frequent to reduce conflicts
     this.pingInterval = window.setInterval(() => {
       this.sendPing();
-    }, this.pingIntervalTime);
+    }, this.pingIntervalTime * 1.5); // 45 seconds instead of 30
   }
   
   // Clear ping interval and timeout
@@ -408,8 +415,8 @@ class WebSocketService {
       this.pingTimeout = window.setTimeout(() => {
         const timeSinceLastPong = Date.now() - this.lastPongTime;
         
-        // If we haven't received a pong in twice the ping interval, consider the connection dead
-        if (timeSinceLastPong > this.pingIntervalTime * 2) {
+        // More lenient pong timeout to reduce false disconnections
+        if (timeSinceLastPong > this.pingIntervalTime * 3) {
           console.error('No pong response received, connection may be dead');
           
           // Close the socket to trigger reconnection
@@ -417,7 +424,7 @@ class WebSocketService {
             this.socket.close();
           }
         }
-      }, this.pingTimeoutTime);
+      }, this.pingTimeoutTime * 2); // Double the timeout period
     } catch (error) {
       console.error('Error sending ping:', error);
     }
