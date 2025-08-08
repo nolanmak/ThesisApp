@@ -303,6 +303,9 @@ class AlpacaService {
 
 
   private handleMessage(message: Record<string, unknown>): void {
+    // Update activity timestamp for any received message
+    this.updateLastActivity();
+    
     // Handle proxy message format
     if (message.type) {
       switch (message.type) {
@@ -315,7 +318,7 @@ class AlpacaService {
           break;
 
         case 'trade':
-          console.log('📈 Trade received from proxy:', message);
+          // Remove verbose logging for trades to reduce console clutter
           this.handleProxyTradeMessage(message as unknown as ProxyTradeMessage);
           break;
 
@@ -648,7 +651,7 @@ class AlpacaService {
       console.log(`Maximum reconnection attempts (${this.maxReconnectAttempts}) reached for Alpaca WebSocket - resetting counter`);
       this.reconnectAttempts = 0; // Reset counter instead of disabling
       // Wait longer before trying again
-      const resetDelay = 60000; // 1 minute
+      const resetDelay = 120000; // 2 minutes
       setTimeout(() => {
         if (!this.isManualClose && this.isEnabled) {
           this.connect();
@@ -659,10 +662,10 @@ class AlpacaService {
 
     this.reconnectAttempts++;
     
-    // Longer delays to avoid rapid reconnection
-    const baseDelay = Math.max(5000, this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1));
-    const jitter = Math.random() * 0.3 * baseDelay;
-    const delay = Math.min(60000, baseDelay + jitter);
+    // More conservative reconnection delays
+    const baseDelay = Math.max(10000, this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts - 1)); // Less aggressive exponential backoff
+    const jitter = Math.random() * 0.2 * baseDelay; // Less jitter
+    const delay = Math.min(300000, baseDelay + jitter); // Cap at 5 minutes
     
     console.log(`Attempting to reconnect Alpaca WebSocket in ${Math.round(delay / 1000)} seconds (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
     
@@ -680,11 +683,17 @@ class AlpacaService {
     this.clearPingInterval();
     this.lastPongTime = Date.now();
     
-    // Note: Alpaca doesn't require explicit pings - the server sends heartbeats
-    // But we can still monitor connection health
+    // Update last pong time whenever we receive any data
+    this.updateLastActivity();
+    
+    // Less frequent health checks to avoid premature disconnections
     this.pingInterval = window.setInterval(() => {
       this.checkConnectionHealth();
-    }, this.pingIntervalTime);
+    }, this.pingIntervalTime * 2); // Check every 60 seconds instead of 30
+  }
+  
+  private updateLastActivity(): void {
+    this.lastPongTime = Date.now();
   }
   
   private clearPingInterval(): void {
@@ -705,10 +714,12 @@ class AlpacaService {
       return;
     }
     
-    // If we haven't received any data in a while, consider the connection stale
+    // More lenient health check - only disconnect if we haven't received data for much longer
     const timeSinceLastData = Date.now() - this.lastPongTime;
-    if (timeSinceLastData > this.pingIntervalTime * 2) {
-      console.warn('Alpaca WebSocket appears stale, reconnecting');
+    const healthCheckThreshold = this.pingIntervalTime * 4; // 2 minutes instead of 1 minute
+    
+    if (timeSinceLastData > healthCheckThreshold) {
+      console.warn(`Alpaca WebSocket appears stale (${Math.round(timeSinceLastData / 1000)}s since last activity), reconnecting`);
       if (this.socket) {
         this.socket.close();
       }
