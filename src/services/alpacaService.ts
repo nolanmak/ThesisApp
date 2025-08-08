@@ -82,13 +82,31 @@ interface AlpacaBar {
 //   msg: string;
 // }
 
-// Proxy message interfaces
+// Enhanced proxy message interfaces for new backend
 interface ProxyTradeMessage {
   type: 'trade';
   symbol: string;
   price: number;
   size: number;
   timestamp: string;
+  cumulative_volume?: number; // Added: Backend-provided cumulative volume
+  after_hours_mode?: boolean; // Added: Indicates if in after-hours tracking mode
+  conditions?: string[];
+  exchange?: string;
+}
+
+interface VolumeDataMessage {
+  type: 'volume_data';
+  ticker: string;
+  cumulative_volume: number;
+  mode: 'live_after_hours' | 'historical';
+  date?: string; // Present for historical data
+  timestamp: string;
+}
+
+interface VolumeRequestMessage {
+  type: 'get_volume';
+  ticker: string;
 }
 
 // Type definition kept for potential future use
@@ -105,7 +123,7 @@ class AlpacaService {
   private reconnectTimeout: number | null = null;
   private reconnectDelay = 2000;
   private lastConnectionAttempt = 0;
-  private minConnectionInterval = 5000;
+  private minConnectionInterval = 3000; // Increased to 3000ms to prevent connection spam
   private connectionFailures = 0;
   private maxConsecutiveFailures = 3;
   private isEnabled = true;
@@ -233,11 +251,11 @@ class AlpacaService {
       this.socket = new WebSocket(wsUrl);
       
       this.socket.onopen = () => {
-        console.log('Alpaca proxy WebSocket connection established');
+        console.log('🚀 Alpaca proxy WebSocket connection established to:', wsUrl);
         this.reconnectAttempts = 0;
         this.connectionFailures = 0;
         this.reconnectDelay = 2000;
-        console.log('✅ Alpaca WebSocket reconnected successfully');
+        console.log('✅ Alpaca WebSocket connected successfully to CloudFront');
         this.isConnecting = false;
         
         // For proxy connection, assume we're authenticated after successful connection
@@ -322,6 +340,10 @@ class AlpacaService {
           this.handleProxyTradeMessage(message as unknown as ProxyTradeMessage);
           break;
 
+        case 'volume_data':
+          this.handleVolumeDataMessage(message as unknown as VolumeDataMessage);
+          break;
+
         case 'pong':
           console.log('Alpaca proxy pong received');
           break;
@@ -368,15 +390,30 @@ class AlpacaService {
   }
 
   private handleProxyTradeMessage(trade: ProxyTradeMessage): void {
-    // Handle proxy trade message format
-    // Update cumulative volume and trades
-    const currentVolume = this.cumulativeVolume.get(trade.symbol) || 0;
-    const currentTrades = this.cumulativeTrades.get(trade.symbol) || 0;
-    const newCumulativeVolume = currentVolume + trade.size;
-    const newCumulativeTrades = currentTrades + 1;
+    // Handle enhanced proxy trade message format with backend cumulative volume
     
-    this.cumulativeVolume.set(trade.symbol, newCumulativeVolume);
-    this.cumulativeTrades.set(trade.symbol, newCumulativeTrades);
+    // Use backend-provided cumulative volume if available, otherwise fall back to local tracking
+    let cumulativeVolume: number;
+    let cumulativeTrades: number;
+    
+    if (trade.cumulative_volume !== undefined) {
+      // Backend provides cumulative volume (preferred)
+      cumulativeVolume = trade.cumulative_volume;
+      // Update local tracking to match backend
+      this.cumulativeVolume.set(trade.symbol, cumulativeVolume);
+      // Estimate trades (backend doesn't send trade count)
+      cumulativeTrades = this.cumulativeTrades.get(trade.symbol) || 0;
+      this.cumulativeTrades.set(trade.symbol, cumulativeTrades + 1);
+    } else {
+      // Fall back to local cumulative tracking
+      const currentVolume = this.cumulativeVolume.get(trade.symbol) || 0;
+      const currentTrades = this.cumulativeTrades.get(trade.symbol) || 0;
+      cumulativeVolume = currentVolume + trade.size;
+      cumulativeTrades = currentTrades + 1;
+      
+      this.cumulativeVolume.set(trade.symbol, cumulativeVolume);
+      this.cumulativeTrades.set(trade.symbol, cumulativeTrades);
+    }
     
     // Set session start time if not already set
     if (!this.sessionStartTime.has(trade.symbol)) {
@@ -388,15 +425,42 @@ class AlpacaService {
       close: trade.price,
       high: trade.price, // Single trade doesn't have high/low, use price
       low: trade.price,
-      numberOfTrades: newCumulativeTrades,
+      numberOfTrades: cumulativeTrades,
       open: trade.price,
       timestamp: new Date(trade.timestamp),
       volume: trade.size, // Volume from this specific trade
-      cumulativeVolume: newCumulativeVolume, // Running total
+      cumulativeVolume: cumulativeVolume, // Backend or local cumulative total
       volumeWeightedAverage: trade.price
     };
 
     this.notifySubscribers(trade.symbol, tickData);
+  }
+
+  private handleVolumeDataMessage(volumeData: VolumeDataMessage): void {
+    // Handle volume data response from backend
+    console.log(`📊 Volume data received for ${volumeData.ticker}:`, volumeData);
+    
+    // Update local tracking with backend data
+    this.cumulativeVolume.set(volumeData.ticker, volumeData.cumulative_volume);
+    
+    // Create TickData from volume data (for consistency with existing interface)
+    const tickData: TickData = {
+      symbol: volumeData.ticker,
+      close: 0, // No price data in volume-only message
+      high: 0,
+      low: 0,
+      numberOfTrades: this.cumulativeTrades.get(volumeData.ticker) || 0,
+      open: 0,
+      timestamp: new Date(volumeData.timestamp),
+      volume: 0, // No individual trade volume
+      cumulativeVolume: volumeData.cumulative_volume,
+      volumeWeightedAverage: 0
+    };
+
+    // Only notify if we have subscribers for this symbol
+    if (this.subscribers.has(volumeData.ticker)) {
+      this.notifySubscribers(volumeData.ticker, tickData);
+    }
   }
 
   private handleTradeMessage(trade: AlpacaTrade): void {
@@ -515,6 +579,10 @@ class AlpacaService {
     };
 
     this.socket.send(JSON.stringify(subscribeMessage));
+
+    // Request initial volume data for subscribed symbols
+    console.log('Requesting initial volume data for subscribed symbols');
+    this.requestVolumeDataForSymbols(symbolsArray);
   }
 
   public subscribe(symbols: string | string[], callback: (data: TickData) => void): () => void {
@@ -567,9 +635,9 @@ class AlpacaService {
   }
 
   public async fetchInitialData(symbols: string[]): Promise<void> {
-    // For WebSocket, we don't need to fetch initial data separately
-    // The real-time stream will provide the data
-    console.log('WebSocket will provide real-time data for symbols:', symbols);
+    // Request initial volume data from backend for the provided symbols
+    console.log('Requesting initial volume data for symbols:', symbols);
+    this.requestVolumeDataForSymbols(symbols);
   }
 
   // Add method to reset cumulative volume for a symbol or all symbols
@@ -601,6 +669,27 @@ class AlpacaService {
       trades: this.cumulativeTrades.get(symbol) || 0,
       sessionStart: this.sessionStartTime.get(symbol) || null
     };
+  }
+
+  // Request volume data from backend for a specific ticker
+  public requestVolumeData(ticker: string): void {
+    if (!this.isConnected()) {
+      console.warn('Cannot request volume data - WebSocket not connected');
+      return;
+    }
+
+    const volumeRequest: VolumeRequestMessage = {
+      type: 'get_volume',
+      ticker: ticker.toUpperCase()
+    };
+
+    console.log('📊 Requesting volume data for:', ticker);
+    this.socket!.send(JSON.stringify(volumeRequest));
+  }
+
+  // Request volume data for multiple tickers
+  public requestVolumeDataForSymbols(tickers: string[]): void {
+    tickers.forEach(ticker => this.requestVolumeData(ticker));
   }
 
   public disconnect(): void {
