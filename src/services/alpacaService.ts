@@ -148,9 +148,8 @@ class AlpacaService {
     // For proxy connection, we don't need Alpaca credentials in the frontend
     // The proxy handles authentication with Alpaca
     console.log('Alpaca service initialized for proxy connection. Enabled:', this.isEnabled);
-    if (this.isEnabled) {
-      this.connect();
-    }
+    // Don't auto-connect in constructor to avoid race conditions
+    // Connection will be initiated when subscribe() is called
   }
 
   public enable(): void {
@@ -270,7 +269,10 @@ class AlpacaService {
           this.pendingSubscriptions.clear();
         }
         
-        this.subscribeToSymbols();
+        // Subscribe to symbols after a brief delay to ensure connection is stable
+        setTimeout(() => {
+          this.subscribeToSymbols();
+        }, 100);
       };
 
       this.socket.onmessage = (event) => {
@@ -292,17 +294,28 @@ class AlpacaService {
       };
 
       this.socket.onerror = (error) => {
-        console.error('Alpaca WebSocket error:', error);
+        console.error('🚨 Alpaca WebSocket error:', error);
+        console.error('🚨 WebSocket state at error:', {
+          readyState: this.socket?.readyState,
+          url: this.socket?.url,
+          isConnecting: this.isConnecting,
+          reconnectAttempts: this.reconnectAttempts
+        });
         this.isConnecting = false;
         this.isAuthenticated = false;
         
         if (this.reconnectAttempts >= this.maxReconnectAttempts - 1) {
-          console.error('Alpaca WebSocket connection failing repeatedly');
+          console.error('❌ Alpaca WebSocket connection failing repeatedly');
         }
       };
 
       this.socket.onclose = (event) => {
-        console.log(`Alpaca WebSocket connection closed: ${event.code} ${event.reason}`);
+        console.log(`❌ Alpaca WebSocket connection closed: ${event.code} ${event.reason}`);
+        console.log('🔍 Close event details:', {
+          wasClean: event.wasClean,
+          code: event.code,
+          reason: event.reason || 'No reason provided'
+        });
         this.isConnecting = false;
         this.isAuthenticated = false;
         this.clearPingInterval();
@@ -736,27 +749,20 @@ class AlpacaService {
     
     this.connectionFailures++;
     
+    // Never give up - always reset counter and continue trying
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.log(`Maximum reconnection attempts (${this.maxReconnectAttempts}) reached for Alpaca WebSocket - resetting counter`);
-      this.reconnectAttempts = 0; // Reset counter instead of disabling
-      // Wait longer before trying again
-      const resetDelay = 120000; // 2 minutes
-      setTimeout(() => {
-        if (!this.isManualClose && this.isEnabled) {
-          this.connect();
-        }
-      }, resetDelay);
-      return;
+      console.log(`Resetting reconnection counter after ${this.maxReconnectAttempts} attempts - continuing indefinitely for volume tracking`);
+      this.reconnectAttempts = 0; // Reset counter to continue forever
     }
 
     this.reconnectAttempts++;
     
-    // More conservative reconnection delays
-    const baseDelay = Math.max(10000, this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts - 1)); // Less aggressive exponential backoff
-    const jitter = Math.random() * 0.2 * baseDelay; // Less jitter
-    const delay = Math.min(300000, baseDelay + jitter); // Cap at 5 minutes
+    // Progressive delays but never exceed 1 minute for real-time data
+    const baseDelay = Math.min(60000, this.reconnectDelay * Math.pow(1.3, Math.min(this.reconnectAttempts - 1, 10))); // Cap exponential growth
+    const jitter = Math.random() * 0.1 * baseDelay; // Small jitter
+    const delay = Math.min(60000, baseDelay + jitter); // Never wait more than 1 minute
     
-    console.log(`Attempting to reconnect Alpaca WebSocket in ${Math.round(delay / 1000)} seconds (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+    console.log(`🔄 Reconnecting Alpaca WebSocket in ${Math.round(delay / 1000)}s (attempt ${this.reconnectAttempts}) - never giving up for volume tracking`);
     
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
