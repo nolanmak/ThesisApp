@@ -9,6 +9,7 @@ export interface TickData {
   volume: number; // Latest volume from this update
   cumulativeVolume: number; // Running total of all volume
   volumeWeightedAverage: number;
+  twentyDayAvgVolume?: number; // 20-day average daily volume
 }
 
 export interface AlpacaConfig {
@@ -91,6 +92,7 @@ interface ProxyTradeMessage {
   timestamp: string;
   cumulative_volume?: number; // Added: Backend-provided cumulative volume
   after_hours_mode?: boolean; // Added: Indicates if in after-hours tracking mode
+  '20_day_avg_volume'?: number; // Added: 20-day average daily volume
   conditions?: string[];
   exchange?: string;
 }
@@ -100,6 +102,7 @@ interface VolumeDataMessage {
   ticker: string;
   cumulative_volume: number;
   mode: 'live_after_hours' | 'historical';
+  '20_day_avg_volume'?: number; // Added: 20-day average daily volume
   date?: string; // Present for historical data
   timestamp: string;
 }
@@ -443,7 +446,8 @@ class AlpacaService {
       timestamp: new Date(trade.timestamp),
       volume: trade.size, // Volume from this specific trade
       cumulativeVolume: cumulativeVolume, // Backend or local cumulative total
-      volumeWeightedAverage: trade.price
+      volumeWeightedAverage: trade.price,
+      twentyDayAvgVolume: trade['20_day_avg_volume'] // Include 20-day average if available
     };
 
     this.notifySubscribers(trade.symbol, tickData);
@@ -467,7 +471,8 @@ class AlpacaService {
       timestamp: new Date(volumeData.timestamp),
       volume: 0, // No individual trade volume
       cumulativeVolume: volumeData.cumulative_volume,
-      volumeWeightedAverage: 0
+      volumeWeightedAverage: 0,
+      twentyDayAvgVolume: volumeData['20_day_avg_volume'] // Include 20-day average if available
     };
 
     // Only notify if we have subscribers for this symbol
