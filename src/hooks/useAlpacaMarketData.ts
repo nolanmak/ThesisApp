@@ -139,6 +139,24 @@ export const useAlpacaMarketData = (symbols: string[]) => {
     alpacaService.resetCumulativeVolume(); // No symbol = reset all
   }, []);
 
+  // Request volume data for a specific ticker
+  const requestVolumeData = useCallback((ticker: string) => {
+    alpacaService.requestVolumeData(ticker);
+  }, []);
+
+  // Request volume data for multiple tickers
+  const requestVolumeDataForSymbols = useCallback((tickers: string[]) => {
+    alpacaService.requestVolumeDataForSymbols(tickers);
+  }, []);
+
+  // Fetch initial volume data when symbols change
+  useEffect(() => {
+    if (memoizedSymbols.length > 0 && enabled && isConnected) {
+      console.log('Fetching initial volume data for symbols:', memoizedSymbols);
+      alpacaService.fetchInitialData(memoizedSymbols);
+    }
+  }, [memoizedSymbols, enabled, isConnected]);
+
   return {
     marketData,
     isConnected,
@@ -150,6 +168,8 @@ export const useAlpacaMarketData = (symbols: string[]) => {
     reconnect,
     resetCumulativeVolume,
     getCumulativeStats,
-    resetAllCumulativeVolume
+    resetAllCumulativeVolume,
+    requestVolumeData,
+    requestVolumeDataForSymbols
   };
 };
