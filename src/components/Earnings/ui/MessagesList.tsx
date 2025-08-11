@@ -167,15 +167,21 @@ const MessagesList: React.FC<MessagesListProps> = ({
     // Create a map for deduplication
     const uniqueMessagesMap = new Map<string, Message>();
     
-    // First pass: filter out invalid timestamps, then filter by watchlist if available
+    // First pass: filter out invalid timestamps
     let validMessages = messages.filter(message => {
       const messageTimestamp = new Date(message.timestamp);
       return !isNaN(messageTimestamp.getTime());
     });
 
-    // Filter by watchlist if user has one and is authenticated
-    if (user?.email && userWatchlist.length > 0) {
+    // Filter by watchlist only for new messages (after initial load)
+    if (user?.email && userWatchlist.length > 0 && initialLoadCompletedRef.current) {
+      // Only filter out new messages that aren't in watchlist
       const filteredMessages = validMessages.filter(message => {
+        // If this is an existing message (already seen), keep it regardless of watchlist
+        if (allSeenMessageIdsRef.current.has(message.message_id)) {
+          return true;
+        }
+        // For new messages, apply watchlist filtering
         return userWatchlist.includes(message.ticker.toUpperCase());
       });
       
