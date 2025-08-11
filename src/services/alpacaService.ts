@@ -9,6 +9,9 @@ export interface TickData {
   volume: number; // Latest volume from this update
   cumulativeVolume: number; // Running total of all volume
   volumeWeightedAverage: number;
+  twentyDayAvgVolume?: number; // 20-day average daily volume
+  volumePercentageOfAvg?: number; // Percentage of current volume vs 20-day avg
+  isHighVolumeSignal?: boolean; // True if > 20% of 20-day average (buy signal)
 }
 
 export interface AlpacaConfig {
@@ -91,6 +94,9 @@ interface ProxyTradeMessage {
   timestamp: string;
   cumulative_volume?: number; // Added: Backend-provided cumulative volume
   after_hours_mode?: boolean; // Added: Indicates if in after-hours tracking mode
+  '20_day_avg_volume'?: number; // Added: 20-day average daily volume
+  volume_percentage_of_avg?: number; // Added: Percentage of current volume vs 20-day avg
+  is_high_volume_signal?: boolean; // Added: True if > 20% of 20-day average (buy signal)
   conditions?: string[];
   exchange?: string;
 }
@@ -100,6 +106,9 @@ interface VolumeDataMessage {
   ticker: string;
   cumulative_volume: number;
   mode: 'live_after_hours' | 'historical';
+  '20_day_avg_volume'?: number; // Added: 20-day average daily volume
+  volume_percentage_of_avg?: number; // Added: Percentage of current volume vs 20-day avg
+  is_high_volume_signal?: boolean; // Added: True if > 20% of 20-day average (buy signal)
   date?: string; // Present for historical data
   timestamp: string;
 }
@@ -121,19 +130,21 @@ class AlpacaService {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 50;
   private reconnectTimeout: number | null = null;
-  private reconnectDelay = 2000;
+  private reconnectDelay = 500; // Faster initial reconnect
   private lastConnectionAttempt = 0;
-  private minConnectionInterval = 3000; // Increased to 3000ms to prevent connection spam
+  private minConnectionInterval = 1000; // Reduced to 1000ms for faster connection establishment
   private connectionFailures = 0;
   private maxConsecutiveFailures = 3;
   private isEnabled = true;
   private pingInterval: number | null = null;
   private pingTimeout: number | null = null;
   private lastPongTime = 0;
-  private pingIntervalTime = 30000; // 30 seconds
-  private pingTimeoutTime = 10000; // 10 seconds
+  private pingIntervalTime = 45000; // 45 seconds - less aggressive
+  private pingTimeoutTime = 15000; // 15 seconds - more lenient
   private pendingSubscriptions: Set<string> = new Set();
   private isAuthenticated = false;
+  private connectionEstablishTimeout: number | null = null;
+  private isEagerConnection = false; // Flag to enable proactive connection
   
   // Track cumulative volume and trade counts for each symbol
   private cumulativeVolume: Map<string, number> = new Map();
@@ -142,20 +153,45 @@ class AlpacaService {
 
   constructor() {
     this.initializeFromEnv();
+    // Establish connection proactively for faster volume data access
+    this.startEagerConnection();
   }
 
   private initializeFromEnv(): void {
     // For proxy connection, we don't need Alpaca credentials in the frontend
     // The proxy handles authentication with Alpaca
     console.log('Alpaca service initialized for proxy connection. Enabled:', this.isEnabled);
-    // Don't auto-connect in constructor to avoid race conditions
-    // Connection will be initiated when subscribe() is called
+    // Enable eager connection for volume tracking
+    this.isEagerConnection = true;
+  }
+
+  private startEagerConnection(): void {
+    if (!this.isEagerConnection || !this.isEnabled) {
+      return;
+    }
+    
+    // Start connection in background after a short delay to avoid blocking app startup
+    this.connectionEstablishTimeout = window.setTimeout(() => {
+      if (!this.isConnected() && this.isEnabled) {
+        console.log('🚀 Starting eager WebSocket connection for volume data');
+        this.connect();
+      }
+    }, 500); // 500ms delay for non-blocking startup
   }
 
   public enable(): void {
     if (!this.isEnabled) {
       this.isEnabled = true;
       console.log('Alpaca WebSocket functionality enabled');
+      this.isEagerConnection = true;
+      this.connect();
+    }
+  }
+
+  // Warm up the connection for faster volume data access
+  public warmConnection(): void {
+    if (this.isEnabled && !this.isConnected() && !this.isConnecting) {
+      console.log('🔥 Warming WebSocket connection for volume data');
       this.connect();
     }
   }
@@ -195,7 +231,10 @@ class AlpacaService {
     
     if (timeSinceLastAttempt < this.minConnectionInterval) {
       console.log(`Alpaca connection attempt too frequent (${timeSinceLastAttempt}ms since last attempt), minimum interval is ${this.minConnectionInterval}ms`);
-      return;
+      // For volume data, allow more frequent attempts if not currently connecting
+      if (this.isConnecting) {
+        return;
+      }
     }
 
     if (this.isConnecting) {
@@ -231,7 +270,7 @@ class AlpacaService {
       this.socket = null;
 
       // Wait for the connection to fully close before creating a new one
-      setTimeout(() => this.createConnection(), 1000);
+      setTimeout(() => this.createConnection(), 300); // Faster cleanup
       return;
     }
 
@@ -253,7 +292,7 @@ class AlpacaService {
         console.log('🚀 Alpaca proxy WebSocket connection established to:', wsUrl);
         this.reconnectAttempts = 0;
         this.connectionFailures = 0;
-        this.reconnectDelay = 2000;
+        this.reconnectDelay = 500; // Reset to initial fast delay
         console.log('✅ Alpaca WebSocket connected successfully to CloudFront');
         this.isConnecting = false;
         
@@ -269,10 +308,8 @@ class AlpacaService {
           this.pendingSubscriptions.clear();
         }
         
-        // Subscribe to symbols after a brief delay to ensure connection is stable
-        setTimeout(() => {
-          this.subscribeToSymbols();
-        }, 100);
+        // Subscribe to symbols immediately - connection is stable after onopen
+        this.subscribeToSymbols();
       };
 
       this.socket.onmessage = (event) => {
@@ -304,8 +341,9 @@ class AlpacaService {
         this.isConnecting = false;
         this.isAuthenticated = false;
         
-        if (this.reconnectAttempts >= this.maxReconnectAttempts - 1) {
-          console.error('❌ Alpaca WebSocket connection failing repeatedly');
+        // Don't wait for onclose, start reconnection immediately for faster recovery
+        if (!this.isManualClose && this.isEnabled) {
+          this.attemptReconnect();
         }
       };
 
@@ -443,15 +481,17 @@ class AlpacaService {
       timestamp: new Date(trade.timestamp),
       volume: trade.size, // Volume from this specific trade
       cumulativeVolume: cumulativeVolume, // Backend or local cumulative total
-      volumeWeightedAverage: trade.price
+      volumeWeightedAverage: trade.price,
+      twentyDayAvgVolume: trade['20_day_avg_volume'], // Include 20-day average if available
+      volumePercentageOfAvg: trade.volume_percentage_of_avg, // Percentage vs 20-day avg
+      isHighVolumeSignal: trade.is_high_volume_signal // Buy signal if > 20%
     };
 
     this.notifySubscribers(trade.symbol, tickData);
   }
 
   private handleVolumeDataMessage(volumeData: VolumeDataMessage): void {
-    // Handle volume data response from backend
-    console.log(`📊 Volume data received for ${volumeData.ticker}:`, volumeData);
+    console.log('📊 Complete Volume Data received:', JSON.stringify(volumeData, null, 2));
     
     // Update local tracking with backend data
     this.cumulativeVolume.set(volumeData.ticker, volumeData.cumulative_volume);
@@ -467,7 +507,10 @@ class AlpacaService {
       timestamp: new Date(volumeData.timestamp),
       volume: 0, // No individual trade volume
       cumulativeVolume: volumeData.cumulative_volume,
-      volumeWeightedAverage: 0
+      volumeWeightedAverage: 0,
+      twentyDayAvgVolume: volumeData['20_day_avg_volume'], // Include 20-day average if available
+      volumePercentageOfAvg: volumeData.volume_percentage_of_avg, // Percentage vs 20-day avg
+      isHighVolumeSignal: volumeData.is_high_volume_signal // Buy signal if > 20%
     };
 
     // Only notify if we have subscribers for this symbol
@@ -618,13 +661,29 @@ class AlpacaService {
     // Add symbols to pending subscriptions for reconnection scenarios
     symbolsArray.forEach(symbol => this.pendingSubscriptions.add(symbol));
 
-    // If authenticated, subscribe immediately
+    // Priority connection for subscriptions - try to connect immediately if not connected
     if (this.isAuthenticated) {
       this.subscribeToSymbols();
-    } else if (!this.isConnecting && this.isEnabled) {
-      // Not connected, try to connect
+      // Request initial data immediately after subscription
+      this.fetchInitialData(symbolsArray);
+    } else {
+      // Aggressive connection attempt for subscriptions
       console.log('Starting connection to subscribe to symbols:', symbolsArray);
-      this.connect();
+      if (!this.isConnecting) {
+        // Override connection interval for subscription requests
+        this.lastConnectionAttempt = 0;
+        this.connect();
+      }
+      
+      // Pre-fetch data as soon as connected
+      if (this.socket) {
+        const originalOnOpen = this.socket.onopen;
+        this.socket.onopen = (event) => {
+          if (originalOnOpen) originalOnOpen.call(this.socket!, event);
+          // Request initial data for newly subscribed symbols
+          setTimeout(() => this.fetchInitialData(symbolsArray), 50);
+        };
+      }
     }
 
     // Return unsubscribe function
@@ -648,8 +707,12 @@ class AlpacaService {
   }
 
   public async fetchInitialData(symbols: string[]): Promise<void> {
+    if (!this.isConnected()) {
+      console.warn('Cannot fetch initial data - WebSocket not connected, will retry when connected');
+      return;
+    }
     // Request initial volume data from backend for the provided symbols
-    console.log('Requesting initial volume data for symbols:', symbols);
+    console.log('Fetching initial volume data for symbols:', symbols);
     this.requestVolumeDataForSymbols(symbols);
   }
 
@@ -712,6 +775,11 @@ class AlpacaService {
       this.reconnectTimeout = null;
     }
 
+    if (this.connectionEstablishTimeout) {
+      clearTimeout(this.connectionEstablishTimeout);
+      this.connectionEstablishTimeout = null;
+    }
+
     this.clearPingInterval();
 
     if (this.socket) {
@@ -757,10 +825,10 @@ class AlpacaService {
 
     this.reconnectAttempts++;
     
-    // Progressive delays but never exceed 1 minute for real-time data
-    const baseDelay = Math.min(60000, this.reconnectDelay * Math.pow(1.3, Math.min(this.reconnectAttempts - 1, 10))); // Cap exponential growth
+    // Progressive delays but cap at 10 seconds for real-time data
+    const baseDelay = Math.min(10000, this.reconnectDelay * Math.pow(1.2, Math.min(this.reconnectAttempts - 1, 5))); // Smaller exponential growth, cap at 10s
     const jitter = Math.random() * 0.1 * baseDelay; // Small jitter
-    const delay = Math.min(60000, baseDelay + jitter); // Never wait more than 1 minute
+    const delay = Math.min(10000, baseDelay + jitter); // Never wait more than 10 seconds
     
     console.log(`🔄 Reconnecting Alpaca WebSocket in ${Math.round(delay / 1000)}s (attempt ${this.reconnectAttempts}) - never giving up for volume tracking`);
     
@@ -781,10 +849,11 @@ class AlpacaService {
     // Update last pong time whenever we receive any data
     this.updateLastActivity();
     
-    // Less frequent health checks to avoid premature disconnections
+    // Adaptive health checks based on connection stability
+    const checkInterval = this.reconnectAttempts > 3 ? this.pingIntervalTime * 2 : this.pingIntervalTime;
     this.pingInterval = window.setInterval(() => {
       this.checkConnectionHealth();
-    }, this.pingIntervalTime * 2); // Check every 60 seconds instead of 30
+    }, checkInterval);
   }
   
   private updateLastActivity(): void {
@@ -811,7 +880,7 @@ class AlpacaService {
     
     // More lenient health check - only disconnect if we haven't received data for much longer
     const timeSinceLastData = Date.now() - this.lastPongTime;
-    const healthCheckThreshold = this.pingIntervalTime * 4; // 2 minutes instead of 1 minute
+    const healthCheckThreshold = this.pingIntervalTime * 3; // 2.25 minutes - more stable
     
     if (timeSinceLastData > healthCheckThreshold) {
       console.warn(`Alpaca WebSocket appears stale (${Math.round(timeSinceLastData / 1000)}s since last activity), reconnecting`);

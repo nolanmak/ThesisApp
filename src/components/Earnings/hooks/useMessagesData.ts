@@ -178,6 +178,78 @@ const useMessagesData = (initialSearchTicker: string = '') => {
     fetchMessages();
   }, [fetchMessages]);
 
+  // Set up continuous polling for new messages
+  useEffect(() => {
+    const POLLING_INTERVAL = 3000; // 3 seconds
+    let pollingInterval: number;
+    
+    const startPolling = () => {
+      pollingInterval = window.setInterval(async () => {
+        // Only poll if we're not currently loading/refreshing and have messages already
+        if (!state.loading && !state.refreshing && state.messages.length > 0) {
+          try {
+            // Fetch new messages silently (no toast notification)
+            const fetchedMessages = await getMessages(true); // bypass cache
+            
+            // Sort messages by timestamp (newest first)
+            const sortedMessages = fetchedMessages.sort((a, b) => 
+              new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+            );
+            
+            setState(prev => {
+              // Check if we have any new messages by comparing message IDs
+              const currentIds = new Set(prev.messages.map(msg => msg.message_id));
+              const newMessages = sortedMessages.filter(msg => !currentIds.has(msg.message_id));
+              
+              if (newMessages.length > 0) {
+                console.log(`Found ${newMessages.length} new messages via polling`);
+                // Update original messages ref if we have new messages
+                if (originalMessagesRef.current.length > 0) {
+                  const originalIds = new Set(originalMessagesRef.current.map(msg => msg.message_id));
+                  const newOriginalMessages = sortedMessages.filter(msg => !originalIds.has(msg.message_id));
+                  if (newOriginalMessages.length > 0) {
+                    originalMessagesRef.current = [...originalMessagesRef.current, ...newOriginalMessages]
+                      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+                  }
+                }
+                
+                // Apply search filter to new messages if needed
+                let filteredMessages = sortedMessages;
+                if (prev.searchTicker !== '') {
+                  filteredMessages = sortedMessages.filter((message: Message) => 
+                    message.ticker && message.ticker.toLowerCase().includes(prev.searchTicker.toLowerCase())
+                  );
+                }
+                
+                return {
+                  ...prev,
+                  messages: filteredMessages
+                };
+              }
+              
+              return prev;
+            });
+          } catch (error) {
+            console.error('Error during polling:', error);
+            // Don't show error toast for polling failures to avoid spam
+          }
+        }
+      }, POLLING_INTERVAL);
+    };
+
+    // Start polling after initial load
+    if (!state.loading && state.messages.length > 0) {
+      startPolling();
+    }
+
+    // Cleanup interval on unmount or dependency change
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, [state.loading, state.refreshing, state.messages.length, state.searchTicker]);
+
   return {
     messages: state.messages || [],
     loading: state.loading,
