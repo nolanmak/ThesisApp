@@ -33,15 +33,15 @@ export const useAlpacaMarketData = (symbols: string[]) => {
       setIsConnected(connected);
       setEnabled(wsEnabled);
       
-      // If we have config but not connected, we're probably connecting
-      setIsConnecting(!connected && wsEnabled && symbols.length > 0);
+      // More conservative connecting state management
+      setIsConnecting(!connected && wsEnabled && symbols.length > 0 && !connected);
     };
 
     // Check immediately
     checkConnection();
     
-    // Check periodically
-    const interval = setInterval(checkConnection, 2000);
+    // Check less frequently to reduce noise
+    const interval = setInterval(checkConnection, 3000);
     return () => clearInterval(interval);
   }, [memoizedSymbols.length]);
 
@@ -70,7 +70,11 @@ export const useAlpacaMarketData = (symbols: string[]) => {
 
     // Subscribe to all symbols at once
     const unsubscribe = alpacaService.subscribe(memoizedSymbols, (data: TickData) => {
-      // Remove verbose logging for each trade to reduce console clutter
+      // Log volume data reception for debugging
+      if (data.cumulativeVolume > 0 || data.twentyDayAvgVolume) {
+        console.log(`📊 Volume data for ${data.symbol}: ${data.cumulativeVolume.toLocaleString()} (${data.volumePercentageOfAvg?.toFixed(1)}% of 20-day avg)`);
+      }
+      
       setMarketData(prev => ({
         ...prev,
         [data.symbol]: data
@@ -152,8 +156,13 @@ export const useAlpacaMarketData = (symbols: string[]) => {
   // Fetch initial volume data when symbols change
   useEffect(() => {
     if (memoizedSymbols.length > 0 && enabled && isConnected) {
-      console.log('Fetching initial volume data for symbols:', memoizedSymbols);
-      alpacaService.fetchInitialData(memoizedSymbols);
+      // Add a small delay to ensure subscription is processed first
+      const timer = setTimeout(() => {
+        console.log('Fetching initial volume data for symbols:', memoizedSymbols);
+        alpacaService.fetchInitialData(memoizedSymbols);
+      }, 300);
+      
+      return () => clearTimeout(timer);
     }
   }, [memoizedSymbols, enabled, isConnected]);
 

@@ -132,7 +132,7 @@ class AlpacaService {
   private reconnectTimeout: number | null = null;
   private reconnectDelay = 500; // Faster initial reconnect
   private lastConnectionAttempt = 0;
-  private minConnectionInterval = 1000; // Reduced to 1000ms for faster connection establishment
+  private minConnectionInterval = 3000; // Increased to 3000ms for better stability
   private connectionFailures = 0;
   private maxConsecutiveFailures = 3;
   private isEnabled = true;
@@ -170,13 +170,13 @@ class AlpacaService {
       return;
     }
     
-    // Start connection in background after a short delay to avoid blocking app startup
+    // Start connection in background after a longer delay to avoid conflicts
     this.connectionEstablishTimeout = window.setTimeout(() => {
-      if (!this.isConnected() && this.isEnabled) {
+      if (!this.isConnected() && this.isEnabled && !this.isConnecting) {
         console.log('🚀 Starting eager WebSocket connection for volume data');
         this.connect();
       }
-    }, 500); // 500ms delay for non-blocking startup
+    }, 2000); // Longer delay to avoid conflicts with manual connections
   }
 
   public enable(): void {
@@ -310,6 +310,14 @@ class AlpacaService {
         
         // Subscribe to symbols immediately - connection is stable after onopen
         this.subscribeToSymbols();
+        
+        // Request initial data for all subscribed symbols after connection
+        if (this.symbols.size > 0) {
+          setTimeout(() => {
+            console.log('Fetching initial data for all symbols after connection:', Array.from(this.symbols));
+            this.fetchInitialData(Array.from(this.symbols));
+          }, 200); // Wait for subscription to be processed
+        }
       };
 
       this.socket.onmessage = (event) => {
@@ -491,7 +499,7 @@ class AlpacaService {
   }
 
   private handleVolumeDataMessage(volumeData: VolumeDataMessage): void {
-    console.log('📊 Complete Volume Data received:', JSON.stringify(volumeData, null, 2));
+    console.log('📊 Complete Volume Data received for', volumeData.ticker, '- Volume:', volumeData.cumulative_volume, '20-day avg:', volumeData['20_day_avg_volume']);
     
     // Update local tracking with backend data
     this.cumulativeVolume.set(volumeData.ticker, volumeData.cumulative_volume);
@@ -513,9 +521,13 @@ class AlpacaService {
       isHighVolumeSignal: volumeData.is_high_volume_signal // Buy signal if > 20%
     };
 
-    // Only notify if we have subscribers for this symbol
-    if (this.subscribers.has(volumeData.ticker)) {
+    // Always notify subscribers - this is initial volume data they need
+    const symbolSubscribers = this.subscribers.get(volumeData.ticker);
+    if (symbolSubscribers && symbolSubscribers.size > 0) {
+      console.log(`Notifying ${symbolSubscribers.size} subscribers for ${volumeData.ticker} with volume data`);
       this.notifySubscribers(volumeData.ticker, tickData);
+    } else {
+      console.log(`No subscribers found for ${volumeData.ticker}, storing data for later`);
     }
   }
 
@@ -661,30 +673,18 @@ class AlpacaService {
     // Add symbols to pending subscriptions for reconnection scenarios
     symbolsArray.forEach(symbol => this.pendingSubscriptions.add(symbol));
 
-    // Priority connection for subscriptions - try to connect immediately if not connected
-    if (this.isAuthenticated) {
+    // Handle connection and subscription more reliably
+    if (this.isAuthenticated && this.isConnected()) {
+      // Already connected, subscribe immediately
       this.subscribeToSymbols();
-      // Request initial data immediately after subscription
-      this.fetchInitialData(symbolsArray);
-    } else {
-      // Aggressive connection attempt for subscriptions
+      // Wait a bit before requesting initial data to ensure subscription is processed
+      setTimeout(() => this.fetchInitialData(symbolsArray), 100);
+    } else if (!this.isConnecting) {
+      // Not connected and not connecting, start connection
       console.log('Starting connection to subscribe to symbols:', symbolsArray);
-      if (!this.isConnecting) {
-        // Override connection interval for subscription requests
-        this.lastConnectionAttempt = 0;
-        this.connect();
-      }
-      
-      // Pre-fetch data as soon as connected
-      if (this.socket) {
-        const originalOnOpen = this.socket.onopen;
-        this.socket.onopen = (event) => {
-          if (originalOnOpen) originalOnOpen.call(this.socket!, event);
-          // Request initial data for newly subscribed symbols
-          setTimeout(() => this.fetchInitialData(symbolsArray), 50);
-        };
-      }
+      this.connect();
     }
+    // If already connecting, symbols are in pendingSubscriptions and will be handled on connect
 
     // Return unsubscribe function
     return () => {
@@ -711,9 +711,31 @@ class AlpacaService {
       console.warn('Cannot fetch initial data - WebSocket not connected, will retry when connected');
       return;
     }
+    
+    if (symbols.length === 0) {
+      console.log('No symbols to fetch initial data for');
+      return;
+    }
+    
     // Request initial volume data from backend for the provided symbols
     console.log('Fetching initial volume data for symbols:', symbols);
-    this.requestVolumeDataForSymbols(symbols);
+    
+    // Add retry logic for failed requests
+    try {
+      this.requestVolumeDataForSymbols(symbols);
+      
+      // Set a timeout to retry if no data received
+      setTimeout(() => {
+        symbols.forEach(symbol => {
+          if (!this.cumulativeVolume.has(symbol) || this.cumulativeVolume.get(symbol) === 0) {
+            console.log('Retrying volume data request for:', symbol);
+            this.requestVolumeData(symbol);
+          }
+        });
+      }, 2000);
+    } catch (error) {
+      console.error('Error fetching initial data:', error);
+    }
   }
 
   // Add method to reset cumulative volume for a symbol or all symbols

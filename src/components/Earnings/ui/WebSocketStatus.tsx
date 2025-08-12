@@ -139,41 +139,79 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
 
   // Set up audio source when currentAudio changes
   useEffect(() => {
-    if (currentAudio && audioRef.current) {
-      console.log('[AUDIO PLAYER] Setting up audio source:', currentAudio.data.audio_url);
-      audioRef.current.src = currentAudio.data.audio_url;
-      audioRef.current.playbackRate = 1.5; // Ensure 1.5x speed is maintained
+    if (currentAudio && audioRef.current && audioEnabled && userHasInteracted) {
+      const audioElement = audioRef.current;
+      const audioUrl = currentAudio.data.audio_url;
       
-      if (audioEnabled && userHasInteracted) {
-        console.log('[AUDIO PLAYER] Attempting to play audio...');
-        audioRef.current.play()
-          .then(() => {
-            setIsPlaying(true);
-            console.log('[AUDIO PLAYER] Audio playing successfully at 1.5x speed');
-          })
-          .catch(error => {
-            console.error('[AUDIO PLAYER] Error playing audio:', error);
-            setIsPlaying(false);
-            
-            // If autoplay is blocked, show a notification to the user
-            if (error.name === 'NotAllowedError') {
-              console.warn('[AUDIO PLAYER] Autoplay was blocked. User interaction is required to play audio.');
-              toast.info('Audio autoplay blocked. Click the audio button to hear notifications.', {
-                autoClose: 5000,
-                position: 'top-right'
-              });
-            } else {
-              toast.error(`Audio playback failed: ${error.message}`, {
-                autoClose: 5000,
-                position: 'top-right'
-              });
-            }
-          });
-      } else {
-        console.log('[AUDIO PLAYER] Not playing audio - audioEnabled:', audioEnabled, 'userHasInteracted:', userHasInteracted);
+      console.log('[AUDIO PLAYER] Setting up audio source:', audioUrl);
+      
+      // Abort any ongoing play promise to prevent interruption errors
+      if (isPlaying) {
+        audioElement.pause();
+        setIsPlaying(false);
       }
+      
+      // Wait for any pending operations to complete before setting new source
+      const setupAudio = async () => {
+        try {
+          // Set the new source and wait for it to be ready
+          audioElement.src = audioUrl;
+          audioElement.playbackRate = 1.5;
+          
+          // Wait for the audio to be ready to play
+          await new Promise((resolve, reject) => {
+            const handleCanPlay = () => {
+              audioElement.removeEventListener('canplay', handleCanPlay);
+              audioElement.removeEventListener('error', handleError);
+              resolve(undefined);
+            };
+            
+            const handleError = (error: Event) => {
+              audioElement.removeEventListener('canplay', handleCanPlay);
+              audioElement.removeEventListener('error', handleError);
+              reject(error);
+            };
+            
+            audioElement.addEventListener('canplay', handleCanPlay);
+            audioElement.addEventListener('error', handleError);
+            
+            // Load the audio
+            audioElement.load();
+          });
+          
+          console.log('[AUDIO PLAYER] Attempting to play audio...');
+          await audioElement.play();
+          setIsPlaying(true);
+          console.log('[AUDIO PLAYER] Audio playing successfully at 1.5x speed');
+          
+        } catch (error: any) {
+          console.error('[AUDIO PLAYER] Error playing audio:', error);
+          setIsPlaying(false);
+          
+          // Handle specific error cases
+          if (error.name === 'NotAllowedError') {
+            console.warn('[AUDIO PLAYER] Autoplay was blocked. User interaction is required to play audio.');
+            toast.info('Audio autoplay blocked. Click the audio button to hear notifications.', {
+              autoClose: 5000,
+              position: 'top-right'
+            });
+          } else if (error.name === 'AbortError') {
+            console.log('[AUDIO PLAYER] Play request was aborted (likely due to rapid messages)');
+            // Don't show error toast for abort errors as they're expected
+          } else {
+            toast.error(`Audio playback failed: ${error.message}`, {
+              autoClose: 5000,
+              position: 'top-right'
+            });
+          }
+        }
+      };
+      
+      setupAudio();
+    } else if (currentAudio && (!audioEnabled || !userHasInteracted)) {
+      console.log('[AUDIO PLAYER] Not playing audio - audioEnabled:', audioEnabled, 'userHasInteracted:', userHasInteracted);
     }
-  }, [currentAudio, audioEnabled, userHasInteracted]);
+  }, [currentAudio, audioEnabled, userHasInteracted, isPlaying]);
   
   // Handle audio events
   const handleAudioEnded = () => {
