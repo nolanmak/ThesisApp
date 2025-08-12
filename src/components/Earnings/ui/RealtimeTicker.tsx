@@ -86,6 +86,21 @@ const RealtimeTicker: React.FC<RealtimeTickerProps> = ({
         </div>
       )}
       
+      {tickData.volumePercentageOfAvg && (
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-neutral-500">20-Day Avg %</span>
+          <span className={`text-xs font-semibold ${
+            tickData.volumePercentageOfAvg >= 20 
+              ? 'text-green-600' 
+              : tickData.volumePercentageOfAvg >= 10 
+                ? 'text-yellow-600' 
+                : 'text-neutral-700'
+          }`}>
+            {tickData.volumePercentageOfAvg.toFixed(1)}%
+          </span>
+        </div>
+      )}
+      
       <div className="flex items-center justify-between">
         <span className="text-xs text-neutral-500">Total Trades</span>
         <span className="text-xs font-medium text-neutral-700">
