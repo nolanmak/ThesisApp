@@ -134,8 +134,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
   const InlineVolume: React.FC<{ ticker: string }> = ({ ticker }) => {
     const tickData = marketData[ticker];
     
-  
-    
     if (!tickData || !isConnected) {
       return (
         <span className="text-xs text-neutral-400 ml-2">
@@ -144,9 +142,23 @@ const MessagesList: React.FC<MessagesListProps> = ({
       );
     }
     
+    const volumeDisplay = formatVolume(tickData.cumulativeVolume);
+    const hasPercentage = tickData.volumePercentageOfAvg !== undefined;
+    
     return (
       <span className="text-xs text-neutral-500 ml-2">
-        • Vol: {formatVolume(tickData.cumulativeVolume)}
+        • Vol: {volumeDisplay}
+        {hasPercentage && (
+          <span className={`ml-1 font-medium ${
+            tickData.volumePercentageOfAvg! >= 20 
+              ? 'text-green-600' 
+              : tickData.volumePercentageOfAvg! >= 10 
+                ? 'text-yellow-600' 
+                : 'text-neutral-500'
+          }`}>
+            ({tickData.volumePercentageOfAvg!.toFixed(1)}%)
+          </span>
+        )}
       </span>
     );
   };
