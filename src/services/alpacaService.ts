@@ -286,9 +286,33 @@ class AlpacaService {
     try {
       const wsUrl = this.getWebSocketUrl();
       console.log('Creating new Alpaca WebSocket connection to:', wsUrl);
+      
+      // Clear any existing socket first
+      if (this.socket) {
+        this.socket.onopen = null;
+        this.socket.onmessage = null;
+        this.socket.onerror = null;
+        this.socket.onclose = null;
+      }
+      
       this.socket = new WebSocket(wsUrl);
+      console.log('WebSocket created, readyState:', this.socket.readyState);
+      
+      // Add connection timeout
+      const connectionTimeout = setTimeout(() => {
+        console.error('🚨 Alpaca WebSocket connection timeout - connection never opened');
+        if (this.socket && this.socket.readyState === WebSocket.CONNECTING) {
+          console.log('Closing timed-out connection and retrying');
+          this.socket.close();
+          this.isConnecting = false;
+          if (!this.isManualClose && this.isEnabled) {
+            this.attemptReconnect();
+          }
+        }
+      }, 10000); // 10 second timeout
       
       this.socket.onopen = () => {
+        clearTimeout(connectionTimeout);
         console.log('🚀 Alpaca proxy WebSocket connection established to:', wsUrl);
         this.reconnectAttempts = 0;
         this.connectionFailures = 0;
@@ -340,8 +364,14 @@ class AlpacaService {
 
       this.socket.onerror = (error) => {
         console.error('🚨 Alpaca WebSocket error:', error);
+        console.error('🚨 Error event details:', {
+          type: error.type,
+          target: error.target,
+          currentTarget: error.currentTarget
+        });
         console.error('🚨 WebSocket state at error:', {
           readyState: this.socket?.readyState,
+          readyStateText: this.getReadyStateText(this.socket?.readyState),
           url: this.socket?.url,
           isConnecting: this.isConnecting,
           reconnectAttempts: this.reconnectAttempts
@@ -356,10 +386,12 @@ class AlpacaService {
       };
 
       this.socket.onclose = (event) => {
+        clearTimeout(connectionTimeout);
         console.log(`❌ Alpaca WebSocket connection closed: ${event.code} ${event.reason}`);
         console.log('🔍 Close event details:', {
           wasClean: event.wasClean,
           code: event.code,
+          codeDescription: this.getCloseCodeDescription(event.code),
           reason: event.reason || 'No reason provided'
         });
         this.isConnecting = false;
@@ -891,6 +923,34 @@ class AlpacaService {
     if (this.pingTimeout) {
       clearTimeout(this.pingTimeout);
       this.pingTimeout = null;
+    }
+  }
+  
+  private getReadyStateText(state?: number): string {
+    switch (state) {
+      case WebSocket.CONNECTING: return 'CONNECTING (0)';
+      case WebSocket.OPEN: return 'OPEN (1)';
+      case WebSocket.CLOSING: return 'CLOSING (2)';
+      case WebSocket.CLOSED: return 'CLOSED (3)';
+      default: return `UNKNOWN (${state})`;
+    }
+  }
+  
+  private getCloseCodeDescription(code: number): string {
+    switch (code) {
+      case 1000: return 'Normal Closure';
+      case 1001: return 'Going Away';
+      case 1002: return 'Protocol Error';
+      case 1003: return 'Unsupported Data';
+      case 1005: return 'No Status Received';
+      case 1006: return 'Abnormal Closure';
+      case 1007: return 'Invalid frame payload data';
+      case 1008: return 'Policy Violation';
+      case 1009: return 'Message Too Big';
+      case 1010: return 'Mandatory Extension';
+      case 1011: return 'Internal Server Error';
+      case 1015: return 'TLS Handshake';
+      default: return 'Unknown';
     }
   }
   
