@@ -37,6 +37,7 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
   const [audioQueue, setAudioQueue] = useState<AudioNotification[]>([]);
   const [userHasInteracted, setUserHasInteracted] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+  const lastPlayedUrlRef = useRef<string | null>(null);
   
   // Audio WebSocket integration
   const {
@@ -124,7 +125,7 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
 
   // Handle audio playback when new notifications arrive
   useEffect(() => {
-    if (audioQueue.length > 0 && !isPlaying) {
+    if (audioQueue.length > 0 && !isPlaying && audioEnabled && userHasInteracted) {
       // Play the next audio in the queue
       const nextAudio = audioQueue[0];
       setCurrentAudio(nextAudio);
@@ -144,9 +145,16 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
 
   // Set up audio source when currentAudio changes
   useEffect(() => {
-    if (currentAudio && audioRef.current && audioEnabled && userHasInteracted) {
+    if (currentAudio && audioRef.current && audioEnabled && userHasInteracted && !isPlaying) {
       const audioElement = audioRef.current;
       const audioUrl = currentAudio.data.audio_url;
+      
+      // Don't replay the same audio URL
+      if (lastPlayedUrlRef.current === audioUrl) {
+        console.log('[AUDIO PLAYER] Skipping - already played this audio URL:', audioUrl);
+        setCurrentAudio(null); // Clear current audio to prevent stuck state
+        return;
+      }
       
       console.log('[AUDIO PLAYER] Setting up audio source:', audioUrl);
       
@@ -187,6 +195,7 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
           console.log('[AUDIO PLAYER] Attempting to play audio...');
           await audioElement.play();
           setIsPlaying(true);
+          lastPlayedUrlRef.current = audioUrl; // Mark this URL as played
           console.log('[AUDIO PLAYER] Audio playing successfully at 1.5x speed');
           
         } catch (error: any) {
@@ -216,12 +225,12 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
     } else if (currentAudio && (!audioEnabled || !userHasInteracted)) {
       console.log('[AUDIO PLAYER] Not playing audio - audioEnabled:', audioEnabled, 'userHasInteracted:', userHasInteracted);
     }
-  }, [currentAudio, audioEnabled, userHasInteracted, isPlaying]);
+  }, [currentAudio]); // Only depend on currentAudio to prevent retriggering
   
   // Handle audio events
   const handleAudioEnded = () => {
     setIsPlaying(false);
-    setCurrentAudio(null);
+    setCurrentAudio(null); // Clear current audio so next one can play
   };
   return (
     <div className="mb-3 flex items-center">
