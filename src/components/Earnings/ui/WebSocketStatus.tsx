@@ -50,18 +50,9 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
     autoConnect: false,
     persistConnection: true,
     onAudioNotification: (notification) => {
-      // Show a visual notification
+      // Just add the notification to the queue - no toast popup
       const ticker = notification.data?.metadata?.ticker || notification.data?.metadata?.company_name || 'Unknown Stock';
-      
-      // Enhanced toast notification
-      toast.success(`🔊 New Earnings Audio: ${ticker}`, {
-        position: 'top-right',
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true
-      });
+      console.log(`[AUDIO PLAYER] 🎧 New Earnings Audio received: ${ticker}`);
       
       // Add the notification to the queue
       setAudioQueue(prevQueue => {
@@ -115,19 +106,11 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
             console.log('[AUDIO PLAYER] Manual audio play successful');
           } catch (error) {
             console.error('[AUDIO PLAYER] Manual audio play failed:', error);
-            toast.error(`Audio playback failed: ${error instanceof Error ? error.message : 'Unknown error'}`, {
-              autoClose: 5000,
-              position: 'top-right'
-            });
           }
         }
       }
     } catch (error) {
       console.error('[AUDIO PLAYER] Error toggling audio:', error);
-      toast.error('Failed to toggle audio. Please try again.', {
-        autoClose: 3000,
-        position: 'top-right'
-      });
     } finally {
       // Reset toggle state after a brief delay to show the loading state
       setTimeout(() => setIsToggling(false), 500);
@@ -227,33 +210,17 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
           setIsPlaying(false);
           setCurrentAudio(null); // Clear current audio to try next one
           
-          // Handle specific error cases
+          // Handle specific error cases - only log, no toast popups
           if (error.name === 'NotAllowedError') {
             console.warn('[AUDIO PLAYER] Autoplay was blocked. User interaction is required to play audio.');
-            toast.info('Audio autoplay blocked. Click the audio button to hear notifications.', {
-              autoClose: 5000,
-              position: 'top-right'
-            });
           } else if (error.name === 'AbortError') {
             console.log('[AUDIO PLAYER] Play request was aborted (likely due to rapid messages)');
-            // Don't show error toast for abort errors as they're expected
           } else if (error.message === 'Audio loading timeout') {
             console.error('[AUDIO PLAYER] Audio loading timed out');
-            toast.error('Audio loading timed out. Network may be slow.', {
-              autoClose: 3000,
-              position: 'top-right'
-            });
           } else if (error.name === 'NetworkError') {
             console.error('[AUDIO PLAYER] Network error loading audio');
-            toast.error('Network error loading audio. Please check connection.', {
-              autoClose: 3000,
-              position: 'top-right'
-            });
           } else {
-            toast.error(`Audio playback failed: ${error.message}`, {
-              autoClose: 5000,
-              position: 'top-right'
-            });
+            console.error('[AUDIO PLAYER] Audio playback failed:', error.message);
           }
         }
       };
