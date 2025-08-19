@@ -33,20 +33,39 @@ class AudioWebSocketService {
   private isManualClose = false;
   private isEnabled = false; // Flag to enable/disable WebSocket functionality
   private lastConnectionAttempt = 0;
-  private minConnectionInterval = 5000; // 5 seconds minimum between connection attempts
+  private minConnectionInterval = 2000; // 2 seconds minimum between connection attempts (reduced from 5s)
   private watchlistFilter: string[] = []; // Watchlist filter for notifications
+  private enablePromise: Promise<void> | null = null; // Track enable operation
 
   // Enable WebSocket functionality
-  public enable(): void {
+  public async enable(): Promise<void> {
+    if (this.enablePromise) {
+      return this.enablePromise;
+    }
+    
     if (!this.isEnabled) {
-      this.isEnabled = true;
-      this.connect();
+      this.enablePromise = new Promise((resolve) => {
+        this.isEnabled = true;
+        console.log('[AUDIO WS] Enabling WebSocket service');
+        
+        // Start connection process
+        this.connect();
+        
+        // Resolve after a short delay to allow connection to start
+        setTimeout(() => {
+          this.enablePromise = null;
+          resolve();
+        }, 500);
+      });
+      
+      return this.enablePromise;
     }
   }
 
   // Disable WebSocket functionality
-  public disable(): void {
+  public async disable(): Promise<void> {
     if (this.isEnabled) {
+      console.log('[AUDIO WS] Disabling WebSocket service');
       this.isEnabled = false;
       this.disconnect();
 
@@ -79,7 +98,7 @@ class AudioWebSocketService {
   }
 
   // Connect to WebSocket
-  public connect(): void {
+  public async connect(): Promise<void> {
     // Don't attempt to connect if WebSocket is disabled
     if (!this.isEnabled) {
       return;
@@ -91,9 +110,11 @@ class AudioWebSocketService {
 
     if (timeSinceLastAttempt < this.minConnectionInterval) {
       console.log(
-        `Connection attempt too frequent (${timeSinceLastAttempt}ms since last attempt), minimum interval is ${this.minConnectionInterval}ms`
+        `[AUDIO WS] Connection attempt too frequent (${timeSinceLastAttempt}ms since last attempt), minimum interval is ${this.minConnectionInterval}ms`
       );
-      return;
+      // Instead of returning, wait for the remaining time
+      const remainingWait = this.minConnectionInterval - timeSinceLastAttempt;
+      await new Promise(resolve => setTimeout(resolve, remainingWait));
     }
 
     // Don't attempt to connect if we're already connecting or connected
