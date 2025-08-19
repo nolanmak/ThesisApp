@@ -88,6 +88,17 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
     try {
       if (audioEnabled) {
         console.log('[AUDIO PLAYER] Disabling audio...');
+        
+        // Stop any currently playing audio immediately
+        if (isPlaying && audioRef.current) {
+          console.log('[AUDIO PLAYER] Stopping currently playing audio');
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0; // Reset to beginning
+          setIsPlaying(false);
+          setCurrentAudio(null);
+          setAudioQueue([]); // Clear the entire queue
+        }
+        
         await disableAudio();
       } else {
         console.log('[AUDIO PLAYER] Enabling audio...');
@@ -171,22 +182,35 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
           audioElement.src = audioUrl;
           audioElement.playbackRate = 1.5;
           
-          // Wait for the audio to be ready to play
+          // Wait for the audio to be ready to play with timeout
           await new Promise((resolve, reject) => {
-            const handleCanPlay = () => {
+            let timeoutId: NodeJS.Timeout;
+            
+            const cleanup = () => {
               audioElement.removeEventListener('canplay', handleCanPlay);
-              audioElement.removeEventListener('error', handleError);
+              audioElement.removeEventListener('error', handleLoadError);
+              if (timeoutId) clearTimeout(timeoutId);
+            };
+            
+            const handleCanPlay = () => {
+              cleanup();
               resolve(undefined);
             };
             
-            const handleError = (error: Event) => {
-              audioElement.removeEventListener('canplay', handleCanPlay);
-              audioElement.removeEventListener('error', handleError);
+            const handleLoadError = (error: Event) => {
+              cleanup();
               reject(error);
             };
             
+            // Set up event listeners
             audioElement.addEventListener('canplay', handleCanPlay);
-            audioElement.addEventListener('error', handleError);
+            audioElement.addEventListener('error', handleLoadError);
+            
+            // Add timeout to prevent hanging
+            timeoutId = setTimeout(() => {
+              cleanup();
+              reject(new Error('Audio loading timeout'));
+            }, 10000); // 10 second timeout
             
             // Load the audio
             audioElement.load();
@@ -201,6 +225,7 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
         } catch (error: any) {
           console.error('[AUDIO PLAYER] Error playing audio:', error);
           setIsPlaying(false);
+          setCurrentAudio(null); // Clear current audio to try next one
           
           // Handle specific error cases
           if (error.name === 'NotAllowedError') {
@@ -212,6 +237,18 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
           } else if (error.name === 'AbortError') {
             console.log('[AUDIO PLAYER] Play request was aborted (likely due to rapid messages)');
             // Don't show error toast for abort errors as they're expected
+          } else if (error.message === 'Audio loading timeout') {
+            console.error('[AUDIO PLAYER] Audio loading timed out');
+            toast.error('Audio loading timed out. Network may be slow.', {
+              autoClose: 3000,
+              position: 'top-right'
+            });
+          } else if (error.name === 'NetworkError') {
+            console.error('[AUDIO PLAYER] Network error loading audio');
+            toast.error('Network error loading audio. Please check connection.', {
+              autoClose: 3000,
+              position: 'top-right'
+            });
           } else {
             toast.error(`Audio playback failed: ${error.message}`, {
               autoClose: 5000,
@@ -229,9 +266,57 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
   
   // Handle audio events
   const handleAudioEnded = () => {
+    console.log('[AUDIO PLAYER] Audio ended naturally');
     setIsPlaying(false);
     setCurrentAudio(null); // Clear current audio so next one can play
   };
+
+  const handleAudioPause = () => {
+    console.log('[AUDIO PLAYER] Audio paused');
+    setIsPlaying(false);
+  };
+
+  const handleAudioPlay = () => {
+    console.log('[AUDIO PLAYER] Audio started playing');
+    setIsPlaying(true);
+  };
+
+  const handleAudioError = (e: Event) => {
+    console.error('[AUDIO PLAYER] Audio error during playback:', e);
+    setIsPlaying(false);
+    setCurrentAudio(null); // Clear to move to next audio
+  };
+
+  const handleAudioStalled = () => {
+    console.warn('[AUDIO PLAYER] Audio playback stalled - network issues?');
+  };
+
+  const handleAudioWaiting = () => {
+    console.log('[AUDIO PLAYER] Audio buffering...');
+  };
+
+  // Recovery mechanism for stuck audio playback
+  useEffect(() => {
+    if (isPlaying && audioRef.current) {
+      const checkPlaybackInterval = setInterval(() => {
+        const audio = audioRef.current;
+        if (audio && !audio.paused && audio.currentTime > 0 && audio.duration > 0) {
+          // Audio is actually playing, all good
+          return;
+        }
+        
+        if (audio && (audio.paused || audio.ended)) {
+          console.log('[AUDIO PLAYER] Detected stuck playing state, correcting...');
+          setIsPlaying(false);
+          if (audio.ended) {
+            setCurrentAudio(null);
+          }
+        }
+      }, 1000); // Check every second
+
+      return () => clearInterval(checkPlaybackInterval);
+    }
+  }, [isPlaying]);
   return (
     <div className="mb-3 flex items-center">
       {/* Message search box */}
@@ -295,20 +380,34 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
               !isToggling ? (
                 audioEnabled 
                   ? audioConnected 
-                    ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                    ? isPlaying 
+                      ? 'bg-green-500 text-white hover:bg-green-600 animate-pulse' // Playing state
+                      : 'bg-blue-500 text-white hover:bg-blue-600' 
                     : audioReconnecting 
                       ? 'bg-amber-500 text-white hover:bg-amber-600' 
                       : 'bg-neutral-300 text-white hover:bg-neutral-400'
                   : 'bg-neutral-200 text-neutral-500 hover:bg-neutral-300'
               ) : ''
             }`}
-            title={isToggling ? 'Connecting...' : audioEnabled ? "Disable audio notifications" : "Enable audio notifications"}
+            title={
+              isToggling 
+                ? 'Connecting...' 
+                : audioEnabled 
+                  ? isPlaying 
+                    ? "Stop current audio and disable notifications" 
+                    : "Disable audio notifications"
+                  : "Enable audio notifications"
+            }
           >
             {isToggling ? (
               <Loader size={12} className="animate-spin" />
             ) : audioEnabled ? (
               audioConnected ? (
-                <Volume2 size={12} />
+                isPlaying ? (
+                  <Volume2 size={12} className="animate-bounce" /> // Bouncing icon when playing
+                ) : (
+                  <Volume2 size={12} />
+                )
               ) : (
                 audioReconnecting ? (
                   <Loader size={12} className="animate-spin" />
@@ -339,8 +438,14 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
       <audio 
         ref={audioRef}
         onEnded={handleAudioEnded}
-        onPause={() => setIsPlaying(false)}
-        onPlay={() => setIsPlaying(true)}
+        onPause={handleAudioPause}
+        onPlay={handleAudioPlay}
+        onError={handleAudioError}
+        onStalled={handleAudioStalled}
+        onWaiting={handleAudioWaiting}
+        onLoadStart={() => console.log('[AUDIO PLAYER] Started loading audio')}
+        onCanPlay={() => console.log('[AUDIO PLAYER] Audio ready to play')}
+        onAbort={() => console.log('[AUDIO PLAYER] Audio load aborted')}
         style={{ display: 'none' }}
       />
     </div>
