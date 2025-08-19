@@ -89,7 +89,7 @@ export const useAudioWebSocket = (options: UseAudioWebSocketOptions = {}): UseAu
   }, [onAudioNotification]);
 
   // Connect to WebSocket
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     if (enabled) {
       // Clear any pending disconnect timeout
       if (disconnectTimeoutRef.current !== null) {
@@ -97,7 +97,7 @@ export const useAudioWebSocket = (options: UseAudioWebSocketOptions = {}): UseAu
         disconnectTimeoutRef.current = null;
       }
       
-      audioWebsocketService.connect();
+      await audioWebsocketService.connect();
     }
   }, [enabled]);
 
@@ -117,19 +117,19 @@ export const useAudioWebSocket = (options: UseAudioWebSocketOptions = {}): UseAu
   }, [persistConnection]);
 
   // Enable WebSocket functionality
-  const enable = useCallback(() => {
+  const enable = useCallback(async () => {
     // Update local state first to prevent race conditions
     setEnabled(true);
-    audioWebsocketService.enable();
+    await audioWebsocketService.enable();
   }, []);
 
   // Disable WebSocket functionality
-  const disable = useCallback(() => {
+  const disable = useCallback(async () => {
     // Update local state first to prevent race conditions
     setEnabled(false);
     setConnected(false);
     setReconnecting(false);
-    audioWebsocketService.disable();
+    await audioWebsocketService.disable();
   }, []);
 
   // Send a message to the WebSocket server
@@ -141,9 +141,14 @@ export const useAudioWebSocket = (options: UseAudioWebSocketOptions = {}): UseAu
     // Set mounted flag
     isMounted.current = true;
     
+    // Sync local enabled state with service state
+    setEnabled(audioWebsocketService.isWebSocketEnabled());
+    
     // Auto-connect if enabled
-    if (autoConnect && enabled) {
-      connect();
+    if (autoConnect && audioWebsocketService.isWebSocketEnabled()) {
+      connect().catch(error => {
+        console.error('[AUDIO HOOK] Auto-connect failed:', error);
+      });
     }
 
     // Subscribe to connection status changes
@@ -164,6 +169,12 @@ export const useAudioWebSocket = (options: UseAudioWebSocketOptions = {}): UseAu
       connectionUnsubscribe();
       notificationUnsubscribe();
       
+      // Clear any pending timeouts
+      if (disconnectTimeoutRef.current !== null) {
+        clearTimeout(disconnectTimeoutRef.current);
+        disconnectTimeoutRef.current = null;
+      }
+      
       // Only disconnect if autoConnect was enabled (we're managing the connection)
       // and we're not persisting the connection
       if (autoConnect) {
@@ -179,7 +190,7 @@ export const useAudioWebSocket = (options: UseAudioWebSocketOptions = {}): UseAu
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoConnect, enabled, persistConnection]); // Removed callbacks from deps to prevent re-mounting
+  }, [autoConnect, persistConnection]); // Removed enabled from deps to prevent re-mounting
 
   return {
     connected,

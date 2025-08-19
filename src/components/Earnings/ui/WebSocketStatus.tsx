@@ -71,6 +71,7 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
     }
   });
 
+
   const handleToggleAudio = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -86,10 +87,10 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
     try {
       if (audioEnabled) {
         console.log('[AUDIO PLAYER] Disabling audio...');
-        disableAudio();
+        await disableAudio();
       } else {
         console.log('[AUDIO PLAYER] Enabling audio...');
-        enableAudio();
+        await enableAudio();
         // Enable user interaction when audio is enabled
         setUserHasInteracted(true);
         
@@ -111,9 +112,13 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
       }
     } catch (error) {
       console.error('[AUDIO PLAYER] Error toggling audio:', error);
+      toast.error('Failed to toggle audio. Please try again.', {
+        autoClose: 3000,
+        position: 'top-right'
+      });
     } finally {
-      // Reset toggle state after a short delay
-      setTimeout(() => setIsToggling(false), 200);
+      // Reset toggle state after a brief delay to show the loading state
+      setTimeout(() => setIsToggling(false), 500);
     }
   };
 
@@ -273,18 +278,26 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
             type="button"
             onClick={handleToggleAudio}
             disabled={isToggling}
-            className={`flex items-center justify-center rounded-full w-6 h-6 transition-colors duration-150 ease-in-out cursor-pointer ${
-              audioEnabled 
-                ? audioConnected 
-                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                  : audioReconnecting 
-                    ? 'bg-amber-500 text-white hover:bg-amber-600' 
-                    : 'bg-neutral-300 text-white hover:bg-neutral-400'
-                : 'bg-neutral-200 text-neutral-500 hover:bg-neutral-300'
+            className={`flex items-center justify-center rounded-full w-6 h-6 transition-colors duration-150 ease-in-out ${
+              isToggling
+                ? 'cursor-wait bg-amber-500 text-white' // Loading state
+                : 'cursor-pointer'
+            } ${
+              !isToggling ? (
+                audioEnabled 
+                  ? audioConnected 
+                    ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                    : audioReconnecting 
+                      ? 'bg-amber-500 text-white hover:bg-amber-600' 
+                      : 'bg-neutral-300 text-white hover:bg-neutral-400'
+                  : 'bg-neutral-200 text-neutral-500 hover:bg-neutral-300'
+              ) : ''
             }`}
-            title={audioEnabled ? "Disable audio notifications" : "Enable audio notifications"}
+            title={isToggling ? 'Connecting...' : audioEnabled ? "Disable audio notifications" : "Enable audio notifications"}
           >
-            {audioEnabled ? (
+            {isToggling ? (
+              <Loader size={12} className="animate-spin" />
+            ) : audioEnabled ? (
               audioConnected ? (
                 <Volume2 size={12} />
               ) : (
