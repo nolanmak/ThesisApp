@@ -1,4 +1,13 @@
-import { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
+import { 
+  CognitoIdentityProviderClient,
+  SignUpCommand,
+  ConfirmSignUpCommand,
+  InitiateAuthCommand,
+  ResendConfirmationCodeCommand,
+  ForgotPasswordCommand,
+  ConfirmForgotPasswordCommand,
+  AuthFlowType
+} from '@aws-sdk/client-cognito-identity-provider';
 
 export interface CognitoConfig {
   userPoolId: string;
@@ -106,6 +115,112 @@ class CognitoAuth {
       family_name: payload.family_name as string | undefined,
       picture: payload.picture as string | undefined
     };
+  }
+
+  // Email Authentication Methods
+  async signUpWithEmail(email: string, password: string): Promise<{ userSub: string }> {
+    try {
+      const command = new SignUpCommand({
+        ClientId: this.config.clientId,
+        Username: email,
+        Password: password,
+        UserAttributes: []
+      });
+
+      const response = await this.client.send(command);
+      return { userSub: response.UserSub || '' };
+    } catch (error) {
+      console.error('Error signing up with email:', error);
+      throw error;
+    }
+  }
+
+  async confirmSignUp(email: string, confirmationCode: string): Promise<void> {
+    try {
+      const command = new ConfirmSignUpCommand({
+        ClientId: this.config.clientId,
+        Username: email,
+        ConfirmationCode: confirmationCode
+      });
+
+      await this.client.send(command);
+    } catch (error) {
+      console.error('Error confirming sign up:', error);
+      throw error;
+    }
+  }
+
+  async signInWithEmail(email: string, password: string): Promise<{ accessToken: string; idToken: string; refreshToken: string }> {
+    try {
+      const command = new InitiateAuthCommand({
+        ClientId: this.config.clientId,
+        AuthFlow: AuthFlowType.USER_PASSWORD_AUTH,
+        AuthParameters: {
+          USERNAME: email,
+          PASSWORD: password
+        }
+      });
+
+      const response = await this.client.send(command);
+      
+      if (!response.AuthenticationResult) {
+        throw new Error('Authentication failed');
+      }
+
+      return {
+        accessToken: response.AuthenticationResult.AccessToken || '',
+        idToken: response.AuthenticationResult.IdToken || '',
+        refreshToken: response.AuthenticationResult.RefreshToken || ''
+      };
+    } catch (error) {
+      console.error('Error signing in with email:', error);
+      throw error;
+    }
+  }
+
+  async resendConfirmationCode(email: string): Promise<void> {
+    try {
+      const command = new ResendConfirmationCodeCommand({
+        ClientId: this.config.clientId,
+        Username: email
+      });
+
+      await this.client.send(command);
+    } catch (error) {
+      console.error('Error resending confirmation code:', error);
+      throw error;
+    }
+  }
+
+  // Password Reset Methods
+  async forgotPassword(email: string): Promise<void> {
+    try {
+      const command = new ForgotPasswordCommand({
+        ClientId: this.config.clientId,
+        Username: email
+      });
+
+      await this.client.send(command);
+    } catch (error) {
+      console.error('Error initiating password reset:', error);
+      throw error;
+    }
+  }
+
+  async confirmForgotPassword(email: string, confirmationCode: string, newPassword: string): Promise<void> {
+    try {
+      const command = new ConfirmForgotPasswordCommand({
+        ClientId: this.config.clientId,
+        Username: email,
+        ConfirmationCode: confirmationCode,
+        Password: newPassword
+      });
+
+      await this.client.send(command);
+    } catch (error) {
+      console.error('Error confirming password reset:', error);
+      throw error;
+    }
   }
 }
 

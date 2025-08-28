@@ -7,6 +7,7 @@ import Calendar from './components/Calendar';
 import Earnings from './components/Earnings';
 import WatchList from './components/WatchList';
 import LandingPage from './components/Landing/LandingPage';
+import PasswordReset from './components/Landing/PasswordReset';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import GlobalDataProvider from './providers/GlobalDataProvider';
@@ -20,6 +21,7 @@ function App() {
           <Router>
             <Routes>
               <Route path="/" element={<LandingPage />} />
+              <Route path="/reset-password" element={<PasswordReset />} />
               
               {/* Protected routes - require Authenticated User */}
               <Route element={<ProtectedRoute />}>
