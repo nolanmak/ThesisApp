@@ -10,6 +10,12 @@ interface AuthContextType {
   isAuthenticated: boolean;
   removeAuthTokens: () => void;
   checkAuthStatus: () => Promise<boolean>;
+  signUpWithEmail: (email: string, password: string) => Promise<{ userSub: string }>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  confirmSignUp: (email: string, confirmationCode: string) => Promise<void>;
+  resendConfirmationCode: (email: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  confirmForgotPassword: (email: string, confirmationCode: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -175,6 +181,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     window.location.href = '/';
   };
 
+  const signUpWithEmail = async (email: string, password: string) => {
+    return await cognitoAuth.signUpWithEmail(email, password);
+  };
+
+  const signInWithEmail = async (email: string, password: string) => {
+    const tokens = await cognitoAuth.signInWithEmail(email, password);
+    
+    localStorage.setItem('access_token', tokens.accessToken);
+    localStorage.setItem('id_token', tokens.idToken);
+    localStorage.setItem('refresh_token', tokens.refreshToken);
+    
+    const userData = cognitoAuth.getUserFromIdToken(tokens.idToken);
+    localStorage.setItem('user_data', JSON.stringify(userData));
+    
+    setUser(userData);
+    startSessionMonitoring();
+  };
+
+  const confirmSignUp = async (email: string, confirmationCode: string) => {
+    await cognitoAuth.confirmSignUp(email, confirmationCode);
+  };
+
+  const resendConfirmationCode = async (email: string) => {
+    await cognitoAuth.resendConfirmationCode(email);
+  };
+
+  const forgotPassword = async (email: string) => {
+    await cognitoAuth.forgotPassword(email);
+  };
+
+  const confirmForgotPassword = async (email: string, confirmationCode: string, newPassword: string) => {
+    await cognitoAuth.confirmForgotPassword(email, confirmationCode, newPassword);
+  };
+
   const value: AuthContextType = {
     user,
     isLoading,
@@ -182,7 +222,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signOut,
     isAuthenticated: !!user,
     removeAuthTokens,
-    checkAuthStatus
+    checkAuthStatus,
+    signUpWithEmail,
+    signInWithEmail,
+    confirmSignUp,
+    resendConfirmationCode,
+    forgotPassword,
+    confirmForgotPassword
   };
 
   return (
