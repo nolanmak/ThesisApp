@@ -124,7 +124,37 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                   lineHeight: isMobile ? '1.5' : undefined,
                 }}
               >
-                {parsedMessage && Object.keys(parsedMessage).length > 0 ? (
+                {selectedMessage.source === 'transcript_analysis' ? (
+                  // Display full transcript analysis content
+                  <div className="space-y-3">
+                    <div className="text-purple-700 font-semibold mb-3">📊 Earnings Call Transcript Analysis</div>
+                    <div 
+                      className="text-neutral-700 leading-relaxed"
+                      style={{
+                        fontSize: isMobile ? '0.9rem' : '0.8rem',
+                        lineHeight: '1.6'
+                      }}
+                    >
+                      {selectedMessage.discord_message}
+                    </div>
+                    
+                    {/* Display structured transcript data if available */}
+                    {selectedMessage.transcript_data && (
+                      <div className="mt-6 pt-4 border-t border-neutral-200">
+                        <div className="text-purple-700 font-semibold mb-3">📋 Detailed Analysis Data</div>
+                        <pre 
+                          className="text-xs text-neutral-600 bg-neutral-50 p-3 rounded border overflow-x-auto"
+                          style={{
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word'
+                          }}
+                        >
+                          {JSON.stringify(JSON.parse(selectedMessage.transcript_data), null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+                ) : parsedMessage && Object.keys(parsedMessage).length > 0 ? (
                   <div className="space-y-4">
                     {Object.entries(parsedMessage).map(([section, items]) => (
                       <div key={section}>
