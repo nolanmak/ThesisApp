@@ -181,7 +181,6 @@ export const ParseTranscriptData = (message: Message): { [key: string]: MetricIt
     }
 
   } catch (error) {
-    console.error('Error parsing transcript data:', error);
     return null;
   }
 
