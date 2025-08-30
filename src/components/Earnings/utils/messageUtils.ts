@@ -52,6 +52,25 @@ export const createMetricText = (item: MetricDataItem, label: string): string | 
 };
 
 /**
+ * Extract preview text from transcript analysis messages
+ */
+export const ParseTranscriptMessage = (message: Message): string | null => {
+  if (!message.discord_message || message.source !== 'transcript_analysis') {
+    return null;
+  }
+
+  // Extract the first line as preview (usually contains the header with emoji and ticker)
+  const lines = message.discord_message.split('\n');
+  const firstLine = lines[0]?.trim();
+  
+  if (firstLine && firstLine.length > 0) {
+    return firstLine;
+  }
+  
+  return null;
+};
+
+/**
  * Parse message payload to extract structured metrics data
  */
 export const ParseMessagePayload = (message: Message): { [key: string]: MetricItem[] } | null => {

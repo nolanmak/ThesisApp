@@ -27,6 +27,8 @@ export interface Message {
   source?: string;
   link?: string;
   company_name?: string;
+  audio_url?: string;
+  transcript_data?: string;
   report_data?: {
     link?: string;
   }
