@@ -87,78 +87,65 @@ export const ParseTranscriptData = (message: Message): { [key: string]: MetricIt
       : message.transcript_data;
 
     // Management Confidence Indicators
-    if (data.management_confidence_indicators?.L) {
-      const items = data.management_confidence_indicators.L
-        .map((item: any) => item.S)
-        .filter((text: string) => text && text.length > 0);
+    if (data.management_confidence_indicators && Array.isArray(data.management_confidence_indicators)) {
+      const items = data.management_confidence_indicators.filter((text: string) => text && text.length > 0);
       if (items.length > 0) {
         sections["Management Confidence"] = items;
       }
     }
 
     // Company Provided Commentary
-    if (data.company_provided_commentary?.L) {
-      const items = data.company_provided_commentary.L
-        .map((item: any) => item.S)
-        .filter((text: string) => text && text.length > 0);
+    if (data.company_provided_commentary && Array.isArray(data.company_provided_commentary)) {
+      const items = data.company_provided_commentary.filter((text: string) => text && text.length > 0);
       if (items.length > 0) {
         sections["Company Commentary"] = items;
       }
     }
 
     // Competitive Positioning Sentiment
-    if (data.competitive_positioning_sentiment?.L) {
-      const items = data.competitive_positioning_sentiment.L
-        .map((item: any) => item.S)
-        .filter((text: string) => text && text.length > 0);
+    if (data.competitive_positioning_sentiment && Array.isArray(data.competitive_positioning_sentiment)) {
+      const items = data.competitive_positioning_sentiment.filter((text: string) => text && text.length > 0);
       if (items.length > 0) {
         sections["Competitive Position"] = items;
       }
     }
 
     // Demand Environment Commentary
-    if (data.demand_environment_commentary?.L) {
-      const items = data.demand_environment_commentary.L
-        .map((item: any) => item.S)
-        .filter((text: string) => text && text.length > 0);
+    if (data.demand_environment_commentary && Array.isArray(data.demand_environment_commentary)) {
+      const items = data.demand_environment_commentary.filter((text: string) => text && text.length > 0);
       if (items.length > 0) {
         sections["Demand Environment"] = items;
       }
     }
 
     // Forward Looking Statements
-    if (data.forward_looking_statements?.L) {
-      const items = data.forward_looking_statements.L
-        .map((item: any) => item.S)
-        .filter((text: string) => text && text.length > 0);
+    if (data.forward_looking_statements && Array.isArray(data.forward_looking_statements)) {
+      const items = data.forward_looking_statements.filter((text: string) => text && text.length > 0);
       if (items.length > 0) {
         sections["Forward Outlook"] = items;
       }
     }
 
     // Business Outlook Commentary
-    if (data.business_outlook_commentary?.L) {
-      const items = data.business_outlook_commentary.L
-        .map((item: any) => item.S)
-        .filter((text: string) => text && text.length > 0);
+    if (data.business_outlook_commentary && Array.isArray(data.business_outlook_commentary)) {
+      const items = data.business_outlook_commentary.filter((text: string) => text && text.length > 0);
       if (items.length > 0) {
         sections["Business Outlook"] = items;
       }
     }
 
     // Current Quarter Metrics
-    if (data.current_quarter?.L) {
+    if (data.current_quarter && Array.isArray(data.current_quarter)) {
       const metrics: MetricItem[] = [];
-      data.current_quarter.L.forEach((item: any) => {
-        if (item.M) {
-          const metric = item.M;
-          const label = metric.metric_label?.S || 'Metric';
-          const value = metric.metric_value?.N || metric.raw_text?.S;
-          const unit = metric.metric_unit?.S;
+      data.current_quarter.forEach((item: any) => {
+        if (item && typeof item === 'object') {
+          const label = item.metric_label || 'Metric';
+          const value = item.metric_value || item.raw_text;
+          const unit = item.metric_unit;
           
           if (value) {
             let text = `${label}: ${value}`;
-            if (unit && unit !== '') {
+            if (unit && unit !== '' && unit !== null) {
               text += ` ${unit}`;
             }
             metrics.push({ label, text });
@@ -171,18 +158,17 @@ export const ParseTranscriptData = (message: Message): { [key: string]: MetricIt
     }
 
     // Current Year Metrics
-    if (data.current_year?.L) {
+    if (data.current_year && Array.isArray(data.current_year)) {
       const metrics: MetricItem[] = [];
-      data.current_year.L.forEach((item: any) => {
-        if (item.M) {
-          const metric = item.M;
-          const label = metric.metric_label?.S || 'Metric';
-          const value = metric.metric_value?.N || metric.raw_text?.S;
-          const unit = metric.metric_unit?.S;
+      data.current_year.forEach((item: any) => {
+        if (item && typeof item === 'object') {
+          const label = item.metric_label || 'Metric';
+          const value = item.metric_value || item.raw_text;
+          const unit = item.metric_unit;
           
           if (value) {
             let text = `${label}: ${value}`;
-            if (unit && unit !== '') {
+            if (unit && unit !== '' && unit !== null) {
               text += ` ${unit}`;
             }
             metrics.push({ label, text });
