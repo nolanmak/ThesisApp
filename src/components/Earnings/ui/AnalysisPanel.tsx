@@ -149,7 +149,18 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                             wordBreak: 'break-word'
                           }}
                         >
-                          {JSON.stringify(JSON.parse(selectedMessage.transcript_data), null, 2)}
+                          {(() => {
+                            try {
+                              // Check if transcript_data is already an object or a string
+                              const data = typeof selectedMessage.transcript_data === 'string' 
+                                ? JSON.parse(selectedMessage.transcript_data)
+                                : selectedMessage.transcript_data;
+                              return JSON.stringify(data, null, 2);
+                            } catch (error) {
+                              console.error('Error parsing transcript_data:', error);
+                              return selectedMessage.transcript_data;
+                            }
+                          })()}
                         </pre>
                       </div>
                     )}
