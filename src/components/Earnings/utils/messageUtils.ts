@@ -71,6 +71,138 @@ export const ParseTranscriptMessage = (message: Message): string | null => {
 };
 
 /**
+ * Parse transcript data into human-readable format
+ */
+export const ParseTranscriptData = (message: Message): { [key: string]: MetricItem[] } | null => {
+  if (!message.transcript_data || message.source !== 'transcript_analysis') {
+    return null;
+  }
+
+  const sections: { [key: string]: MetricItem[] } = {};
+
+  try {
+    // Parse transcript_data if it's a string, otherwise use as object
+    const data = typeof message.transcript_data === 'string' 
+      ? JSON.parse(message.transcript_data)
+      : message.transcript_data;
+
+    // Management Confidence Indicators
+    if (data.management_confidence_indicators?.L) {
+      const items = data.management_confidence_indicators.L
+        .map((item: any) => item.S)
+        .filter((text: string) => text && text.length > 0);
+      if (items.length > 0) {
+        sections["Management Confidence"] = items;
+      }
+    }
+
+    // Company Provided Commentary
+    if (data.company_provided_commentary?.L) {
+      const items = data.company_provided_commentary.L
+        .map((item: any) => item.S)
+        .filter((text: string) => text && text.length > 0);
+      if (items.length > 0) {
+        sections["Company Commentary"] = items;
+      }
+    }
+
+    // Competitive Positioning Sentiment
+    if (data.competitive_positioning_sentiment?.L) {
+      const items = data.competitive_positioning_sentiment.L
+        .map((item: any) => item.S)
+        .filter((text: string) => text && text.length > 0);
+      if (items.length > 0) {
+        sections["Competitive Position"] = items;
+      }
+    }
+
+    // Demand Environment Commentary
+    if (data.demand_environment_commentary?.L) {
+      const items = data.demand_environment_commentary.L
+        .map((item: any) => item.S)
+        .filter((text: string) => text && text.length > 0);
+      if (items.length > 0) {
+        sections["Demand Environment"] = items;
+      }
+    }
+
+    // Forward Looking Statements
+    if (data.forward_looking_statements?.L) {
+      const items = data.forward_looking_statements.L
+        .map((item: any) => item.S)
+        .filter((text: string) => text && text.length > 0);
+      if (items.length > 0) {
+        sections["Forward Outlook"] = items;
+      }
+    }
+
+    // Business Outlook Commentary
+    if (data.business_outlook_commentary?.L) {
+      const items = data.business_outlook_commentary.L
+        .map((item: any) => item.S)
+        .filter((text: string) => text && text.length > 0);
+      if (items.length > 0) {
+        sections["Business Outlook"] = items;
+      }
+    }
+
+    // Current Quarter Metrics
+    if (data.current_quarter?.L) {
+      const metrics: MetricItem[] = [];
+      data.current_quarter.L.forEach((item: any) => {
+        if (item.M) {
+          const metric = item.M;
+          const label = metric.metric_label?.S || 'Metric';
+          const value = metric.metric_value?.N || metric.raw_text?.S;
+          const unit = metric.metric_unit?.S;
+          
+          if (value) {
+            let text = `${label}: ${value}`;
+            if (unit && unit !== '') {
+              text += ` ${unit}`;
+            }
+            metrics.push({ label, text });
+          }
+        }
+      });
+      if (metrics.length > 0) {
+        sections["Current Quarter Metrics"] = metrics;
+      }
+    }
+
+    // Current Year Metrics
+    if (data.current_year?.L) {
+      const metrics: MetricItem[] = [];
+      data.current_year.L.forEach((item: any) => {
+        if (item.M) {
+          const metric = item.M;
+          const label = metric.metric_label?.S || 'Metric';
+          const value = metric.metric_value?.N || metric.raw_text?.S;
+          const unit = metric.metric_unit?.S;
+          
+          if (value) {
+            let text = `${label}: ${value}`;
+            if (unit && unit !== '') {
+              text += ` ${unit}`;
+            }
+            metrics.push({ label, text });
+          }
+        }
+      });
+      if (metrics.length > 0) {
+        sections["Current Year Metrics"] = metrics;
+      }
+    }
+
+  } catch (error) {
+    console.error('Error parsing transcript data:', error);
+    return null;
+  }
+
+  return Object.keys(sections).length > 0 ? sections : null;
+};
+
+/**
  * Parse message payload to extract structured metrics data
  */
 export const ParseMessagePayload = (message: Message): { [key: string]: MetricItem[] } | null => {

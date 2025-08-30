@@ -1,7 +1,7 @@
 import React from 'react';
 import { Message } from '../../../types';
 import { ThumbsDown, X } from 'lucide-react';
-import { ParseMessagePayload } from '../utils/messageUtils';
+import { ParseMessagePayload, ParseTranscriptMessage, ParseTranscriptData } from '../utils/messageUtils';
 
 interface AnalysisPanelProps {
   selectedMessage: Message | null;
@@ -21,6 +21,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   setFeedbackModalOpen
 }) => {
   const parsedMessage = selectedMessage ? ParseMessagePayload(selectedMessage) : null;
+  const parsedTranscriptData = selectedMessage ? ParseTranscriptData(selectedMessage) : null;
 
   return (
     <div 
@@ -125,43 +126,32 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                 }}
               >
                 {selectedMessage.source === 'transcript_analysis' ? (
-                  // Display full transcript analysis content
-                  <div className="space-y-3">
-                    <div className="text-purple-700 font-semibold mb-3">📊 Earnings Call Transcript Analysis</div>
-                    <div 
-                      className="text-neutral-700 leading-relaxed"
-                      style={{
-                        fontSize: isMobile ? '0.9rem' : '0.8rem',
-                        lineHeight: '1.6'
-                      }}
-                    >
-                      {selectedMessage.discord_message}
+                  // Display transcript analysis with structured data
+                  <div className="space-y-4">
+                    {/* Show just the preview text */}
+                    <div className="text-purple-700 font-semibold mb-3">
+                      {ParseTranscriptMessage(selectedMessage) || '📊 Earnings Call Transcript Analysis'}
                     </div>
                     
-                    {/* Display structured transcript data if available */}
-                    {selectedMessage.transcript_data && (
-                      <div className="mt-6 pt-4 border-t border-neutral-200">
-                        <div className="text-purple-700 font-semibold mb-3">📋 Detailed Analysis Data</div>
-                        <pre 
-                          className="text-xs text-neutral-600 bg-neutral-50 p-3 rounded border overflow-x-auto"
-                          style={{
-                            whiteSpace: 'pre-wrap',
-                            wordBreak: 'break-word'
-                          }}
-                        >
-                          {(() => {
-                            try {
-                              // Check if transcript_data is already an object or a string
-                              const data = typeof selectedMessage.transcript_data === 'string' 
-                                ? JSON.parse(selectedMessage.transcript_data)
-                                : selectedMessage.transcript_data;
-                              return JSON.stringify(data, null, 2);
-                            } catch (error) {
-                              console.error('Error parsing transcript_data:', error);
-                              return selectedMessage.transcript_data;
-                            }
-                          })()}
-                        </pre>
+                    {/* Display structured transcript data in human-readable format */}
+                    {parsedTranscriptData && Object.keys(parsedTranscriptData).length > 0 ? (
+                      <div className="space-y-4">
+                        {Object.entries(parsedTranscriptData).map(([section, items]) => (
+                          <div key={section}>
+                            <div className="text-purple-700 font-semibold mb-2">{section}</div>
+                            <ul className="space-y-1 list-disc pl-5">
+                              {items.map((item, idx) => (
+                                <li key={idx} className="text-neutral-600">
+                                  {typeof item === 'string' ? item : item.text || item.label}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-neutral-500 text-center p-4">
+                        No transcript analysis data available
                       </div>
                     )}
                   </div>
