@@ -9,6 +9,7 @@ import WatchList from './components/WatchList';
 import LandingPage from './components/Landing/LandingPage';
 import PasswordReset from './components/Landing/PasswordReset';
 import ScheduleTemplate from './components/ScheduleTemplate';
+import EarningsDataTemplate from './components/EarningsDataTemplate';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import GlobalDataProvider from './providers/GlobalDataProvider';
@@ -26,6 +27,7 @@ function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/reset-password" element={<PasswordReset />} />
               <Route path="/ScheduleTemplate" element={<ScheduleTemplate />} />
+              <Route path="/EarningsDataTemplate" element={<EarningsDataTemplate />} />
               
               {/* Protected routes - require Authenticated User */}
               <Route element={<ProtectedRoute />}>

@@ -88,18 +88,18 @@ const WatchList: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
+      <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700 p-6">
         <div className="flex items-center mb-6">
-          <List className="mr-3 text-blue-500" size={24} />
-          <h1 className="text-2xl font-semibold text-neutral-800">Watch List</h1>
+          <List className="mr-3 text-blue-500 dark:text-blue-400" size={24} />
+          <h1 className="text-2xl font-semibold text-neutral-800 dark:text-neutral-100">Watch List</h1>
         </div>
         
         <div className="space-y-4">
           <div>
-            <label htmlFor="tickers" className="block text-sm font-medium text-neutral-700 mb-2">
+            <label htmlFor="tickers" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
               Stock Tickers
             </label>
-            <p className="text-sm text-neutral-500 mb-3">
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
               Paste your list of stock tickers below (one per line or comma-separated)
             </p>
             <textarea
@@ -107,7 +107,7 @@ const WatchList: React.FC = () => {
               value={tickers}
               onChange={(e) => setTickers(e.target.value)}
               onPaste={handlePaste}
-              className="w-full h-48 p-3 border border-neutral-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className="w-full h-48 p-3 border border-neutral-300 dark:border-neutral-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
               placeholder="AAPL&#10;MSFT&#10;GOOGL&#10;TSLA&#10;&#10;or&#10;&#10;AAPL, MSFT, GOOGL, TSLA"
             />
           </div>
