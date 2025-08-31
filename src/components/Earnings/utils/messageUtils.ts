@@ -188,6 +188,159 @@ export const ParseTranscriptData = (message: Message): { [key: string]: MetricIt
 };
 
 /**
+ * Extract preview text from sentiment analysis messages
+ */
+export const ParseSentimentMessage = (message: Message): string | null => {
+  if (!message.discord_message || (message.source !== 'sentiment_analysis' && !message.sentiment_additional_metrics)) {
+    return null;
+  }
+
+  return message.discord_message;
+};
+
+/**
+ * Parse sentiment additional metrics into human-readable format
+ */
+export const ParseSentimentData = (message: Message): { [key: string]: MetricItem[] } | null => {
+  if (!message.sentiment_additional_metrics) {
+    return null;
+  }
+
+  const sections: { [key: string]: MetricItem[] } = {};
+
+  try {
+    // Parse sentiment_additional_metrics if it's a string, otherwise use as object
+    const data = typeof message.sentiment_additional_metrics === 'string' 
+      ? JSON.parse(message.sentiment_additional_metrics)
+      : message.sentiment_additional_metrics;
+
+    // Sentiment Analysis
+    if (data.sentiment_analysis?.M) {
+      const sentiment = data.sentiment_analysis.M;
+      const sentimentItems: MetricItem[] = [];
+      
+      if (sentiment.overall_sentiment?.S) {
+        sentimentItems.push({ label: "Overall Sentiment", text: sentiment.overall_sentiment.S });
+      }
+      if (sentiment.management_tone?.S) {
+        sentimentItems.push({ label: "Management Tone", text: sentiment.management_tone.S });
+      }
+      if (sentiment.forward_outlook_sentiment?.S) {
+        sentimentItems.push({ label: "Forward Outlook", text: sentiment.forward_outlook_sentiment.S });
+      }
+      if (sentiment.confidence_level?.S) {
+        sentimentItems.push({ label: "Confidence Level", text: sentiment.confidence_level.S });
+      }
+      
+      if (sentimentItems.length > 0) {
+        sections["Sentiment Analysis"] = sentimentItems;
+      }
+
+      // Key Sentiment Drivers
+      if (sentiment.key_sentiment_drivers?.L) {
+        const drivers = sentiment.key_sentiment_drivers.L
+          .map((item: any) => item.S)
+          .filter((text: string) => text && text.length > 0);
+        if (drivers.length > 0) {
+          sections["Key Sentiment Drivers"] = drivers;
+        }
+      }
+    }
+
+    // Management Guidance
+    if (data.management_guidance?.L) {
+      const guidance: MetricItem[] = [];
+      data.management_guidance.L.forEach((item: any) => {
+        if (item.M) {
+          const guide = item.M;
+          const type = guide.guidance_type?.S;
+          const statement = guide.guidance_statement?.S;
+          const timeHorizon = guide.time_horizon?.S;
+          const confidence = guide.confidence_indicator?.S;
+          
+          if (type && statement) {
+            let text = `${type}: ${statement}`;
+            if (timeHorizon) {
+              text += ` (${timeHorizon})`;
+            }
+            if (confidence) {
+              text += ` - ${confidence}`;
+            }
+            guidance.push({ label: type, text });
+          }
+        }
+      });
+      if (guidance.length > 0) {
+        sections["Management Guidance"] = guidance;
+      }
+    }
+
+    // Risk Factors
+    if (data.risk_factors?.L) {
+      const risks: MetricItem[] = [];
+      data.risk_factors.L.forEach((item: any) => {
+        if (item.M) {
+          const risk = item.M;
+          const category = risk.risk_category?.S;
+          const description = risk.risk_description?.S;
+          const impact = risk.potential_impact?.S;
+          
+          if (category && description) {
+            let text = `${description}`;
+            if (impact) {
+              text += ` Impact: ${impact}`;
+            }
+            risks.push({ label: category, text });
+          }
+        }
+      });
+      if (risks.length > 0) {
+        sections["Risk Factors"] = risks;
+      }
+    }
+
+    // Swing Trader Metrics
+    if (data.swing_trader_metrics?.L) {
+      const metrics: MetricItem[] = [];
+      data.swing_trader_metrics.L.forEach((item: any) => {
+        if (item.M) {
+          const metric = item.M;
+          const label = metric.metric_label?.S || 'Metric';
+          const rawText = metric.raw_text?.S;
+          const timePeriod = metric.time_period?.S;
+          
+          if (rawText) {
+            let text = rawText;
+            if (timePeriod) {
+              text += ` (${timePeriod})`;
+            }
+            metrics.push({ label, text });
+          }
+        }
+      });
+      if (metrics.length > 0) {
+        sections["Key Metrics"] = metrics;
+      }
+    }
+
+    // Key Quotes
+    if (data.key_quotes?.L) {
+      const quotes = data.key_quotes.L
+        .map((item: any) => item.S)
+        .filter((text: string) => text && text.length > 0);
+      if (quotes.length > 0) {
+        sections["Key Quotes"] = quotes;
+      }
+    }
+
+  } catch (error) {
+    return null;
+  }
+
+  return Object.keys(sections).length > 0 ? sections : null;
+};
+
+/**
  * Parse message payload to extract structured metrics data
  */
 export const ParseMessagePayload = (message: Message): { [key: string]: MetricItem[] } | null => {

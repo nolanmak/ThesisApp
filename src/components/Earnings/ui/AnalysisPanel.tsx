@@ -1,7 +1,7 @@
 import React from 'react';
 import { Message } from '../../../types';
 import { ThumbsDown, X } from 'lucide-react';
-import { ParseMessagePayload, ParseTranscriptMessage, ParseTranscriptData } from '../utils/messageUtils';
+import { ParseMessagePayload, ParseTranscriptMessage, ParseTranscriptData, ParseSentimentMessage, ParseSentimentData } from '../utils/messageUtils';
 
 interface AnalysisPanelProps {
   selectedMessage: Message | null;
@@ -22,6 +22,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
 }) => {
   const parsedMessage = selectedMessage ? ParseMessagePayload(selectedMessage) : null;
   const parsedTranscriptData = selectedMessage ? ParseTranscriptData(selectedMessage) : null;
+  const parsedSentimentData = selectedMessage ? ParseSentimentData(selectedMessage) : null;
 
   return (
     <div 
@@ -152,6 +153,48 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                     ) : (
                       <div className="text-neutral-500 text-center p-4">
                         No transcript analysis data available
+                      </div>
+                    )}
+                  </div>
+                ) : (selectedMessage.source === 'sentiment_analysis' || selectedMessage.sentiment_additional_metrics) ? (
+                  // Display sentiment analysis with structured data
+                  <div className="space-y-4">
+                    {/* Show the preview text */}
+                    <div className="text-green-700 font-semibold mb-3">
+                      {ParseSentimentMessage(selectedMessage) || '📈 Sentiment Analysis'}
+                    </div>
+                    
+                    {/* Display structured sentiment data in human-readable format */}
+                    {parsedSentimentData && Object.keys(parsedSentimentData).length > 0 ? (
+                      <div className="space-y-4">
+                        {Object.entries(parsedSentimentData).map(([section, items]) => (
+                          <div key={section}>
+                            <div className="text-green-700 font-semibold mb-2">{section}</div>
+                            {['Key Quotes', 'Key Sentiment Drivers'].includes(section) ? (
+                              <ul className="space-y-1 list-disc pl-5">
+                                {items.map((item, idx) => (
+                                  <li key={idx} className="text-neutral-600">
+                                    {typeof item === 'string' ? item : item.text || item.label}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <div className="space-y-1">
+                                {items.map((item, idx: number) => (
+                                  <div key={idx} className="flex flex-wrap gap-2 items-center">
+                                    <span className="text-neutral-600">
+                                      {typeof item === 'string' ? item : item.text || item.label}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-neutral-500 text-center p-4">
+                        No sentiment analysis data available
                       </div>
                     )}
                   </div>

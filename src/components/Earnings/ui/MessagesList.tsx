@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Message, MetricItem } from '../../../types';
-import { ExternalLink, BarChart2, Mic } from 'lucide-react';
-import { ParseMessagePayload, ParseTranscriptMessage } from '../utils/messageUtils';
+import { ExternalLink, BarChart2, Mic, TrendingUp } from 'lucide-react';
+import { ParseMessagePayload, ParseTranscriptMessage, ParseSentimentMessage } from '../utils/messageUtils';
 import { useAlpacaMarketData } from '../../../hooks/useAlpacaMarketData';
 import { useWatchlist } from '../../../hooks/useWatchlist';
 import { useAuth } from '../../../contexts/AuthContext';
+import StockLogo from '../../ui/StockLogo';
 
 interface MessagesListProps {
   messages: Message[];
@@ -319,6 +320,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
     prevMessagesRef.current = messages;
   }, [messages]);
 
+
   if (loading && (!messages || messages.length === 0)) {
     return (
       <div className="bg-white p-6 rounded-md shadow-md border border-neutral-100 text-center">
@@ -431,17 +433,20 @@ const MessagesList: React.FC<MessagesListProps> = ({
                       overflowX: 'hidden'
                     }}
                   >
-                    <span 
-                      className="font-bold text-neutral-800"
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {message.ticker}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <StockLogo ticker={message.ticker} size={16} />
+                      <span 
+                        className="font-bold text-neutral-800"
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {message.ticker}
+                      </span>
+                    </div>
 
                     {message.company_name && (
                       <span 
@@ -499,6 +504,123 @@ const MessagesList: React.FC<MessagesListProps> = ({
                 </div>
               </div>
             </div>
+          ) : (message.source === 'sentiment_analysis' || message.sentiment_additional_metrics) ? (
+            /* Sentiment analysis message with preview */
+            <div
+              className="flex flex-col transition-colors"
+              style={{
+                gap: isMobile ? '8px' : undefined,
+                width: '100%',
+                maxWidth: '100%',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                className="flex justify-between items-center mb-1"
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: undefined,
+                  marginBottom: '4px',
+                  width: '100%',
+                  maxWidth: '100%',
+                  overflow: 'hidden'
+                }}
+              >
+                <div
+                  className="flex items-center"
+                  style={{
+                    flexWrap: 'nowrap',
+                    gap: '4px',
+                    width: isMobile ? 'calc(100% - 30px)' : undefined,
+                    maxWidth: '100%',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {/* Ticker and company name */}
+                  <div 
+                    className="flex items-center space-x-1 px-1.5 py-0.5 text-xs"
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      padding: '2px 6px',
+                      width: 'auto',
+                      maxWidth: isMobile ? 'calc(100% - 30px)' : '100%',
+                      boxSizing: 'border-box',
+                      overflowX: 'hidden'
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <StockLogo ticker={message.ticker} size={16} />
+                      <span 
+                        className="font-bold text-neutral-800"
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {message.ticker}
+                      </span>
+                    </div>
+
+                    {message.company_name && (
+                      <span 
+                        className="text-neutral-500"
+                        style={{
+                          maxWidth: isMobile ? '60px' : '200px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {message.company_name}
+                      </span>
+                    )}
+
+                    <span className="text-neutral-600 mx-1">
+                      Q{message.quarter}
+                    </span>
+                  </div>
+
+                  <span className="text-xs text-neutral-500 ml-1">
+                    {convertToEasternTime(message.timestamp)}
+                  </span>
+                  <InlineVolume ticker={message.ticker} />
+                  <div
+                    className="inline-flex items-center justify-center w-5 h-5 bg-green-50 text-green-600 rounded-full hover:bg-green-100 transition-colors"
+                    style={{
+                      alignSelf: undefined,
+                      marginTop: '0',
+                      marginLeft: '4px',
+                    }}
+                  >
+                    <TrendingUp size={14} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Static preview of the sentiment message */}
+              <div
+                className="bg-green-50 border border-green-200 rounded flex items-center w-full max-w-full box-border overflow-hidden my-[2px]"
+                style={{
+                  padding: isMobile ? '5px 8px' : '3px 8px',
+                  minHeight: isMobile ? '24px' : '20px',
+                  maxHeight: isMobile ? '100px' : '80px'
+                }}
+              >
+                <div 
+                  className={`text-green-800 font-medium w-full overflow-hidden leading-[1.4] ${
+                    isMobile
+                      ? 'text-[0.8rem] whitespace-pre-wrap text-clip break-words'
+                      : 'text-[0.7rem] whitespace-nowrap truncate break-normal'
+                  }`}
+                >
+                  {ParseSentimentMessage(message) || 'Sentiment analysis available'}
+                </div>
+              </div>
+            </div>
           ) : message.link ? (
             /* Link message - show on a single line like analysis messages */
             <div className="flex flex-col">
@@ -536,17 +658,20 @@ const MessagesList: React.FC<MessagesListProps> = ({
                       overflowX: 'hidden'
                     }}
                   >
-                    <span 
-                      className="font-medium text-neutral-800"
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {message.ticker}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <StockLogo ticker={message.ticker} size={16} />
+                      <span 
+                        className="font-medium text-neutral-800"
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {message.ticker}
+                      </span>
+                    </div>
                     
                     {message.company_name && (
                       <span
@@ -632,17 +757,20 @@ const MessagesList: React.FC<MessagesListProps> = ({
                       overflowX: 'hidden'
                     }}
                   >
-                    <span 
-                      className="font-bold text-neutral-800"
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {message.ticker}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <StockLogo ticker={message.ticker} size={16} />
+                      <span 
+                        className="font-bold text-neutral-800"
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {message.ticker}
+                      </span>
+                    </div>
 
                     {message.company_name && (
                       <span 

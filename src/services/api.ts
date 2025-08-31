@@ -485,3 +485,37 @@ export const getBatchCompanyNames = async (
     return [];
   }
 };
+
+// Stock Logo API
+export interface StockLogoResponse {
+  ticker: string;
+  image: string;
+  contentType: string;
+}
+
+export const getStockLogo = async (ticker: string): Promise<string | null> => {
+  try {
+    const response = await fetch(
+      `https://47mvxdbu6f.execute-api.us-east-1.amazonaws.com/prod/logos/${ticker}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null;
+      }
+      throw new Error(`Failed to fetch logo for ${ticker}: ${response.status}`);
+    }
+
+    const data: StockLogoResponse = await response.json();
+    return `data:image/png;base64,${data.image}`;
+  } catch (error) {
+    console.error(`Error fetching logo for ${ticker}:`, error);
+    return null;
+  }
+};

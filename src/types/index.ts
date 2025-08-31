@@ -29,6 +29,7 @@ export interface Message {
   company_name?: string;
   audio_url?: string;
   transcript_data?: string;
+  sentiment_additional_metrics?: string;
   report_data?: {
     link?: string;
   }
