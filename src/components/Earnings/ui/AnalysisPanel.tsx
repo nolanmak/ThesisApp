@@ -171,20 +171,38 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                           <div key={section}>
                             <div className="text-green-700 font-semibold mb-2">{section}</div>
                             {['Key Quotes', 'Key Sentiment Drivers'].includes(section) ? (
-                              <ul className="space-y-1 list-disc pl-5">
+                              <ul className="space-y-2 list-disc pl-5">
                                 {items.map((item, idx) => (
-                                  <li key={idx} className="text-neutral-600">
+                                  <li key={idx} className="text-neutral-600 leading-relaxed">
                                     {typeof item === 'string' ? item : item.text || item.label}
                                   </li>
                                 ))}
                               </ul>
-                            ) : (
-                              <div className="space-y-1">
+                            ) : section === 'Sentiment Analysis' ? (
+                              <div className="grid grid-cols-1 gap-3">
                                 {items.map((item, idx: number) => (
-                                  <div key={idx} className="flex flex-wrap gap-2 items-center">
-                                    <span className="text-neutral-600">
-                                      {typeof item === 'string' ? item : item.text || item.label}
+                                  <div key={idx} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                                    <span className="font-medium text-green-800">
+                                      {typeof item === 'string' ? item : item.label}
                                     </span>
+                                    <span className="text-green-700 font-semibold">
+                                      {typeof item === 'string' ? '' : item.text}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                {items.map((item, idx: number) => (
+                                  <div key={idx} className="flex flex-col gap-1 p-2 bg-gray-50 rounded border">
+                                    {typeof item === 'string' ? (
+                                      <span className="text-neutral-600">{item}</span>
+                                    ) : (
+                                      <>
+                                        <span className="text-sm font-medium text-neutral-800">{item.label}</span>
+                                        <span className="text-neutral-600 text-sm">{item.text}</span>
+                                      </>
+                                    )}
                                   </div>
                                 ))}
                               </div>

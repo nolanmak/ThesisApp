@@ -222,7 +222,17 @@ const MessagesList: React.FC<MessagesListProps> = ({
     }> = [];
 
     sortedMessages.forEach(message => {
-      const messageType = message.link ? 'link' : 'analysis';
+      let messageType: string;
+      if (message.link) {
+        messageType = 'link';
+      } else if (message.source === 'transcript_analysis') {
+        messageType = 'transcript';
+      } else if (message.source === 'sentiment_analysis' || message.sentiment_additional_metrics) {
+        messageType = 'sentiment';
+      } else {
+        messageType = 'analysis';
+      }
+      
       const messageTimestamp = new Date(message.timestamp);
       const messageDate = messageTimestamp.toISOString().split('T')[0];
       const key = `${message.ticker}-${messageDate}-${messageType}`;
@@ -320,6 +330,43 @@ const MessagesList: React.FC<MessagesListProps> = ({
     prevMessagesRef.current = messages;
   }, [messages]);
 
+  // Debug sentiment detection
+  useEffect(() => {
+    console.log('=== SENTIMENT DEBUG ===');
+    console.log('Total deduplicatedMessages:', deduplicatedMessages.length);
+    
+    // Check every message for sentiment_additional_metrics field
+    const allMessages = deduplicatedMessages.map(msg => ({
+      ticker: msg.ticker,
+      source: msg.source || 'null',
+      hasSentimentField: 'sentiment_additional_metrics' in msg,
+      sentimentFieldType: typeof msg.sentiment_additional_metrics,
+      sentimentFieldValue: msg.sentiment_additional_metrics ? 'HAS_DATA' : 'NO_DATA',
+      discordMessage: msg.discord_message || 'no discord message'
+    }));
+    
+    console.log('All messages sentiment check:', allMessages);
+    
+    // Find DVAX messages specifically
+    const dvaxMessages = deduplicatedMessages.filter(msg => msg.ticker === 'DVAX');
+    console.log('DVAX messages:', dvaxMessages.map(m => ({
+      ticker: m.ticker,
+      discord_message: m.discord_message,
+      source: m.source,
+      has_sentiment_field: 'sentiment_additional_metrics' in m,
+      sentiment_data: m.sentiment_additional_metrics ? 'EXISTS' : 'MISSING',
+      message_id: m.message_id
+    })));
+    
+    const sentimentMessages = deduplicatedMessages.filter(msg => 
+      msg.source === 'sentiment_analysis' || msg.sentiment_additional_metrics
+    );
+    console.log('Filtered sentiment messages count:', sentimentMessages.length);
+    
+    if (sentimentMessages.length > 0) {
+      console.log('Found sentiment messages:', sentimentMessages);
+    }
+  }, [deduplicatedMessages]);
 
   if (loading && (!messages || messages.length === 0)) {
     return (

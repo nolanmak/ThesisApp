@@ -215,21 +215,47 @@ export const ParseSentimentData = (message: Message): { [key: string]: MetricIte
       : message.sentiment_additional_metrics;
 
     // Sentiment Analysis
-    if (data.sentiment_analysis?.M) {
-      const sentiment = data.sentiment_analysis.M;
+    if (data.sentiment_analysis) {
+      const sentiment = data.sentiment_analysis;
       const sentimentItems: MetricItem[] = [];
       
-      if (sentiment.overall_sentiment?.S) {
-        sentimentItems.push({ label: "Overall Sentiment", text: sentiment.overall_sentiment.S });
+      if (sentiment.overall_sentiment) {
+        const emoji = sentiment.overall_sentiment.toLowerCase() === 'positive' ? '🟢' : 
+                     sentiment.overall_sentiment.toLowerCase() === 'negative' ? '🔴' : 
+                     sentiment.overall_sentiment.toLowerCase() === 'neutral' ? '🟡' : '⚪';
+        sentimentItems.push({ 
+          label: "Overall Sentiment", 
+          text: `${emoji} ${sentiment.overall_sentiment}` 
+        });
       }
-      if (sentiment.management_tone?.S) {
-        sentimentItems.push({ label: "Management Tone", text: sentiment.management_tone.S });
+      if (sentiment.management_tone) {
+        const emoji = sentiment.management_tone.toLowerCase() === 'positive' ? '😊' : 
+                     sentiment.management_tone.toLowerCase() === 'negative' ? '😟' : 
+                     sentiment.management_tone.toLowerCase() === 'neutral' ? '😐' : 
+                     sentiment.management_tone.toLowerCase() === 'confident' ? '💪' : '🗣️';
+        sentimentItems.push({ 
+          label: "Management Tone", 
+          text: `${emoji} ${sentiment.management_tone}` 
+        });
       }
-      if (sentiment.forward_outlook_sentiment?.S) {
-        sentimentItems.push({ label: "Forward Outlook", text: sentiment.forward_outlook_sentiment.S });
+      if (sentiment.forward_outlook_sentiment) {
+        const emoji = sentiment.forward_outlook_sentiment.toLowerCase() === 'positive' ? '📈' : 
+                     sentiment.forward_outlook_sentiment.toLowerCase() === 'negative' ? '📉' : 
+                     sentiment.forward_outlook_sentiment.toLowerCase() === 'neutral' ? '➡️' : 
+                     sentiment.forward_outlook_sentiment.toLowerCase() === 'optimistic' ? '🚀' : '🔮';
+        sentimentItems.push({ 
+          label: "Forward Outlook", 
+          text: `${emoji} ${sentiment.forward_outlook_sentiment}` 
+        });
       }
-      if (sentiment.confidence_level?.S) {
-        sentimentItems.push({ label: "Confidence Level", text: sentiment.confidence_level.S });
+      if (sentiment.confidence_level) {
+        const emoji = sentiment.confidence_level.toLowerCase() === 'high' ? '🔥' : 
+                     sentiment.confidence_level.toLowerCase() === 'medium' ? '⚖️' : 
+                     sentiment.confidence_level.toLowerCase() === 'low' ? '🤔' : '📊';
+        sentimentItems.push({ 
+          label: "Management Confidence", 
+          text: `${emoji} ${sentiment.confidence_level}` 
+        });
       }
       
       if (sentimentItems.length > 0) {
@@ -237,10 +263,8 @@ export const ParseSentimentData = (message: Message): { [key: string]: MetricIte
       }
 
       // Key Sentiment Drivers
-      if (sentiment.key_sentiment_drivers?.L) {
-        const drivers = sentiment.key_sentiment_drivers.L
-          .map((item: any) => item.S)
-          .filter((text: string) => text && text.length > 0);
+      if (sentiment.key_sentiment_drivers && Array.isArray(sentiment.key_sentiment_drivers)) {
+        const drivers = sentiment.key_sentiment_drivers.filter((text: string) => text && text.length > 0);
         if (drivers.length > 0) {
           sections["Key Sentiment Drivers"] = drivers;
         }
@@ -248,18 +272,17 @@ export const ParseSentimentData = (message: Message): { [key: string]: MetricIte
     }
 
     // Management Guidance
-    if (data.management_guidance?.L) {
+    if (data.management_guidance && Array.isArray(data.management_guidance)) {
       const guidance: MetricItem[] = [];
-      data.management_guidance.L.forEach((item: any) => {
-        if (item.M) {
-          const guide = item.M;
-          const type = guide.guidance_type?.S;
-          const statement = guide.guidance_statement?.S;
-          const timeHorizon = guide.time_horizon?.S;
-          const confidence = guide.confidence_indicator?.S;
+      data.management_guidance.forEach((item: any) => {
+        if (item) {
+          const type = item.guidance_type;
+          const statement = item.guidance_statement;
+          const timeHorizon = item.time_horizon;
+          const confidence = item.confidence_indicator;
           
           if (type && statement) {
-            let text = `${type}: ${statement}`;
+            let text = `${statement}`;
             if (timeHorizon) {
               text += ` (${timeHorizon})`;
             }
@@ -276,14 +299,13 @@ export const ParseSentimentData = (message: Message): { [key: string]: MetricIte
     }
 
     // Risk Factors
-    if (data.risk_factors?.L) {
+    if (data.risk_factors && Array.isArray(data.risk_factors)) {
       const risks: MetricItem[] = [];
-      data.risk_factors.L.forEach((item: any) => {
-        if (item.M) {
-          const risk = item.M;
-          const category = risk.risk_category?.S;
-          const description = risk.risk_description?.S;
-          const impact = risk.potential_impact?.S;
+      data.risk_factors.forEach((item: any) => {
+        if (item) {
+          const category = item.risk_category;
+          const description = item.risk_description;
+          const impact = item.potential_impact;
           
           if (category && description) {
             let text = `${description}`;
@@ -299,15 +321,14 @@ export const ParseSentimentData = (message: Message): { [key: string]: MetricIte
       }
     }
 
-    // Swing Trader Metrics
-    if (data.swing_trader_metrics?.L) {
+    // Swing Trader Metrics  
+    if (data.swing_trader_metrics && Array.isArray(data.swing_trader_metrics)) {
       const metrics: MetricItem[] = [];
-      data.swing_trader_metrics.L.forEach((item: any) => {
-        if (item.M) {
-          const metric = item.M;
-          const label = metric.metric_label?.S || 'Metric';
-          const rawText = metric.raw_text?.S;
-          const timePeriod = metric.time_period?.S;
+      data.swing_trader_metrics.forEach((item: any) => {
+        if (item) {
+          const label = item.metric_label || 'Metric';
+          const rawText = item.raw_text;
+          const timePeriod = item.time_period;
           
           if (rawText) {
             let text = rawText;
@@ -323,11 +344,35 @@ export const ParseSentimentData = (message: Message): { [key: string]: MetricIte
       }
     }
 
+    // Competitive Insights
+    if (data.competitive_insights && Array.isArray(data.competitive_insights)) {
+      const insights: MetricItem[] = [];
+      data.competitive_insights.forEach((item: any) => {
+        if (item) {
+          const competitor = item.competitor_mention;
+          const position = item.competitive_position;
+          const dynamics = item.market_dynamics;
+          
+          if (position) {
+            let text = position;
+            if (competitor) {
+              text = `vs ${competitor}: ${text}`;
+            }
+            if (dynamics) {
+              text += ` Market: ${dynamics}`;
+            }
+            insights.push({ label: competitor || 'Market Position', text });
+          }
+        }
+      });
+      if (insights.length > 0) {
+        sections["Competitive Insights"] = insights;
+      }
+    }
+
     // Key Quotes
-    if (data.key_quotes?.L) {
-      const quotes = data.key_quotes.L
-        .map((item: any) => item.S)
-        .filter((text: string) => text && text.length > 0);
+    if (data.key_quotes && Array.isArray(data.key_quotes)) {
+      const quotes = data.key_quotes.filter((text: string) => text && text.length > 0);
       if (quotes.length > 0) {
         sections["Key Quotes"] = quotes;
       }
