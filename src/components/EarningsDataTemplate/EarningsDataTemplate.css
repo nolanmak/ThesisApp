@@ -1,90 +1,96 @@
 .earnings-data-container {
-  min-height: 100vh;
+  height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  padding: 20px;
+  padding: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .earnings-data-container .main-container {
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 800px;
+  height: 600px;
   background: white;
-  border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  border-radius: 25px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 2px solid #E8EEF3;
 }
 
 /* Header Section */
 .earnings-data-container .header-section {
-  padding: 30px 40px;
+  padding: 25px 30px;
   background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
   color: white;
   display: flex;
   align-items: center;
-  gap: 30px;
+  justify-content: space-between;
+  flex-shrink: 0;
+  position: relative;
 }
 
 .earnings-data-container .logo-section {
-  flex-shrink: 0;
+  position: absolute;
+  left: 30px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .earnings-data-container .logo-image {
-  height: 60px;
+  height: 50px;
   width: auto;
   object-fit: contain;
-  filter: brightness(0) invert(1);
 }
 
 .earnings-data-container .company-info {
+  text-align: center;
   flex: 1;
 }
 
 .earnings-data-container .company-name {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
   margin: 0;
   color: white;
 }
 
 .earnings-data-container .company-ticker {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 500;
-  opacity: 0.9;
+  color: rgba(255, 255, 255, 0.9);
   margin-left: 10px;
 }
 
 .earnings-data-container .page-title {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 400;
-  margin: 8px 0 0 0;
-  opacity: 0.9;
+  margin: 6px 0 0 0;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Content Area */
+.earnings-data-container .content-area {
+  flex: 1;
+  padding: 40px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 30px;
+  overflow: hidden;
 }
 
 /* Section Styles */
-.earnings-data-container .section {
-  padding: 30px 40px;
-  border-bottom: 1px solid #E8EEF3;
-}
-
-.earnings-data-container .section:last-child {
-  border-bottom: none;
-}
-
 .earnings-data-container .section-title {
-  font-size: 24px;
+  font-size: 16px;
   font-weight: 600;
   color: #2C3E50;
-  margin: 0 0 20px 0;
-  padding-bottom: 10px;
+  margin: 0 0 12px 0;
+  padding-bottom: 6px;
   border-bottom: 2px solid #4A90E2;
   display: inline-block;
-}
-
-/* Cards Grid */
-.earnings-data-container .cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
 }
 
 /* Metric Cards */
@@ -92,27 +98,30 @@
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border-radius: 15px;
   padding: 25px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   border: 1px solid #E8EEF3;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .earnings-data-container .metric-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.12);
 }
 
 .earnings-data-container .metric-title {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 600;
   color: #2C3E50;
-  margin: 0 0 20px 0;
+  margin: 0 0 12px 0;
   text-align: center;
-  padding-bottom: 10px;
+  padding-bottom: 8px;
   border-bottom: 1px solid #E8EEF3;
 }
 
 .earnings-data-container .metric-content {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -122,23 +131,23 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
+  padding: 6px 0;
 }
 
 .earnings-data-container .metric-label {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   color: #64748B;
 }
 
 .earnings-data-container .metric-value {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
 }
 
 .earnings-data-container .metric-value.actual {
   color: #2C3E50;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .earnings-data-container .metric-value.expected {
@@ -147,29 +156,29 @@
 
 .earnings-data-container .metric-value.range {
   color: #64748B;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .earnings-data-container .delta-row {
   background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
   border-radius: 8px;
-  padding: 12px 16px;
+  padding: 12px 15px;
   margin-top: 8px;
 }
 
 .earnings-data-container .delta-container {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .earnings-data-container .metric-indicator {
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .earnings-data-container .metric-delta {
   font-weight: 700;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .earnings-data-container .metric-delta.positive {
@@ -180,79 +189,6 @@
   color: #EF4444;
 }
 
-/* Simple Metric Cards */
-.earnings-data-container .metric-card.simple {
-  text-align: center;
-}
-
-.earnings-data-container .simple-metric-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: #4A90E2;
-  margin-top: 10px;
-}
-
-/* Highlights Card */
-.earnings-data-container .highlights-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border-radius: 15px;
-  padding: 25px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid #E8EEF3;
-}
-
-.earnings-data-container .highlights-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.earnings-data-container .highlight-item {
-  padding: 12px 0;
-  border-bottom: 1px solid #E8EEF3;
-  color: #2C3E50;
-  line-height: 1.6;
-  position: relative;
-  padding-left: 25px;
-}
-
-.earnings-data-container .highlight-item:last-child {
-  border-bottom: none;
-}
-
-.earnings-data-container .highlight-item::before {
-  content: '•';
-  color: #4A90E2;
-  font-weight: 700;
-  position: absolute;
-  left: 0;
-  font-size: 18px;
-}
-
-/* Additional Metrics Card */
-.earnings-data-container .additional-metrics-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border-radius: 15px;
-  padding: 25px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid #E8EEF3;
-}
-
-.earnings-data-container .metrics-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
-}
-
-.earnings-data-container .additional-metric-item {
-  background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
-  color: white;
-  padding: 15px 20px;
-  border-radius: 10px;
-  font-weight: 600;
-  text-align: center;
-  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
-}
 
 /* Responsive Design */
 @media (max-width: 768px) {
