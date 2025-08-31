@@ -1,5 +1,6 @@
 import React from 'react';
 import './ScheduleTemplate.css';
+import logoImage from './logo.png';
 
 interface CompanyEntry {
   ticker: string;
@@ -54,7 +55,7 @@ const ScheduleTemplate: React.FC<ScheduleTemplateProps> = ({
         <div className="logo-section">
           <div className="logo">
             <img 
-              src="/Logos/earninginight.png" 
+              src={logoImage} 
               alt="EarningsInsight Logo" 
               className="logo-image"
             />

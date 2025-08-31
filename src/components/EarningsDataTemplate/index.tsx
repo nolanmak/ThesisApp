@@ -1,5 +1,6 @@
 import React from 'react';
 import './EarningsDataTemplate.css';
+import logoImage from './logo.png';
 
 interface MetricData {
   actual?: string;
@@ -37,8 +38,8 @@ interface EarningsDataTemplateProps {
 
 const EarningsDataTemplate: React.FC<EarningsDataTemplateProps> = ({ 
   earningsData = {},
-  companyName = "Company Name",
-  ticker = "TICKER"
+  companyName = "",
+  ticker = ""
 }) => {
   const renderMetricCard = (title: string, metric: MetricData, showRange = false) => (
     <div className="metric-card">
@@ -133,14 +134,14 @@ const EarningsDataTemplate: React.FC<EarningsDataTemplateProps> = ({
         <div className="header-section">
           <div className="logo-section">
             <img 
-              src="/Logos/earninginight.png" 
+              src={logoImage} 
               alt="EarningsInsight Logo" 
               className="logo-image"
             />
           </div>
           <div className="company-info">
-            <h1 className="company-name">{companyName}</h1>
-            <span className="company-ticker">({ticker})</span>
+            <h1 className="company-name">{companyName || "Company Name"}</h1>
+            <span className="company-ticker">({ticker || "TICKER"})</span>
             <h2 className="page-title">Earnings Analysis</h2>
           </div>
         </div>
