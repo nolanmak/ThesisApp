@@ -61,16 +61,16 @@ const EarningsModal: React.FC<EarningsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
-      <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose}></div>
+      <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70" onClick={onClose}></div>
       <div className="flex items-center justify-center min-h-screen p-4">
-        <div className="bg-white p-6 rounded-md shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto relative z-50">
+        <div className="bg-white dark:bg-neutral-800 p-6 rounded-md shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto relative z-50">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-medium text-neutral-800">
+            <h2 className="text-lg font-medium text-neutral-800 dark:text-neutral-100">
               {currentItem ? 'Edit' : 'Add'} Earnings Item
             </h2>
             <button
               onClick={onClose}
-              className="text-neutral-500 hover:text-neutral-700"
+              className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
             >
               &times;
             </button>
@@ -78,41 +78,41 @@ const EarningsModal: React.FC<EarningsModalProps> = ({
           
           <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-5">
             <div>
-              <label htmlFor="ticker" className="block text-sm font-medium text-neutral-600 mb-1">
+              <label htmlFor="ticker" className="block text-sm font-medium text-neutral-600 dark:text-neutral-300 mb-1">
                 Ticker
               </label>
               <input
                 id="ticker"
                 type="text"
                 {...register('ticker', { required: 'Ticker is required' })}
-                className="block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                className="block w-full rounded-md border-neutral-300 dark:border-neutral-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
                 placeholder="AAPL"
                 style={{ paddingLeft: 10 }}
               />
               {errors.ticker && (
-                <p className="mt-1 text-sm text-error-500">{errors.ticker.message}</p>
+                <p className="mt-1 text-sm text-error-500 dark:text-error-400">{errors.ticker.message}</p>
               )}
             </div>
 
             <div>
-              <label htmlFor="company_name" className="block text-sm font-medium text-neutral-600 mb-1">
+              <label htmlFor="company_name" className="block text-sm font-medium text-neutral-600 dark:text-neutral-300 mb-1">
                 Company Name
               </label>
               <input
                 id="company_name"
                 type="text"
                 {...register('company_name', { required: 'Company name is required' })}
-                className="block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                className="block w-full rounded-md border-neutral-300 dark:border-neutral-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
                 placeholder="Apple Inc."
                 style={{ paddingLeft: 10 }}
               />
               {errors.company_name && (
-                <p className="mt-1 text-sm text-error-500">{errors.company_name.message}</p>
+                <p className="mt-1 text-sm text-error-500 dark:text-error-400">{errors.company_name.message}</p>
               )}
             </div>
             
             <div>
-              <label htmlFor="date" className="block text-sm font-medium text-neutral-600 mb-1">
+              <label htmlFor="date" className="block text-sm font-medium text-neutral-600 dark:text-neutral-300 mb-1">
                 Date
               </label>
               <Controller
@@ -123,7 +123,7 @@ const EarningsModal: React.FC<EarningsModalProps> = ({
                   <DatePicker
                     selected={field.value ? new Date(field.value) : null}
                     onChange={(date) => field.onChange(date)}
-                    className="block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                    className="block w-full rounded-md border-neutral-300 dark:border-neutral-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
                     dateFormat="yyyy-MM-dd"
                     withPortal
                     popperPlacement="bottom"
@@ -131,13 +131,13 @@ const EarningsModal: React.FC<EarningsModalProps> = ({
                 )}
               />
               {errors.date && (
-                <p className="mt-1 text-sm text-error-500">{errors.date.message}</p>
+                <p className="mt-1 text-sm text-error-500 dark:text-error-400">{errors.date.message}</p>
               )}
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="year" className="block text-sm font-medium text-neutral-600 mb-1">
+                <label htmlFor="year" className="block text-sm font-medium text-neutral-600 dark:text-neutral-300 mb-1">
                   Year
                 </label>
                 <input
@@ -149,16 +149,16 @@ const EarningsModal: React.FC<EarningsModalProps> = ({
                     min: { value: 2000, message: 'Year must be 2000 or later' },
                     max: { value: 2100, message: 'Year must be 2100 or earlier' }
                   })}
-                  className="block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                  className="block w-full rounded-md border-neutral-300 dark:border-neutral-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
                   style={{ paddingLeft: 10 }}
                 />
                 {errors.year && (
-                  <p className="mt-1 text-sm text-error-500">{errors.year.message}</p>
+                  <p className="mt-1 text-sm text-error-500 dark:text-error-400">{errors.year.message}</p>
                 )}
               </div>
               
               <div>
-                <label htmlFor="quarter" className="block text-sm font-medium text-neutral-600 mb-1">
+                <label htmlFor="quarter" className="block text-sm font-medium text-neutral-600 dark:text-neutral-300 mb-1">
                   Quarter
                 </label>
                 <select
@@ -167,7 +167,7 @@ const EarningsModal: React.FC<EarningsModalProps> = ({
                     required: 'Quarter is required',
                     valueAsNumber: true
                   })}
-                  className="block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                  className="block w-full rounded-md border-neutral-300 dark:border-neutral-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
                   style={{ paddingLeft: 10 }}
                 >
                   <option value={1}>Q1</option>
@@ -176,19 +176,19 @@ const EarningsModal: React.FC<EarningsModalProps> = ({
                   <option value={4}>Q4</option>
                 </select>
                 {errors.quarter && (
-                  <p className="mt-1 text-sm text-error-500">{errors.quarter.message}</p>
+                  <p className="mt-1 text-sm text-error-500 dark:text-error-400">{errors.quarter.message}</p>
                 )}
               </div>
             </div>
             
             <div>
-              <label htmlFor="release_time" className="block text-sm font-medium text-neutral-600 mb-1">
+              <label htmlFor="release_time" className="block text-sm font-medium text-neutral-600 dark:text-neutral-300 mb-1">
                 Release Time
               </label>
               <select
                 id="release_time"
                 {...register('release_time', { required: 'Release time is required' })}
-                className="block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                className="block w-full rounded-md border-neutral-300 dark:border-neutral-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
                 style={{ paddingLeft: 10 }}
               >
                 <option value="before">Before Market</option>
@@ -196,7 +196,7 @@ const EarningsModal: React.FC<EarningsModalProps> = ({
                 <option value="during">During Market</option>
               </select>
               {errors.release_time && (
-                <p className="mt-1 text-sm text-error-500">{errors.release_time.message}</p>
+                <p className="mt-1 text-sm text-error-500 dark:text-error-400">{errors.release_time.message}</p>
               )}
             </div>
             
@@ -205,9 +205,9 @@ const EarningsModal: React.FC<EarningsModalProps> = ({
                 id="is_active"
                 type="checkbox"
                 {...register('is_active')}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="h-4 w-4 rounded border-gray-300 dark:border-neutral-600 text-blue-600 focus:ring-blue-500 bg-white dark:bg-neutral-900"
               />
-              <label htmlFor="is_active" className="ml-2 block text-sm text-gray-700">
+              <label htmlFor="is_active" className="ml-2 block text-sm text-gray-700 dark:text-neutral-300">
                 Active
               </label>
             </div>
@@ -216,13 +216,13 @@ const EarningsModal: React.FC<EarningsModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 bg-neutral-100 text-neutral-700 rounded-md hover:bg-neutral-200 transition-colors duration-150 ease-in-out shadow-sm"
+                className="px-4 py-2 bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors duration-150 ease-in-out shadow-sm"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors duration-150 ease-in-out shadow-sm"
+                className="px-4 py-2 bg-primary-600 dark:bg-primary-700 text-white rounded-md hover:bg-primary-700 dark:hover:bg-primary-800 transition-colors duration-150 ease-in-out shadow-sm"
               >
                 Save
               </button>

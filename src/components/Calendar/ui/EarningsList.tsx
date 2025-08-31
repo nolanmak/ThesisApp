@@ -40,7 +40,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
     return (
       <div className="text-center py-8">
         <Loader size={24} className="animate-spin mx-auto mb-2" />
-        <p className="text-neutral-500">Loading companies...</p>
+        <p className="text-neutral-500 dark:text-neutral-400">Loading companies...</p>
       </div>
     );
   }
@@ -48,7 +48,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
   if (items.length === 0) {
     return (
       <div className="text-center py-8">
-        <p className="text-neutral-500">No companies found for the selected date.</p>
+        <p className="text-neutral-500 dark:text-neutral-400">No companies found for the selected date.</p>
       </div>
     );
   }
@@ -68,7 +68,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
       {items.map((item) => (
         <div 
           key={`${item.ticker}-${item.date}`} 
-          className="bg-white border border-neutral-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col"
+          className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col"
           style={{
             aspectRatio: isMobile ? 'auto' : 'auto', // Remove fixed aspect ratio to allow dynamic sizing
             padding: isMobile ? '12px 10px' : '16px',
@@ -90,7 +90,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
           >
             <div style={{ maxWidth: 'calc(100% - 80px)', overflow: 'hidden' }}>
               <h3 
-                className="font-semibold text-neutral-800"
+                className="font-semibold text-neutral-800 dark:text-neutral-100"
                 style={{
                   fontSize: isMobile ? '1rem' : '1.25rem',
                   lineHeight: isMobile ? '1.2' : '1.4',
@@ -102,7 +102,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
                 {item.ticker}
               </h3>
               <p 
-                className="text-neutral-500 truncate"
+                className="text-neutral-500 dark:text-neutral-400 truncate"
                 style={{
                   fontSize: isMobile ? '0.75rem' : '0.875rem',
                   maxWidth: isMobile ? '120px' : '200px'
@@ -123,8 +123,8 @@ const EarningsList: React.FC<EarningsListProps> = ({
                   }}
                   className={`p-1.5 rounded-full ${
                     configExists(item.ticker) 
-                      ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                      : 'bg-neutral-100 text-neutral-400 hover:bg-neutral-200'
+                      ? 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700' 
+                      : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-600'
                   }`}
                   title={configExists(item.ticker) ? "Edit Config" : "Add Config"}
                 >
@@ -134,8 +134,8 @@ const EarningsList: React.FC<EarningsListProps> = ({
               <div 
                 className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer ${
                   item.is_active 
-                    ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' 
-                    : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
+                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50' 
+                    : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-600'
                 }`}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -148,7 +148,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
           </div>
           
           <div 
-            className="text-neutral-500 mb-2"
+            className="text-neutral-500 dark:text-neutral-400 mb-2"
             style={{
               fontSize: isMobile ? '0.75rem' : '0.875rem',
               marginBottom: isMobile ? '8px' : '8px',
@@ -175,7 +175,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
             >
               <div className="flex items-center space-x-1">
                 <span 
-                  className="text-neutral-600 text-xs font-medium"
+                  className="text-neutral-600 dark:text-neutral-300 text-xs font-medium"
                   style={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}
                 >
                   Wire:
@@ -187,8 +187,8 @@ const EarningsList: React.FC<EarningsListProps> = ({
                   }}
                   className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
                     normalizeBooleanValue(item.WireActive) 
-                      ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                      : 'bg-red-100 text-red-700 hover:bg-red-200'
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50' 
+                      : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50'
                   }`}
                   style={{ fontSize: isMobile ? '0.65rem' : '0.7rem' }}
                 >
@@ -198,7 +198,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
               
               <div className="flex items-center space-x-1">
                 <span 
-                  className="text-neutral-600 text-xs font-medium"
+                  className="text-neutral-600 dark:text-neutral-300 text-xs font-medium"
                   style={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}
                 >
                   IR:
@@ -210,8 +210,8 @@ const EarningsList: React.FC<EarningsListProps> = ({
                   }}
                   className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
                     normalizeBooleanValue(item.IRActive) 
-                      ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                      : 'bg-red-100 text-red-700 hover:bg-red-200'
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50' 
+                      : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50'
                   }`}
                   style={{ fontSize: isMobile ? '0.65rem' : '0.7rem' }}
                 >
@@ -228,7 +228,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
             return hasCompanyNames;
           })() && (
             <div 
-              className="bg-blue-50 rounded-md border border-blue-200 p-2 mb-2"
+              className="bg-blue-50 dark:bg-blue-900/30 rounded-md border border-blue-200 dark:border-blue-800 p-2 mb-2"
               style={{
                 marginBottom: isMobile ? '8px' : '8px',
                 width: '100%',
@@ -237,13 +237,13 @@ const EarningsList: React.FC<EarningsListProps> = ({
               }}
             >
               <div 
-                className="font-semibold text-blue-800 mb-1"
+                className="font-semibold text-blue-800 dark:text-blue-300 mb-1"
                 style={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}
               >
                 Company Name Variations ({companyNames[item.ticker].company_names.length})
               </div>
               <div 
-                className="max-h-24 overflow-y-auto text-blue-700"
+                className="max-h-24 overflow-y-auto text-blue-700 dark:text-blue-400"
                 style={{ fontSize: isMobile ? '0.65rem' : '0.7rem' }}
               >
                 {companyNames[item.ticker].company_names.slice(0, 10).map((name, index) => (
@@ -252,7 +252,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
                   </div>
                 ))}
                 {companyNames[item.ticker].company_names.length > 10 && (
-                  <div className="text-blue-600 font-medium">
+                  <div className="text-blue-600 dark:text-blue-400 font-medium">
                     +{companyNames[item.ticker].company_names.length - 10} more...
                   </div>
                 )}
@@ -262,7 +262,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
           
           {/* Message Analysis Section */}
           <div 
-            className="flex-grow bg-neutral-50 rounded-md border border-neutral-200 p-2"
+            className="flex-grow bg-neutral-50 dark:bg-neutral-700 rounded-md border border-neutral-200 dark:border-neutral-600 p-2"
             style={{
               marginTop: isMobile ? '4px' : '4px',
               minHeight: isMobile ? '60px' : '80px',
@@ -281,7 +281,7 @@ const EarningsList: React.FC<EarningsListProps> = ({
             ) : (
               <div className="flex flex-col items-center">
                 <p 
-                  className="text-neutral-400" 
+                  className="text-neutral-400 dark:text-neutral-500" 
                   style={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}
                 >
                   Activate to enable features

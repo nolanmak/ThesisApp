@@ -116,7 +116,7 @@ const WatchList: React.FC = () => {
             <button
               onClick={handleClearWatchlist}
               disabled={isLoading || currentWatchlist.length === 0}
-              className="flex items-center px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded-md hover:bg-red-600 dark:hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Trash2 className="mr-2" size={16} />
               Clear All
@@ -124,7 +124,7 @@ const WatchList: React.FC = () => {
             <button
               onClick={handleSubmit}
               disabled={!tickers.trim() || isLoading}
-              className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-md hover:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Upload className="mr-2" size={16} />
               {isLoading ? 'Updating...' : 'Update Watch List'}
@@ -133,11 +133,11 @@ const WatchList: React.FC = () => {
         </div>
         
         {currentWatchlist.length > 0 && (
-          <div className="mt-6 p-4 bg-blue-50 rounded-md border border-blue-200">
-            <h3 className="text-sm font-medium text-blue-700 mb-2">Current Watch List ({currentWatchlist.length} tickers):</h3>
+          <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-md border border-blue-200 dark:border-blue-800">
+            <h3 className="text-sm font-medium text-blue-700 dark:text-blue-400 mb-2">Current Watch List ({currentWatchlist.length} tickers):</h3>
             <div className="flex flex-wrap gap-2">
               {currentWatchlist.map((ticker) => (
-                <div key={ticker} className="flex items-center gap-2 px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-md">
+                <div key={ticker} className="flex items-center gap-2 px-2 py-1 bg-blue-100 dark:bg-blue-800/30 text-blue-800 dark:text-blue-300 text-sm rounded-md">
                   <StockLogo ticker={ticker} size={16} />
                   <span>{ticker}</span>
                 </div>
@@ -146,9 +146,9 @@ const WatchList: React.FC = () => {
           </div>
         )}
 
-        <div className="mt-6 p-4 bg-neutral-50 rounded-md border border-neutral-200">
-          <h3 className="text-sm font-medium text-neutral-700 mb-2">Instructions:</h3>
-          <ul className="text-sm text-neutral-600 space-y-1">
+        <div className="mt-6 p-4 bg-neutral-50 dark:bg-neutral-700 rounded-md border border-neutral-200 dark:border-neutral-600">
+          <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Instructions:</h3>
+          <ul className="text-sm text-neutral-600 dark:text-neutral-300 space-y-1">
             <li>• Paste your ticker symbols in the text area above</li>
             <li>• Tickers can be separated by new lines or commas</li>
             <li>• Auto-saves on paste, or click "Update Watch List" to save manually</li>
