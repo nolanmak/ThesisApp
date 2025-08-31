@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { List, Upload, Trash2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getUserProfile, updateUserProfile } from '../../services/api';
+import StockLogo from '../ui/StockLogo';
 
 const WatchList: React.FC = () => {
   const { user } = useAuth();
@@ -136,9 +137,10 @@ const WatchList: React.FC = () => {
             <h3 className="text-sm font-medium text-blue-700 mb-2">Current Watch List ({currentWatchlist.length} tickers):</h3>
             <div className="flex flex-wrap gap-2">
               {currentWatchlist.map((ticker) => (
-                <span key={ticker} className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-md">
-                  {ticker}
-                </span>
+                <div key={ticker} className="flex items-center gap-2 px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-md">
+                  <StockLogo ticker={ticker} size={16} />
+                  <span>{ticker}</span>
+                </div>
               ))}
             </div>
           </div>

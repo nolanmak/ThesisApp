@@ -320,6 +320,32 @@ const MessagesList: React.FC<MessagesListProps> = ({
     prevMessagesRef.current = messages;
   }, [messages]);
 
+  // Debug sentiment detection
+  useEffect(() => {
+    console.log('=== SENTIMENT DEBUG ===');
+    console.log('Total deduplicatedMessages:', deduplicatedMessages.length);
+    
+    // Check every message for sentiment_additional_metrics field
+    const allMessages = deduplicatedMessages.map(msg => ({
+      ticker: msg.ticker,
+      source: msg.source || 'null',
+      hasSentimentField: 'sentiment_additional_metrics' in msg,
+      sentimentFieldType: typeof msg.sentiment_additional_metrics,
+      sentimentFieldValue: msg.sentiment_additional_metrics ? 'HAS_DATA' : 'NO_DATA',
+      discordMessage: msg.discord_message || 'no discord message'
+    }));
+    
+    console.log('All messages sentiment check:', allMessages);
+    
+    const sentimentMessages = deduplicatedMessages.filter(msg => 
+      msg.source === 'sentiment_analysis' || msg.sentiment_additional_metrics
+    );
+    console.log('Filtered sentiment messages count:', sentimentMessages.length);
+    
+    if (sentimentMessages.length > 0) {
+      console.log('Found sentiment messages:', sentimentMessages);
+    }
+  }, [deduplicatedMessages]);
 
   if (loading && (!messages || messages.length === 0)) {
     return (
