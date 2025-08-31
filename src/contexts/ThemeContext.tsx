@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 
 type Theme = 'light' | 'dark';
 
@@ -26,14 +27,22 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     // Check localStorage first
     const saved = localStorage.getItem('theme') as Theme;
     if (saved) {
+      // Apply theme immediately to prevent flash
+      if (saved === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
       return saved;
     }
     
     // Check system preference
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.documentElement.classList.add('dark');
       return 'dark';
     }
     
+    document.documentElement.classList.remove('dark');
     return 'light';
   });
 
@@ -41,7 +50,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     // Update localStorage
     localStorage.setItem('theme', theme);
     
-    // Update document class
+    // Ensure DOM is updated synchronously
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
@@ -50,7 +59,20 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    flushSync(() => {
+      setTheme(prev => {
+        const newTheme = prev === 'light' ? 'dark' : 'light';
+        
+        // Apply DOM changes immediately and synchronously
+        if (newTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+        
+        return newTheme;
+      });
+    });
   };
 
   return (

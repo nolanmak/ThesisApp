@@ -107,89 +107,21 @@ const EarningsDataTemplate: React.FC<EarningsDataTemplateProps> = ({
           </div>
         </div>
 
-        {/* Current Quarter vs Expected */}
-        {earningsData.current_quarter_vs_expected && (
-          <div className="section">
-            <h2 className="section-title">Current Quarter vs Expected</h2>
-            <div className="cards-grid">
-              {earningsData.current_quarter_vs_expected.sales && 
-                renderMetricCard('Sales', earningsData.current_quarter_vs_expected.sales)
-              }
-              {earningsData.current_quarter_vs_expected.eps && 
-                renderMetricCard('EPS', earningsData.current_quarter_vs_expected.eps)
-              }
-            </div>
-          </div>
-        )}
-
-        {/* Next Quarter vs Expected */}
-        {earningsData.next_quarter_vs_expected && (
-          <div className="section">
-            <h2 className="section-title">Next Quarter vs Expected</h2>
-            <div className="cards-grid">
-              {earningsData.next_quarter_vs_expected.eps && 
-                renderMetricCard('EPS Guidance', earningsData.next_quarter_vs_expected.eps, true)
-              }
-            </div>
-          </div>
-        )}
-
-        {/* Historical Growth QoQ */}
-        {earningsData.historical_growth_qoq && (
-          <div className="section">
-            <h2 className="section-title">Historical Growth (QoQ)</h2>
-            <div className="cards-grid">
-              {earningsData.historical_growth_qoq.sales_qoq && 
-                renderSimpleMetricCard('Sales QoQ', earningsData.historical_growth_qoq.sales_qoq)
-              }
-              {earningsData.historical_growth_qoq.eps_qoq && 
-                renderSimpleMetricCard('EPS QoQ', earningsData.historical_growth_qoq.eps_qoq)
-              }
-            </div>
-          </div>
-        )}
-
-        {/* Current Year vs Expected */}
-        {earningsData.current_year_vs_expected && (
-          <div className="section">
-            <h2 className="section-title">Current Year vs Expected</h2>
-            <div className="cards-grid">
-              {earningsData.current_year_vs_expected.eps && 
-                renderMetricCard('Annual EPS', earningsData.current_year_vs_expected.eps, true)
-              }
-            </div>
-          </div>
-        )}
-
-        {/* Company Highlights */}
-        {earningsData.company_highlights && earningsData.company_highlights.length > 0 && (
-          <div className="section">
-            <h2 className="section-title">Company Highlights</h2>
-            <div className="highlights-card">
-              <ul className="highlights-list">
-                {earningsData.company_highlights.map((highlight, index) => (
-                  <li key={index} className="highlight-item">{highlight}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
-
-        {/* Additional Metrics */}
-        {earningsData.additional_metrics && earningsData.additional_metrics.length > 0 && (
-          <div className="section">
-            <h2 className="section-title">Additional Metrics</h2>
-            <div className="additional-metrics-card">
-              <div className="metrics-list">
-                {earningsData.additional_metrics.map((metric, index) => (
-                  <div key={index} className="additional-metric-item">
-                    {metric}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Content Area - Simple 2x2 Grid */}
+        <div className="content-area">
+          {earningsData.current_quarter_vs_expected?.sales && 
+            renderMetricCard('Current Quarter Sales', earningsData.current_quarter_vs_expected.sales)
+          }
+          {earningsData.current_quarter_vs_expected?.eps && 
+            renderMetricCard('Current Quarter EPS', earningsData.current_quarter_vs_expected.eps)
+          }
+          {earningsData.next_quarter_vs_expected?.eps && 
+            renderMetricCard('Next Quarter EPS', earningsData.next_quarter_vs_expected.eps, true)
+          }
+          {earningsData.current_year_vs_expected?.eps && 
+            renderMetricCard('Annual EPS', earningsData.current_year_vs_expected.eps, true)
+          }
+        </div>
       </div>
     </div>
   );
