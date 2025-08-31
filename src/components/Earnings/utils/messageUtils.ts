@@ -220,16 +220,42 @@ export const ParseSentimentData = (message: Message): { [key: string]: MetricIte
       const sentimentItems: MetricItem[] = [];
       
       if (sentiment.overall_sentiment) {
-        sentimentItems.push({ label: "Overall Sentiment", text: sentiment.overall_sentiment });
+        const emoji = sentiment.overall_sentiment.toLowerCase() === 'positive' ? '🟢' : 
+                     sentiment.overall_sentiment.toLowerCase() === 'negative' ? '🔴' : 
+                     sentiment.overall_sentiment.toLowerCase() === 'neutral' ? '🟡' : '⚪';
+        sentimentItems.push({ 
+          label: "Overall Sentiment", 
+          text: `${emoji} ${sentiment.overall_sentiment}` 
+        });
       }
       if (sentiment.management_tone) {
-        sentimentItems.push({ label: "Management Tone", text: sentiment.management_tone });
+        const emoji = sentiment.management_tone.toLowerCase() === 'positive' ? '😊' : 
+                     sentiment.management_tone.toLowerCase() === 'negative' ? '😟' : 
+                     sentiment.management_tone.toLowerCase() === 'neutral' ? '😐' : 
+                     sentiment.management_tone.toLowerCase() === 'confident' ? '💪' : '🗣️';
+        sentimentItems.push({ 
+          label: "Management Tone", 
+          text: `${emoji} ${sentiment.management_tone}` 
+        });
       }
       if (sentiment.forward_outlook_sentiment) {
-        sentimentItems.push({ label: "Forward Outlook", text: sentiment.forward_outlook_sentiment });
+        const emoji = sentiment.forward_outlook_sentiment.toLowerCase() === 'positive' ? '📈' : 
+                     sentiment.forward_outlook_sentiment.toLowerCase() === 'negative' ? '📉' : 
+                     sentiment.forward_outlook_sentiment.toLowerCase() === 'neutral' ? '➡️' : 
+                     sentiment.forward_outlook_sentiment.toLowerCase() === 'optimistic' ? '🚀' : '🔮';
+        sentimentItems.push({ 
+          label: "Forward Outlook", 
+          text: `${emoji} ${sentiment.forward_outlook_sentiment}` 
+        });
       }
       if (sentiment.confidence_level) {
-        sentimentItems.push({ label: "Confidence Level", text: sentiment.confidence_level });
+        const emoji = sentiment.confidence_level.toLowerCase() === 'high' ? '🔥' : 
+                     sentiment.confidence_level.toLowerCase() === 'medium' ? '⚖️' : 
+                     sentiment.confidence_level.toLowerCase() === 'low' ? '🤔' : '📊';
+        sentimentItems.push({ 
+          label: "Management Confidence", 
+          text: `${emoji} ${sentiment.confidence_level}` 
+        });
       }
       
       if (sentimentItems.length > 0) {
