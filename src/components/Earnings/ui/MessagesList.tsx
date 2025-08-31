@@ -337,6 +337,17 @@ const MessagesList: React.FC<MessagesListProps> = ({
     );
   }
 
+  // Debug logging to see message sources
+  React.useEffect(() => {
+    const sources = deduplicatedMessages.map(msg => ({ 
+      ticker: msg.ticker, 
+      source: msg.source || 'no-source',
+      hasTranscript: !!msg.transcript_data,
+      hasSentiment: !!msg.sentiment_additional_metrics
+    }));
+    console.log('Message sources:', sources);
+  }, [deduplicatedMessages]);
+
   return (
     <div className="flex flex-col">
       {/* Market Data Controls */}
