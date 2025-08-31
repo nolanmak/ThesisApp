@@ -32,14 +32,14 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
           ? 'flex w-full h-full absolute inset-0 z-10'
           : 'hidden'
         : 'flex w-[35%] relative'}
-      flex-col bg-white p-6 rounded-md shadow border border-[#f1f1f1]
+      flex-col bg-white dark:bg-neutral-800 p-6 rounded-md shadow border border-[#f1f1f1] dark:border-neutral-700
     `}
     >
       {selectedMessage ? (
         <div className="h-full flex flex-col">
           {/* Header */}
           <div 
-            className="flex items-center justify-between pb-4 border-b border-neutral-200 mb-4"
+            className="flex items-center justify-between pb-4 border-b border-neutral-200 dark:border-neutral-700 mb-4"
             style={{
               flexWrap: isMobile ? 'wrap' : 'nowrap',
               gap: isMobile ? '8px' : undefined
@@ -100,16 +100,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
             {isMobile && (
               <button 
                 onClick={handleCloseAnalysisPanel}
-                className="text-neutral-500 hover:text-neutral-700"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '30px',
-                  height: '30px',
-                  borderRadius: '50%',
-                  backgroundColor: '#f3f4f6'
-                }}
+                className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 flex items-center justify-center w-[30px] h-[30px] rounded-full bg-neutral-200 dark:bg-neutral-700"
               >
                 <X size={16} />
               </button>
@@ -120,7 +111,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
           <div className="flex-1 overflow-auto">
             {!selectedMessage.link && (
               <div
-                className="text-neutral-800 whitespace-pre-wrap markdown-content break-words overflow-wrap-anywhere"
+                className="text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap markdown-content break-words overflow-wrap-anywhere"
                 style={{
                   fontSize: isMobile ? '0.875rem' : '0.75rem',
                   lineHeight: isMobile ? '1.5' : undefined,
@@ -130,7 +121,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                   // Display transcript analysis with structured data
                   <div className="space-y-4">
                     {/* Show just the preview text */}
-                    <div className="text-purple-700 font-semibold mb-3">
+                    <div className="text-purple-700 dark:text-purple-400 font-semibold mb-3">
                       {ParseTranscriptMessage(selectedMessage) || '📊 Earnings Call Transcript Analysis'}
                     </div>
                     
@@ -139,10 +130,10 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                       <div className="space-y-4">
                         {Object.entries(parsedTranscriptData).map(([section, items]) => (
                           <div key={section}>
-                            <div className="text-purple-700 font-semibold mb-2">{section}</div>
+                            <div className="text-purple-700 dark:text-purple-400 font-semibold mb-2">{section}</div>
                             <ul className="space-y-1 list-disc pl-5">
                               {items.map((item, idx) => (
-                                <li key={idx} className="text-neutral-600">
+                                <li key={idx} className="text-neutral-600 dark:text-neutral-300">
                                   {typeof item === 'string' ? item : item.text || item.label}
                                 </li>
                               ))}
@@ -151,7 +142,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                         ))}
                       </div>
                     ) : (
-                      <div className="text-neutral-500 text-center p-4">
+                      <div className="text-neutral-500 dark:text-neutral-400 text-center p-4">
                         No transcript analysis data available
                       </div>
                     )}
@@ -160,7 +151,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                   // Display sentiment analysis with structured data
                   <div className="space-y-4">
                     {/* Show the preview text */}
-                    <div className="text-green-700 font-semibold mb-3">
+                    <div className="text-green-700 dark:text-green-400 font-semibold mb-3">
                       {ParseSentimentMessage(selectedMessage) || '📈 Sentiment Analysis'}
                     </div>
                     
@@ -169,7 +160,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                       <div className="space-y-4">
                         {Object.entries(parsedSentimentData).map(([section, items]) => (
                           <div key={section}>
-                            <div className="text-green-700 font-semibold mb-2">{section}</div>
+                            <div className="text-green-700 dark:text-green-400 font-semibold mb-2">{section}</div>
                             {['Key Quotes', 'Key Sentiment Drivers'].includes(section) ? (
                               <ul className="space-y-2 list-disc pl-5">
                                 {items.map((item, idx) => (
@@ -181,11 +172,11 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                             ) : section === 'Sentiment Analysis' ? (
                               <div className="grid grid-cols-1 gap-3">
                                 {items.map((item, idx: number) => (
-                                  <div key={idx} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
-                                    <span className="font-medium text-green-800">
+                                  <div key={idx} className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/30 rounded-lg border border-green-200 dark:border-green-800">
+                                    <span className="font-medium text-green-800 dark:text-green-300">
                                       {typeof item === 'string' ? item : item.label}
                                     </span>
-                                    <span className="text-green-700 font-semibold">
+                                    <span className="text-green-700 dark:text-green-300 font-semibold">
                                       {typeof item === 'string' ? '' : item.text}
                                     </span>
                                   </div>
@@ -194,9 +185,9 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                             ) : (
                               <div className="space-y-2">
                                 {items.map((item, idx: number) => (
-                                  <div key={idx} className="flex flex-col gap-1 p-2 bg-gray-50 rounded border">
+                                  <div key={idx} className="flex flex-col gap-1 p-2 bg-gray-50 dark:bg-neutral-700 rounded border border-gray-200 dark:border-neutral-600">
                                     {typeof item === 'string' ? (
-                                      <span className="text-neutral-600">{item}</span>
+                                      <span className="text-neutral-600 dark:text-neutral-300">{item}</span>
                                     ) : (
                                       <>
                                         <span className="text-sm font-medium text-neutral-800">{item.label}</span>

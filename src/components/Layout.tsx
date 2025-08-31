@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, Calendar, MessageCircle, Menu, List } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import ThemeToggle from './ui/ThemeToggle';
 
 const Layout: React.FC = () => {
   const { user } = useAuth();
@@ -29,7 +30,7 @@ const Layout: React.FC = () => {
   }, []);
   
   const isActive = (path: string) => {
-    return location.pathname === path ? 'text-blue-500' : 'text-neutral-500 hover:text-blue-400';
+    return location.pathname === path ? 'text-blue-500 dark:text-blue-400' : 'text-neutral-500 dark:text-neutral-400 hover:text-blue-400 dark:hover:text-blue-300';
   };
   
   const handleLogout = () => {
@@ -47,28 +48,38 @@ const Layout: React.FC = () => {
   };
   
   return (
-    <div className="flex flex-col h-screen bg-neutral-50">
+    <div className="flex flex-col h-screen bg-neutral-50 dark:bg-neutral-900">
       {/* Top Navigation Bar */}
       <div className="text-neutral-100">
         <div className="max-w-7xl mx-auto px-4 py-4 pb-2 flex justify-between items-center">
-          <h1 className="text-lg font-light flex items-center text-neutral-900">
+          <h1 className="text-lg font-light flex items-center text-neutral-900 dark:text-neutral-100">
             <img src="/favicon.svg" alt="Logo" className="mr-2" width={30} height={30} />
             Thesis
           </h1>
-          {/* Alpha version disclosure banner */}
-          <div className="bg-red-50 text-red-600 px-4 py-2 text-xs rounded-md border border-red-200 max-w-[200px] md:max-w-[1000px]">
-            This is an alpha version. Please validate any data through other sources.
+          
+          {/* Center container for banner and theme toggle */}
+          <div className="flex items-center gap-4">
+            {/* Alpha version disclosure banner */}
+            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-4 py-2 text-xs rounded-md border border-red-200 dark:border-red-800 max-w-[200px] md:max-w-[1000px]">
+              This is an alpha version. Please validate any data through other sources.
+            </div>
+            
+            {/* Theme Toggle (desktop only) */}
+            {!isMobile && <ThemeToggle />}
           </div>
           
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Button and Theme Toggle */}
           {isMobile && (
-            <button
-              onClick={toggleMenu}
-              className="flex items-center text-neutral-500"
-              style={{ zIndex: 30 }}
-            >
-              <Menu size={24} />
-            </button>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <button
+                onClick={toggleMenu}
+                className="flex items-center text-neutral-500 dark:text-neutral-400"
+                style={{ zIndex: 30 }}
+              >
+                <Menu size={24} />
+              </button>
+            </div>
           )}
           
           {/* Desktop Navigation */}
@@ -107,7 +118,7 @@ const Layout: React.FC = () => {
                 <li>
                   <button
                     onClick={handleLogout}
-                    className="flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out text-neutral-500 hover:text-red-500"
+                    className="flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out text-neutral-500 dark:text-neutral-400 hover:text-red-500 dark:hover:text-red-400"
                   >
                     <LogOut className="mr-1" size={14} />
                     <span>Logout</span>
@@ -120,20 +131,7 @@ const Layout: React.FC = () => {
           {/* Mobile Navigation Overlay */}
           {isMobile && menuOpen && (
             <div 
-              style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                zIndex: 20,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                paddingTop: '60px'
-              }}
+              className="fixed inset-0 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-sm z-20 flex flex-col justify-center items-center pt-15"
             >
               <nav>
                 <ul style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
@@ -175,7 +173,7 @@ const Layout: React.FC = () => {
                         setMenuOpen(false);
                         handleLogout();
                       }}
-                      className="flex items-center px-3 py-2 text-base rounded-md transition-colors duration-150 ease-in-out text-neutral-500 hover:text-red-500"
+                      className="flex items-center px-3 py-2 text-base rounded-md transition-colors duration-150 ease-in-out text-neutral-500 dark:text-neutral-400 hover:text-red-500 dark:hover:text-red-400"
                     >
                       <LogOut className="mr-2" size={18} />
                       <span>Logout</span>

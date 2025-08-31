@@ -289,14 +289,14 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
       {/* Message search box */}
       <div className="flex-1 relative">
         <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
-          <Search size={14} className="text-neutral-400" />
+          <Search size={14} className="text-neutral-400 dark:text-neutral-500" />
         </div>
         <input
           type="text"
           placeholder="Search messages"
           value={searchMessageTicker}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-8 pr-16 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-xs h-8"
+          className="pl-8 pr-16 block w-full rounded-md border-neutral-300 dark:border-neutral-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-xs h-8 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
         />
         <div className="absolute inset-y-0 right-0 flex items-center space-x-1 pr-1">
           {refreshing && (

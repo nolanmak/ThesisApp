@@ -24,7 +24,7 @@ const StaticPreview: React.FC<{
     return (
       <div key={previewKey}
       className={`
-        bg-sky-50 border border-sky-200 rounded flex items-center w-full max-w-full box-border overflow-hidden my-[2px]
+        bg-sky-50 dark:bg-sky-900/30 border border-sky-200 dark:border-sky-800 rounded flex items-center w-full max-w-full box-border overflow-hidden my-[2px]
         ${isMobile
           ? 'py-[5px] px-[8px] min-h-6 max-h-[100px]'
           : 'py-[3px] px-[8px] min-h-[20px] max-h-[80px]'}
@@ -38,14 +38,14 @@ const StaticPreview: React.FC<{
               .slice(0, 3)
               .map((key, index) => (
                 <div key={`${key}-${index}`} className="flex items-center gap-1 flex-shrink-0">
-                  <div className="font-bold text-[0.7rem] text-blue-800">{key}:</div>
+                  <div className="font-bold text-[0.7rem] text-blue-800 dark:text-blue-300">{key}:</div>
                   {content[key]
                   .map((metric: MetricItem, itemIndex: number) => (
                     <React.Fragment key={`${key}-metric-${itemIndex}`}>
                     {typeof metric === 'string' ? (
-                      <div className="font-medium text-[0.7rem] text-blue-800">{metric}</div>
+                      <div className="font-medium text-[0.7rem] text-blue-800 dark:text-blue-300">{metric}</div>
                     ) : metric.text ? (
-                      <div className="font-medium text-[0.7rem] text-blue-800">{metric.text}</div>
+                      <div className="font-medium text-[0.7rem] text-blue-800 dark:text-blue-300">{metric.text}</div>
                     ) : null}
                     </React.Fragment>
                   ))}
@@ -53,7 +53,7 @@ const StaticPreview: React.FC<{
               ))}
             </div>
           ) : (
-            <div key={previewKey} className="text-blue-800 font-medium text-[0.7rem] text-center">No metrics available</div>
+            <div key={previewKey} className="text-blue-800 dark:text-blue-300 font-medium text-[0.7rem] text-center">No metrics available</div>
           )}
         </div>
       </div>
@@ -62,13 +62,13 @@ const StaticPreview: React.FC<{
   
   return (
     <div key={previewKey}
-      className={`bg-sky-50 border border-sky-200 rounded flex items-center w-full max-w-full box-border overflow-hidden my-[2px]
+      className={`bg-sky-50 dark:bg-sky-900/30 border border-sky-200 dark:border-sky-800 rounded flex items-center w-full max-w-full box-border overflow-hidden my-[2px]
       ${isMobile
         ? 'py-[5px] px-[8px] min-h-6 max-h-[100px]'
         : 'py-[3px] px-[8px] min-h-[20px] max-h-[80px]'}`}
     >
       <div key={previewKey} className={`
-          text-blue-800 font-medium w-full overflow-hidden leading-[1.4]
+          text-blue-800 dark:text-blue-300 font-medium w-full overflow-hidden leading-[1.4]
           ${isMobile
             ? 'text-[0.8rem] whitespace-pre-wrap text-clip break-words'
             : 'text-[0.7rem] whitespace-nowrap truncate break-normal'}
@@ -370,16 +370,16 @@ const MessagesList: React.FC<MessagesListProps> = ({
 
   if (loading && (!messages || messages.length === 0)) {
     return (
-      <div className="bg-white p-6 rounded-md shadow-md border border-neutral-100 text-center">
-        <p className="text-neutral-500">Loading messages...</p>
+      <div className="bg-white dark:bg-neutral-800 p-6 rounded-md shadow-md border border-neutral-100 dark:border-neutral-700 text-center">
+        <p className="text-neutral-500 dark:text-neutral-400">Loading messages...</p>
       </div>
     );
   }
 
   if ((!deduplicatedMessages || deduplicatedMessages.length === 0)) {
     return (
-      <div className="bg-white p-6 rounded-md shadow-md border border-neutral-100 text-center">
-        <p className="text-neutral-500">
+      <div className="bg-white dark:bg-neutral-800 p-6 rounded-md shadow-md border border-neutral-100 dark:border-neutral-700 text-center">
+        <p className="text-neutral-500 dark:text-neutral-400">
           {searchMessageTicker ? `No messages found for "${searchMessageTicker}"` : "No messages found"}
         </p>
       </div>
@@ -390,17 +390,17 @@ const MessagesList: React.FC<MessagesListProps> = ({
     <div className="flex flex-col">
       {/* Market Data Controls */}
       {uniqueTickers.length > 0 && (
-        <div className="bg-white border-b border-neutral-100 px-3 py-2">
+        <div className="bg-white dark:bg-neutral-800 border-b border-neutral-100 dark:border-neutral-700 px-3 py-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-              <span className="text-xs text-neutral-600">
+              <span className="text-xs text-neutral-600 dark:text-neutral-400">
                 {isConnected ? 'Market data connected' : 'Market data disconnected'}
               </span>
             </div>
             <button
               onClick={resetAllCumulativeVolume}
-              className="text-xs px-2 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
+              className="text-xs px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded border border-blue-200 dark:border-blue-800 transition-colors"
               title="Reset session volume tracking for all symbols"
             >
               Reset Volume
@@ -420,7 +420,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
       {deduplicatedMessages.map((message, index) => (
         <div 
           key={message.message_id}
-          className={`bg-white py-2 px-2 border-b transition-colors hover:bg-neutral-50 ${
+          className={`bg-white dark:bg-neutral-800 py-2 px-2 border-b border-neutral-200 dark:border-neutral-700 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-700 ${
             newMessageIds.has(message.message_id) 
               ? 'border-l-4 border-l-green-500' 
               : ''
@@ -483,7 +483,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     <div className="flex items-center gap-2">
                       <StockLogo ticker={message.ticker} size={16} />
                       <span 
-                        className="font-bold text-neutral-800"
+                        className="font-bold text-neutral-800 dark:text-neutral-100"
                         style={{
                           display: 'flex',
                           flexDirection: 'row',
@@ -497,7 +497,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
 
                     {message.company_name && (
                       <span 
-                        className="text-neutral-500"
+                        className="text-neutral-500 dark:text-neutral-400"
                         style={{
                           maxWidth: isMobile ? '60px' : '200px',
                           overflow: 'hidden',
@@ -509,12 +509,12 @@ const MessagesList: React.FC<MessagesListProps> = ({
                       </span>
                     )}
 
-                    <span className="text-neutral-600 mx-1">
+                    <span className="text-neutral-600 dark:text-neutral-400 mx-1">
                       Q{message.quarter}
                     </span>
                   </div>
 
-                  <span className="text-xs text-neutral-500 ml-1">
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400 ml-1">
                     {convertToEasternTime(message.timestamp)}
                   </span>
                   <InlineVolume ticker={message.ticker} />
@@ -600,7 +600,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     <div className="flex items-center gap-2">
                       <StockLogo ticker={message.ticker} size={16} />
                       <span 
-                        className="font-bold text-neutral-800"
+                        className="font-bold text-neutral-800 dark:text-neutral-100"
                         style={{
                           display: 'flex',
                           flexDirection: 'row',
@@ -614,7 +614,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
 
                     {message.company_name && (
                       <span 
-                        className="text-neutral-500"
+                        className="text-neutral-500 dark:text-neutral-400"
                         style={{
                           maxWidth: isMobile ? '60px' : '200px',
                           overflow: 'hidden',
@@ -626,17 +626,17 @@ const MessagesList: React.FC<MessagesListProps> = ({
                       </span>
                     )}
 
-                    <span className="text-neutral-600 mx-1">
+                    <span className="text-neutral-600 dark:text-neutral-400 mx-1">
                       Q{message.quarter}
                     </span>
                   </div>
 
-                  <span className="text-xs text-neutral-500 ml-1">
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400 ml-1">
                     {convertToEasternTime(message.timestamp)}
                   </span>
                   <InlineVolume ticker={message.ticker} />
                   <div
-                    className="inline-flex items-center justify-center w-5 h-5 bg-green-50 text-green-600 rounded-full hover:bg-green-100 transition-colors"
+                    className="inline-flex items-center justify-center w-5 h-5 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
                     style={{
                       alignSelf: undefined,
                       marginTop: '0',
@@ -650,7 +650,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
 
               {/* Static preview of the sentiment message */}
               <div
-                className="bg-green-50 border border-green-200 rounded flex items-center w-full max-w-full box-border overflow-hidden my-[2px]"
+                className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded flex items-center w-full max-w-full box-border overflow-hidden my-[2px]"
                 style={{
                   padding: isMobile ? '5px 8px' : '3px 8px',
                   minHeight: isMobile ? '24px' : '20px',
@@ -658,7 +658,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                 }}
               >
                 <div 
-                  className={`text-green-800 font-medium w-full overflow-hidden leading-[1.4] ${
+                  className={`text-green-800 dark:text-green-300 font-medium w-full overflow-hidden leading-[1.4] ${
                     isMobile
                       ? 'text-[0.8rem] whitespace-pre-wrap text-clip break-words'
                       : 'text-[0.7rem] whitespace-nowrap truncate break-normal'
@@ -722,7 +722,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     
                     {message.company_name && (
                       <span
-                        className="text-neutral-500"
+                        className="text-neutral-500 dark:text-neutral-400"
                         style={{
                           maxWidth: isMobile ? '60px' : '200px',
                           overflow: 'hidden',
@@ -734,12 +734,12 @@ const MessagesList: React.FC<MessagesListProps> = ({
                       </span>
                     )}
                     
-                    <span className="text-neutral-600 mx-1">
+                    <span className="text-neutral-600 dark:text-neutral-400 mx-1">
                       Q{message.quarter}
                     </span>
                   </div>
                   
-                  <span className="text-xs text-neutral-500 ml-1">
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400 ml-1">
                     {convertToEasternTime(message.timestamp)}
                   </span>
                   <InlineVolume ticker={message.ticker} />
@@ -807,7 +807,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     <div className="flex items-center gap-2">
                       <StockLogo ticker={message.ticker} size={16} />
                       <span 
-                        className="font-bold text-neutral-800"
+                        className="font-bold text-neutral-800 dark:text-neutral-100"
                         style={{
                           display: 'flex',
                           flexDirection: 'row',
@@ -821,7 +821,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
 
                     {message.company_name && (
                       <span 
-                        className="text-neutral-500"
+                        className="text-neutral-500 dark:text-neutral-400"
                         style={{
                           maxWidth: isMobile ? '60px' : '200px',
                           overflow: 'hidden',
@@ -833,12 +833,12 @@ const MessagesList: React.FC<MessagesListProps> = ({
                       </span>
                     )}
 
-                    <span className="text-neutral-600 mx-1">
+                    <span className="text-neutral-600 dark:text-neutral-400 mx-1">
                       Q{message.quarter}
                     </span>
                   </div>
 
-                  <span className="text-xs text-neutral-500 ml-1">
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400 ml-1">
                     {convertToEasternTime(message.timestamp)}
                   </span>
                   <InlineVolume ticker={message.ticker} />

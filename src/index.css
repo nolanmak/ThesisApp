@@ -4,15 +4,15 @@
 
 @layer base {
   body {
-    @apply bg-neutral-50 text-neutral-800 font-sans;
+    @apply bg-neutral-50 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 font-sans;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    @apply font-light tracking-tight;
+    @apply font-light tracking-tight text-neutral-900 dark:text-neutral-100;
   }
   
   input, select, textarea {
-    @apply border-neutral-300 focus:border-primary-500 focus:ring-primary-500;
+    @apply border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:border-primary-500 focus:ring-primary-500;
   }
 }
 
@@ -22,15 +22,15 @@
   }
   
   .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-700;
+    @apply bg-primary-600 text-white hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600;
   }
   
   .btn-secondary {
-    @apply bg-neutral-100 text-neutral-700 hover:bg-neutral-200;
+    @apply bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600;
   }
   
   .card {
-    @apply bg-white rounded-md shadow-md border border-neutral-100 p-6;
+    @apply bg-white dark:bg-neutral-800 rounded-md shadow-md dark:shadow-lg border border-neutral-100 dark:border-neutral-700 p-6;
   }
 }
 
@@ -41,15 +41,15 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-neutral-100;
+  @apply bg-neutral-100 dark:bg-neutral-800;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-neutral-300 rounded-full;
+  @apply bg-neutral-300 dark:bg-neutral-600 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-neutral-400;
+  @apply bg-neutral-400 dark:bg-neutral-500;
 }
 
 /* Hide scrollbar but keep functionality */

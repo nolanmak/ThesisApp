@@ -140,7 +140,7 @@ const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
+    <div className="relative min-h-screen w-full overflow-hidden bg-neutral-50 dark:bg-neutral-900">
       {/* Wave Background */}
       <WaveBackground />
 
@@ -149,7 +149,7 @@ const LandingPage: React.FC = () => {
         <div className="max-w-2xl w-full px-4 md:px-6" style={{ maxWidth: '100%' }}>
           <div className="text-center mb-12 fade-in">
               <h1 
-                className="bg-[#f9fafb]/80 backdrop-blur-sm font-bold mb-4 tracking-tight text-neutral-800 w-fit mx-auto flex items-center"
+                className="bg-neutral-50/80 dark:bg-neutral-800/80 backdrop-blur-sm font-bold mb-4 tracking-tight text-neutral-800 dark:text-neutral-100 w-fit mx-auto flex items-center"
                 style={{
                   fontSize: isMobile ? '1.875rem' : '2.25rem',
                   padding: isMobile ? '0.5rem' : '0.25rem',
@@ -167,7 +167,7 @@ const LandingPage: React.FC = () => {
                 Thesis
               </h1>
               <p 
-                className="bg-[#f9fafb]/80 backdrop-blur-sm text-neutral-600 w-fit mx-auto"
+                className="bg-neutral-50/80 dark:bg-neutral-800/80 backdrop-blur-sm text-neutral-600 dark:text-neutral-300 w-fit mx-auto"
                 style={{
                   fontSize: isMobile ? '1.125rem' : '1.25rem',
                   padding: isMobile ? '0.5rem' : '0.25rem',
@@ -188,7 +188,7 @@ const LandingPage: React.FC = () => {
             <div style={{ width: isMobile ? '100%' : '14rem' }}>
               <button
                 onClick={() => setIsEmailModalOpen(true)}
-                className="w-full flex items-center justify-center px-4 py-3 border border-neutral-300 rounded-md shadow-sm bg-white hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300"
+                className="w-full flex items-center justify-center px-4 py-3 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300 text-neutral-900 dark:text-neutral-100"
               >
                 <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
