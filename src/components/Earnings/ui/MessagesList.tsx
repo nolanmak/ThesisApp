@@ -433,17 +433,20 @@ const MessagesList: React.FC<MessagesListProps> = ({
                       overflowX: 'hidden'
                     }}
                   >
-                    <span 
-                      className="font-bold text-neutral-800"
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {message.ticker}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <StockLogo ticker={message.ticker} size={16} />
+                      <span 
+                        className="font-bold text-neutral-800"
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {message.ticker}
+                      </span>
+                    </div>
 
                     {message.company_name && (
                       <span 
@@ -478,9 +481,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
                   >
                     <Mic size={14} />
                   </div>
-                </div>
-                <div className="ml-2">
-                  <StockLogo ticker={message.ticker} size={20} />
                 </div>
               </div>
 
@@ -550,17 +550,20 @@ const MessagesList: React.FC<MessagesListProps> = ({
                       overflowX: 'hidden'
                     }}
                   >
-                    <span 
-                      className="font-bold text-neutral-800"
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {message.ticker}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <StockLogo ticker={message.ticker} size={16} />
+                      <span 
+                        className="font-bold text-neutral-800"
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {message.ticker}
+                      </span>
+                    </div>
 
                     {message.company_name && (
                       <span 
@@ -595,9 +598,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
                   >
                     <TrendingUp size={14} />
                   </div>
-                </div>
-                <div className="ml-2">
-                  <StockLogo ticker={message.ticker} size={20} />
                 </div>
               </div>
 
@@ -658,17 +658,20 @@ const MessagesList: React.FC<MessagesListProps> = ({
                       overflowX: 'hidden'
                     }}
                   >
-                    <span 
-                      className="font-medium text-neutral-800"
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {message.ticker}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <StockLogo ticker={message.ticker} size={16} />
+                      <span 
+                        className="font-medium text-neutral-800"
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {message.ticker}
+                      </span>
+                    </div>
                     
                     {message.company_name && (
                       <span
@@ -693,21 +696,18 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     {convertToEasternTime(message.timestamp)}
                   </span>
                   <InlineVolume ticker={message.ticker} />
-                  <div
-                    className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors"
-                    style={{
-                      alignSelf: undefined,
-                      marginTop: '0',
-                      marginLeft: '4px',
-                    }}
-                  >
-                    <a href={message.link} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink size={14} />
-                    </a>
-                  </div>
                 </div>
-                <div className="ml-2">
-                  <StockLogo ticker={message.ticker} size={20} />
+                <div
+                  className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors"
+                  style={{
+                    alignSelf: undefined,
+                    marginTop: '0',
+                    marginLeft: '4px',
+                  }}
+                >
+                  <a href={message.link} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink size={14} />
+                  </a>
                 </div>
               </div>
             </div>
@@ -757,17 +757,20 @@ const MessagesList: React.FC<MessagesListProps> = ({
                       overflowX: 'hidden'
                     }}
                   >
-                    <span 
-                      className="font-bold text-neutral-800"
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {message.ticker}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <StockLogo ticker={message.ticker} size={16} />
+                      <span 
+                        className="font-bold text-neutral-800"
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {message.ticker}
+                      </span>
+                    </div>
 
                     {message.company_name && (
                       <span 
@@ -802,9 +805,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
                   >
                     <BarChart2 size={14} />
                   </div>
-                </div>
-                <div className="ml-2">
-                  <StockLogo ticker={message.ticker} size={20} />
                 </div>
               </div>
 
