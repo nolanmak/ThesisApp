@@ -29,7 +29,7 @@ function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/reset-password" element={<PasswordReset />} />
               <Route path="/ScheduleTemplate" element={<ScheduleTemplate />} />
-              <Route path="/EarningsDataTemplate" element={<EarningsDataTemplateBlank />} />
+              <Route path="/EarningsDataTemplate" element={<EarningsDataTemplate />} />
               <Route path="/EarningsDataDemo" element={<EarningsDataTemplateDemo />} />
               
               {/* Protected routes - require Authenticated User */}

@@ -1,6 +1,7 @@
 import React from 'react';
 import EarningsDataTemplate from './index';
 
+// Demo data - remove this when using in production
 const sampleEarningsData = {
   current_quarter_vs_expected: {
     sales: {
