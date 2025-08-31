@@ -191,7 +191,7 @@ export const ParseTranscriptData = (message: Message): { [key: string]: MetricIt
  * Extract preview text from sentiment analysis messages
  */
 export const ParseSentimentMessage = (message: Message): string | null => {
-  if (!message.discord_message || message.source !== 'sentiment_analysis') {
+  if (!message.discord_message || (message.source !== 'sentiment_analysis' && !message.sentiment_additional_metrics)) {
     return null;
   }
 
@@ -202,7 +202,7 @@ export const ParseSentimentMessage = (message: Message): string | null => {
  * Parse sentiment additional metrics into human-readable format
  */
 export const ParseSentimentData = (message: Message): { [key: string]: MetricItem[] } | null => {
-  if (!message.sentiment_additional_metrics || message.source !== 'sentiment_analysis') {
+  if (!message.sentiment_additional_metrics) {
     return null;
   }
 

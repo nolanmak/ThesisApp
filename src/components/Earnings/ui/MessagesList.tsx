@@ -5,6 +5,7 @@ import { ParseMessagePayload, ParseTranscriptMessage, ParseSentimentMessage } fr
 import { useAlpacaMarketData } from '../../../hooks/useAlpacaMarketData';
 import { useWatchlist } from '../../../hooks/useWatchlist';
 import { useAuth } from '../../../contexts/AuthContext';
+import StockLogo from '../../ui/StockLogo';
 
 interface MessagesListProps {
   messages: Message[];
@@ -319,6 +320,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
     prevMessagesRef.current = messages;
   }, [messages]);
 
+
   if (loading && (!messages || messages.length === 0)) {
     return (
       <div className="bg-white p-6 rounded-md shadow-md border border-neutral-100 text-center">
@@ -336,17 +338,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
       </div>
     );
   }
-
-  // Debug logging to see message sources
-  React.useEffect(() => {
-    const sources = deduplicatedMessages.map(msg => ({ 
-      ticker: msg.ticker, 
-      source: msg.source || 'no-source',
-      hasTranscript: !!msg.transcript_data,
-      hasSentiment: !!msg.sentiment_additional_metrics
-    }));
-    console.log('Message sources:', sources);
-  }, [deduplicatedMessages]);
 
   return (
     <div className="flex flex-col">
@@ -488,6 +479,9 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     <Mic size={14} />
                   </div>
                 </div>
+                <div className="ml-2">
+                  <StockLogo ticker={message.ticker} size={20} />
+                </div>
               </div>
 
               {/* Static preview of the transcript message */}
@@ -510,7 +504,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                 </div>
               </div>
             </div>
-          ) : message.source === 'sentiment_analysis' ? (
+          ) : (message.source === 'sentiment_analysis' || message.sentiment_additional_metrics) ? (
             /* Sentiment analysis message with preview */
             <div
               className="flex flex-col transition-colors"
@@ -601,6 +595,9 @@ const MessagesList: React.FC<MessagesListProps> = ({
                   >
                     <TrendingUp size={14} />
                   </div>
+                </div>
+                <div className="ml-2">
+                  <StockLogo ticker={message.ticker} size={20} />
                 </div>
               </div>
 
@@ -696,18 +693,21 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     {convertToEasternTime(message.timestamp)}
                   </span>
                   <InlineVolume ticker={message.ticker} />
+                  <div
+                    className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors"
+                    style={{
+                      alignSelf: undefined,
+                      marginTop: '0',
+                      marginLeft: '4px',
+                    }}
+                  >
+                    <a href={message.link} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink size={14} />
+                    </a>
+                  </div>
                 </div>
-                <div
-                  className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors"
-                  style={{
-                    alignSelf: undefined,
-                    marginTop: '0',
-                    marginLeft: '4px',
-                  }}
-                >
-                  <a href={message.link} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink size={14} />
-                  </a>
+                <div className="ml-2">
+                  <StockLogo ticker={message.ticker} size={20} />
                 </div>
               </div>
             </div>
@@ -802,6 +802,9 @@ const MessagesList: React.FC<MessagesListProps> = ({
                   >
                     <BarChart2 size={14} />
                   </div>
+                </div>
+                <div className="ml-2">
+                  <StockLogo ticker={message.ticker} size={20} />
                 </div>
               </div>
 

@@ -156,7 +156,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                       </div>
                     )}
                   </div>
-                ) : selectedMessage.source === 'sentiment_analysis' ? (
+                ) : (selectedMessage.source === 'sentiment_analysis' || selectedMessage.sentiment_additional_metrics) ? (
                   // Display sentiment analysis with structured data
                   <div className="space-y-4">
                     {/* Show the preview text */}
