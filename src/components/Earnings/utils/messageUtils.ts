@@ -214,7 +214,6 @@ export const ParseSentimentData = (message: Message): { [key: string]: MetricIte
       ? JSON.parse(message.sentiment_additional_metrics)
       : message.sentiment_additional_metrics;
 
-    console.log('Parsing sentiment data for', message.ticker, ':', data);
 
     // Sentiment Analysis
     if (data.sentiment_analysis?.M) {

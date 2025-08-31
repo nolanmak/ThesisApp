@@ -222,7 +222,17 @@ const MessagesList: React.FC<MessagesListProps> = ({
     }> = [];
 
     sortedMessages.forEach(message => {
-      const messageType = message.link ? 'link' : 'analysis';
+      let messageType: string;
+      if (message.link) {
+        messageType = 'link';
+      } else if (message.source === 'transcript_analysis') {
+        messageType = 'transcript';
+      } else if (message.source === 'sentiment_analysis' || message.sentiment_additional_metrics) {
+        messageType = 'sentiment';
+      } else {
+        messageType = 'analysis';
+      }
+      
       const messageTimestamp = new Date(message.timestamp);
       const messageDate = messageTimestamp.toISOString().split('T')[0];
       const key = `${message.ticker}-${messageDate}-${messageType}`;
@@ -336,6 +346,17 @@ const MessagesList: React.FC<MessagesListProps> = ({
     }));
     
     console.log('All messages sentiment check:', allMessages);
+    
+    // Find DVAX messages specifically
+    const dvaxMessages = deduplicatedMessages.filter(msg => msg.ticker === 'DVAX');
+    console.log('DVAX messages:', dvaxMessages.map(m => ({
+      ticker: m.ticker,
+      discord_message: m.discord_message,
+      source: m.source,
+      has_sentiment_field: 'sentiment_additional_metrics' in m,
+      sentiment_data: m.sentiment_additional_metrics ? 'EXISTS' : 'MISSING',
+      message_id: m.message_id
+    })));
     
     const sentimentMessages = deduplicatedMessages.filter(msg => 
       msg.source === 'sentiment_analysis' || msg.sentiment_additional_metrics
