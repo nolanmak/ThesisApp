@@ -39,19 +39,19 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
     console.log('Warning: ConfigModal rendered without currentItem!');
     return (
       <div className="fixed inset-0 z-50 overflow-hidden">
-        <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose}></div>
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70" onClick={onClose}></div>
         <div className="flex items-center justify-center min-h-screen p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto relative z-50">
+          <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto relative z-50">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-neutral-800">Error</h2>
-                <button onClick={onClose} className="text-neutral-500 hover:text-neutral-700">&times;</button>
+                <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100">Error</h2>
+                <button onClick={onClose} className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200">&times;</button>
               </div>
-              <p className="text-red-500">No company selected. Please try again.</p>
+              <p className="text-red-500 dark:text-red-400">No company selected. Please try again.</p>
               <div className="flex justify-end pt-4">
                 <button 
                   onClick={onClose}
-                  className="px-4 py-2 text-sm bg-neutral-100 text-neutral-700 rounded-md hover:bg-neutral-200"
+                  className="px-4 py-2 text-sm bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-600"
                 >
                   Close
                 </button>
@@ -186,17 +186,17 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
-      <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose}></div>
+      <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70" onClick={onClose}></div>
       <div className="flex items-center justify-center min-h-screen p-4">
-        <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto relative z-50">
+        <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto relative z-50">
           <div className="p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-neutral-800">
+              <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100">
                 Configure {currentItem.ticker}
               </h2>
               <button
                 onClick={onClose}
-                className="text-neutral-500 hover:text-neutral-700"
+                className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
               >
                 &times;
               </button>
@@ -205,7 +205,7 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
             {/* Configuration form */}
             <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                   Base URL
                 </label>
                 <input
@@ -217,22 +217,22 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                       message: "Please enter a valid URL (e.g., example.com)"
                     }
                   })}
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
                   placeholder="https://example.com/investor-relations"
                 />
                 {errors.base_url && (
-                  <p className="text-error-500 text-xs mt-1">
+                  <p className="text-error-500 dark:text-error-400 text-xs mt-1">
                     {errors.base_url.type === "required" ? "Base URL is required" : errors.base_url.message}
                   </p>
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                   Browser Type
                 </label>
                 <select
                   {...register("browser_type")}
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
                 >
                   <option value="chromium">Chromium</option>
                   <option value="firefox">Firefox</option>
@@ -264,34 +264,34 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                   Selector
                 </label>
                 <input
                   type="text"
                   {...register("selector", { required: true })}
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
                   placeholder=".earnings-press-release"
                 />
                 {errors.selector && (
-                  <p className="text-error-500 text-xs mt-1">Selector is required</p>
+                  <p className="text-error-500 dark:text-error-400 text-xs mt-1">Selector is required</p>
                 )}
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                   Page Content Selector
                 </label>
                 <input
                   type="text"
                   {...register("page_content_selector")}
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
                   placeholder="body"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                   URL Ignore List (one per line)
                 </label>
                 <textarea
@@ -302,7 +302,7 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                   Href Ignore Words (one per line)
                 </label>
                 <textarea
@@ -317,7 +317,7 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                 
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                       Fixed Terms (one per line)
                     </label>
                     <textarea
@@ -333,7 +333,7 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                         type="checkbox"
                         id="quarter_as_string"
                         {...register("verify_keywords.quarter_as_string")}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="h-4 w-4 rounded border-gray-300 dark:border-neutral-600 text-blue-600 focus:ring-blue-500 bg-white dark:bg-neutral-900"
                       />
                       <label htmlFor="quarter_as_string" className="ml-2 block text-sm text-gray-700">
                         Quarter as String
@@ -345,9 +345,9 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                         type="checkbox"
                         id="quarter_with_q"
                         {...register("verify_keywords.quarter_with_q")}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="h-4 w-4 rounded border-gray-300 dark:border-neutral-600 text-blue-600 focus:ring-blue-500 bg-white dark:bg-neutral-900"
                       />
-                      <label htmlFor="quarter_with_q" className="ml-2 block text-sm text-gray-700">
+                      <label htmlFor="quarter_with_q" className="ml-2 block text-sm text-gray-700 dark:text-neutral-300">
                         Quarter with Q
                       </label>
                     </div>
@@ -357,9 +357,9 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                         type="checkbox"
                         id="requires_current_year"
                         {...register("verify_keywords.requires_current_year")}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="h-4 w-4 rounded border-gray-300 dark:border-neutral-600 text-blue-600 focus:ring-blue-500 bg-white dark:bg-neutral-900"
                       />
-                      <label htmlFor="requires_current_year" className="ml-2 block text-sm text-gray-700">
+                      <label htmlFor="requires_current_year" className="ml-2 block text-sm text-gray-700 dark:text-neutral-300">
                         Requires Current Year
                       </label>
                     </div>
@@ -369,9 +369,9 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                         type="checkbox"
                         id="requires_quarter"
                         {...register("verify_keywords.requires_quarter")}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="h-4 w-4 rounded border-gray-300 dark:border-neutral-600 text-blue-600 focus:ring-blue-500 bg-white dark:bg-neutral-900"
                       />
-                      <label htmlFor="requires_quarter" className="ml-2 block text-sm text-gray-700">
+                      <label htmlFor="requires_quarter" className="ml-2 block text-sm text-gray-700 dark:text-neutral-300">
                         Requires Quarter
                       </label>
                     </div>
@@ -381,9 +381,9 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                         type="checkbox"
                         id="requires_year"
                         {...register("verify_keywords.requires_year")}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="h-4 w-4 rounded border-gray-300 dark:border-neutral-600 text-blue-600 focus:ring-blue-500 bg-white dark:bg-neutral-900"
                       />
-                      <label htmlFor="requires_year" className="ml-2 block text-sm text-gray-700">
+                      <label htmlFor="requires_year" className="ml-2 block text-sm text-gray-700 dark:text-neutral-300">
                         Requires Year
                       </label>
                     </div>
@@ -392,12 +392,12 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
               </div>
               
               {/* Key Element Selectors Section */}
-              <div className="p-4 bg-white rounded-lg shadow">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Key Element Selectors</h3>
+              <div className="p-4 bg-white dark:bg-neutral-700 rounded-lg shadow">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-neutral-100 mb-4">Key Element Selectors</h3>
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 gap-4">
                     <div>
-                      <label htmlFor="key_element_selector" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="key_element_selector" className="block text-sm font-medium text-gray-700 dark:text-neutral-300">
                         Key Element Selector
                       </label>
                       <input
@@ -405,35 +405,35 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                         id="key_element_selector"
                         {...register("key_element_selector")}
                         defaultValue="body"
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-neutral-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
                       />
-                      <p className="mt-1 text-xs text-gray-500">CSS selector for the key element (default: body)</p>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-neutral-400">CSS selector for the key element (default: body)</p>
                     </div>
                     
                     <div>
-                      <label htmlFor="key_element_id" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="key_element_id" className="block text-sm font-medium text-gray-700 dark:text-neutral-300">
                         Key Element ID
                       </label>
                       <input
                         type="text"
                         id="key_element_id"
                         {...register("key_element_id")}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-neutral-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
                       />
-                      <p className="mt-1 text-xs text-gray-500">ID of the key element (leave empty if not applicable)</p>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-neutral-400">ID of the key element (leave empty if not applicable)</p>
                     </div>
                     
                     <div>
-                      <label htmlFor="key_element_class" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="key_element_class" className="block text-sm font-medium text-gray-700 dark:text-neutral-300">
                         Key Element Class
                       </label>
                       <input
                         type="text"
                         id="key_element_class"
                         {...register("key_element_class")}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-neutral-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
                       />
-                      <p className="mt-1 text-xs text-gray-500">Class of the key element (leave empty if not applicable)</p>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-neutral-400">Class of the key element (leave empty if not applicable)</p>
                     </div>
                   </div>
                 </div>
@@ -443,13 +443,13 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 text-sm bg-neutral-100 text-neutral-700 rounded-md hover:bg-neutral-200 mr-2"
+                  className="px-4 py-2 text-sm bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-600 mr-2"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-sm bg-primary-500 hover:bg-primary-600 text-white rounded-md"
+                  className="px-4 py-2 text-sm bg-primary-500 dark:bg-primary-600 hover:bg-primary-600 dark:hover:bg-primary-700 text-white rounded-md"
                 >
                   Save Configuration
                 </button>

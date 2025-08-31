@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import { useTheme } from "../../contexts/ThemeContext";
 
 // Simple 2D noise implementation
 function createNoise2D() {
@@ -57,6 +58,7 @@ const WaveBackground: React.FC = () => {
   const animationRef = useRef<number>(0);
   const noiseRef = useRef<((x: number, y: number) => number) | null>(null);
   const focalPointsRef = useRef<Array<{x: number, y: number, speed: number, radius: number, phase: number}>>([]);
+  const { theme } = useTheme();
 
   useEffect(() => {
     console.log("WaveBackground mounting...");
@@ -109,8 +111,8 @@ const WaveBackground: React.FC = () => {
         return;
       }
 
-      // Fill with off-white background for slightly better contrast while maintaining clean look
-      ctx.fillStyle = "#f9fafb";
+      // Fill with theme-appropriate background
+      ctx.fillStyle = theme === 'dark' ? "#111827" : "#f9fafb";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const dotBaseSize = 2; // Base size for dots
@@ -140,8 +142,9 @@ const WaveBackground: React.FC = () => {
       });
       focalPointsRef.current = focalPoints;
 
-      // Dark dots for better contrast
-      ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+      // Theme-appropriate dots for better contrast
+      const dotColor = theme === 'dark' ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.45)";
+      ctx.fillStyle = dotColor;
 
       for (let x = 0; x < cols; x++) {
         for (let y = 0; y < rows; y++) {
@@ -190,7 +193,11 @@ const WaveBackground: React.FC = () => {
             
             // Color intensity based on influence
             const alpha = 0.3 + totalInfluence * 0.2;
-            ctx.fillStyle = `rgba(0, 0, 0, ${alpha})`;
+            if (theme === 'dark') {
+              ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.7})`;
+            } else {
+              ctx.fillStyle = `rgba(0, 0, 0, ${alpha})`;
+            }
             
             ctx.beginPath();
             ctx.arc(posX, posY, dotBaseSize * combinedVal * sizeFactor, 0, Math.PI * 2);
@@ -213,7 +220,7 @@ const WaveBackground: React.FC = () => {
       window.removeEventListener("resize", resizeCanvas);
       cancelAnimationFrame(animationRef.current);
     };
-  }, []);
+  }, [theme]);
 
   return (
     <canvas 

@@ -213,7 +213,7 @@ const MessageAnalysis: React.FC<MessageAnalysisProps> = ({
     if (!Array.isArray(messages)) {
       console.warn('Messages is not an array:', messages);
       return (
-        <div className="flex flex-col items-center justify-center h-full text-neutral-400">
+        <div className="flex flex-col items-center justify-center h-full text-neutral-400 dark:text-neutral-500">
           <p style={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}>
             Loading messages...
           </p>
@@ -225,7 +225,7 @@ const MessageAnalysis: React.FC<MessageAnalysisProps> = ({
 
   if (analysis.totalMessages === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-neutral-400">
+      <div className="flex flex-col items-center justify-center h-full text-neutral-400 dark:text-neutral-500">
         <p style={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}>
           No messages found
         </p>
@@ -240,42 +240,42 @@ const MessageAnalysis: React.FC<MessageAnalysisProps> = ({
     <div className="space-y-2 text-xs">
       {/* Link Messages Section */}
       {analysis.linkMessages.total > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded p-2">
-          <div className="font-semibold text-blue-800 mb-1">
+        <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded p-2">
+          <div className="font-semibold text-blue-800 dark:text-blue-300 mb-1">
             Link Messages ({analysis.linkMessages.total})
           </div>
           
           {analysis.linkMessages.irSite > 0 && (
-            <div className="text-blue-700">
+            <div className="text-blue-700 dark:text-blue-400">
               IR Site: {analysis.linkMessages.irSite}
             </div>
           )}
           
           {analysis.linkMessages.wireSite > 0 && (
-            <div className="text-blue-700">
+            <div className="text-blue-700 dark:text-blue-400">
               Wire Services: {analysis.linkMessages.wireSite}
               {analysis.linkMessages.wireBreakdown.businesswire > 0 && (
-                <div className="ml-2 text-blue-600">
+                <div className="ml-2 text-blue-600 dark:text-blue-400">
                   • Business Wire: {analysis.linkMessages.wireBreakdown.businesswire}
                 </div>
               )}
               {analysis.linkMessages.wireBreakdown.globenewswire > 0 && (
-                <div className="ml-2 text-blue-600">
+                <div className="ml-2 text-blue-600 dark:text-blue-400">
                   • GlobeNewswire: {analysis.linkMessages.wireBreakdown.globenewswire}
                 </div>
               )}
               {analysis.linkMessages.wireBreakdown.prnewswire > 0 && (
-                <div className="ml-2 text-blue-600">
+                <div className="ml-2 text-blue-600 dark:text-blue-400">
                   • PR Newswire: {analysis.linkMessages.wireBreakdown.prnewswire}
                 </div>
               )}
               {analysis.linkMessages.wireBreakdown.accesswire > 0 && (
-                <div className="ml-2 text-blue-600">
+                <div className="ml-2 text-blue-600 dark:text-blue-400">
                   • AccessWire: {analysis.linkMessages.wireBreakdown.accesswire}
                 </div>
               )}
               {analysis.linkMessages.wireBreakdown.other > 0 && (
-                <div className="ml-2 text-blue-600">
+                <div className="ml-2 text-blue-600 dark:text-blue-400">
                   • Other Wire: {analysis.linkMessages.wireBreakdown.other}
                 </div>
               )}
@@ -286,15 +286,15 @@ const MessageAnalysis: React.FC<MessageAnalysisProps> = ({
 
       {/* Analysis Messages Section */}
       {analysis.analysisMessages.total > 0 && (
-        <div className="bg-green-50 border border-green-200 rounded p-2 relative">
-          <div className="font-semibold text-green-800 mb-1 flex items-center justify-between">
+        <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded p-2 relative">
+          <div className="font-semibold text-green-800 dark:text-green-300 mb-1 flex items-center justify-between">
             <span>Analysis Messages ({analysis.analysisMessages.total})</span>
             {analysis.analysisMessages.hasDifferences && analysis.analysisMessages.differences && (
               <div className="relative">
                 <button
                   onMouseEnter={() => setShowTooltip(true)}
                   onMouseLeave={() => setShowTooltip(false)}
-                  className="text-orange-600 hover:text-orange-800"
+                  className="text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300"
                 >
                   <Info size={14} />
                 </button>

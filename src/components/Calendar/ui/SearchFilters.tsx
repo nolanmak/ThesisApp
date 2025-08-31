@@ -63,7 +63,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
         >
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
-              <Search size={14} className="text-neutral-400" />
+              <Search size={14} className="text-neutral-400 dark:text-neutral-500" />
             </div>
             <input
               type="text"
@@ -71,7 +71,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
               placeholder="Search ticker..."
               value={searchTicker}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-8 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-xs"
+              className="pl-8 block w-full rounded-md border-neutral-300 dark:border-neutral-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-xs bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
               style={{
                 height: '32px',
                 fontSize: isMobile ? '13px' : '12px',
@@ -93,14 +93,14 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
         >
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
-              <CalendarIcon size={14} className="text-neutral-400" />
+              <CalendarIcon size={14} className="text-neutral-400 dark:text-neutral-500" />
             </div>
             <input
               type="date"
               id="date-selector"
               value={selectedDate}
               onChange={(e) => onDateChange(e.target.value)}
-              className="pl-8 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-xs"
+              className="pl-8 block w-full rounded-md border-neutral-300 dark:border-neutral-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-xs bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
               style={{
                 height: '32px',
                 fontSize: isMobile ? '13px' : '12px',
@@ -131,8 +131,8 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
               onClick={() => onFilterChange(null)}
               className={`px-2 py-1 text-xs rounded-md ${
                 filterActive === null 
-                  ? 'bg-neutral-600 text-white' 
-                  : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                  ? 'bg-neutral-600 dark:bg-neutral-500 text-white' 
+                  : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
               } transition-colors duration-150 ease-in-out flex-1`}
             >
               All
@@ -141,8 +141,8 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
               onClick={() => onFilterChange(true)}
               className={`px-2 py-1 text-xs rounded-md ${
                 filterActive === true 
-                  ? 'bg-success-500 text-white' 
-                  : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                  ? 'bg-success-500 dark:bg-success-600 text-white' 
+                  : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
               } transition-colors duration-150 ease-in-out flex-1`}
             >
               Active List
@@ -161,13 +161,13 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
         >
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
-              <Clock size={14} className="text-neutral-400" />
+              <Clock size={14} className="text-neutral-400 dark:text-neutral-500" />
             </div>
             <select
               id="release-time-filter"
               value={releaseTime || ''}
               onChange={(e) => onReleaseTimeChange(e.target.value === '' ? null : e.target.value)}
-              className="pl-8 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-xs"
+              className="pl-8 block w-full rounded-md border-neutral-300 dark:border-neutral-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-xs bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
               style={{
                 height: '32px',
                 fontSize: isMobile ? '13px' : '12px',
@@ -195,7 +195,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
         <button
           onClick={onRefreshClick}
           disabled={isRefreshing}
-          className="p-1.5 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-orange-400 transition-colors duration-150 ease-in-out shadow-sm flex items-center justify-center"
+          className="p-1.5 bg-orange-600 dark:bg-orange-700 text-white rounded-md hover:bg-orange-700 dark:hover:bg-orange-800 disabled:bg-orange-400 dark:disabled:bg-orange-500 transition-colors duration-150 ease-in-out shadow-sm flex items-center justify-center"
           aria-label="Refresh Data"
           style={{
             height: '32px',
@@ -211,7 +211,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
         {/* Add Item Button */}
         <button
           onClick={onAddClick}
-          className="p-1.5 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors duration-150 ease-in-out shadow-sm flex items-center justify-center"
+          className="p-1.5 bg-primary-600 dark:bg-primary-700 text-white rounded-md hover:bg-primary-700 dark:hover:bg-primary-800 transition-colors duration-150 ease-in-out shadow-sm flex items-center justify-center"
           aria-label="Add Item"
           style={{
             height: '32px',

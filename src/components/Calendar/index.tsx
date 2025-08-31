@@ -172,7 +172,7 @@ const Calendar: React.FC = () => {
       >
         {/* Earnings list - full width */}
         <div 
-          className="w-full bg-white rounded-md shadow-md border border-neutral-100 flex flex-col overflow-hidden"
+          className="w-full bg-white dark:bg-neutral-800 rounded-md shadow-md border border-neutral-100 dark:border-neutral-700 flex flex-col overflow-hidden"
           style={{
             padding: isMobile ? '12px 8px' : '24px',
             width: '100%',
