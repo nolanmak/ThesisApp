@@ -102,7 +102,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
   const allSeenMessageIdsRef = useRef<Set<string>>(new Set());
   const prevMessagesRef = useRef<Message[]>([]);
   const initialLoadCompletedRef = useRef<boolean>(false);
-  const sessionStartTimeRef = useRef<number>(Date.now()); // Track when the session started
   
   // Calculate 24 hours ago timestamp once
   const twentyFourHoursAgo = React.useMemo(() => {
@@ -305,7 +304,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
     // Find truly new messages - ones that are actually new compared to previous state
     // This ensures pagination messages (which existed before but weren't in our previous state) don't get highlighted
     const prevMessageIds = new Set(prevMessagesRef.current.map(msg => msg.message_id));
-    const currentMessageIds = new Set(messages.map(msg => msg.message_id));
     
     // Find messages that are in current but not in previous (genuinely new messages)
     const genuinelyNewMessages = messages.filter(msg => {
@@ -355,6 +353,24 @@ const MessagesList: React.FC<MessagesListProps> = ({
     console.log('=== MESSAGE DATA DEBUG ===');
     console.log('Total deduplicatedMessages:', deduplicatedMessages.length);
     
+    // Focus on transcript messages specifically
+    const transcriptMessages = deduplicatedMessages.filter(msg => msg.source === 'transcript_analysis');
+    console.log('Transcript messages count:', transcriptMessages.length);
+    
+    if (transcriptMessages.length > 0) {
+      console.log('First transcript message sample:', {
+        message_id: transcriptMessages[0].message_id,
+        ticker: transcriptMessages[0].ticker,
+        source: transcriptMessages[0].source,
+        hasDiscordMessage: !!transcriptMessages[0].discord_message,
+        discordMessageLength: transcriptMessages[0].discord_message?.length || 0,
+        discordMessagePreview: transcriptMessages[0].discord_message?.substring(0, 200) + '...',
+        hasTranscriptData: !!transcriptMessages[0].transcript_data,
+        transcriptDataType: typeof transcriptMessages[0].transcript_data,
+        parsedResult: ParseTranscriptMessage(transcriptMessages[0])
+      });
+    }
+    
     // Check message format and source types
     const messageAnalysis = deduplicatedMessages.map(msg => ({
       message_id: msg.message_id,
@@ -378,19 +394,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
     }, {} as Record<string, number>);
     
     console.log('Source type distribution:', sourceTypeCounts);
-    
-    // Show first few messages of each type
-    const sourceTypes = Object.keys(sourceTypeCounts);
-    sourceTypes.forEach(sourceType => {
-      const exampleMessages = deduplicatedMessages.filter(msg => (msg.source || 'null') === sourceType).slice(0, 2);
-      console.log(`Example ${sourceType} messages:`, exampleMessages.map(m => ({
-        ticker: m.ticker,
-        source: m.source,
-        discord_message: m.discord_message?.substring(0, 150) + '...',
-        link: m.link,
-        sentiment_additional_metrics: !!m.sentiment_additional_metrics
-      })));
-    });
   }, [deduplicatedMessages]);
 
   if (loading && (!messages || messages.length === 0)) {
