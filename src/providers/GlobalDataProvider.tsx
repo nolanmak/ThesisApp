@@ -10,10 +10,13 @@ interface GlobalDataContextType {
   messages: Message[]; // Will now contain enriched messages
   messagesLoading: boolean;
   messagesRefreshing: boolean;
+  messagesHasMore: boolean;
+  messagesLoadingMore: boolean;
   webSocketConnected: boolean;
   webSocketReconnecting: boolean;
   webSocketEnabled: boolean;
   refreshMessages: (bypassCache?: boolean) => Promise<void>;
+  loadMoreMessages: () => Promise<void>;
   toggleWebSocket: () => void;
   updateMessagesSearchTicker: (searchTerm: string) => void;
   convertToEasternTime: (utcTimestamp: string) => string;
@@ -60,10 +63,13 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     messages: rawMessages, // Rename original messages
     loading: messagesLoading,
     refreshing: messagesRefreshing,
+    hasMoreMessages: messagesHasMore,
+    loadingMore: messagesLoadingMore,
     connected: webSocketConnected,
     reconnecting: webSocketReconnecting,
     enabled: webSocketEnabled,
     fetchMessages: fetchMessagesFromHook,
+    loadMoreMessages: loadMoreMessagesFromHook,
     toggleEnabled: toggleWebSocket,
     updateSearchTicker: updateMessagesSearchTicker,
     convertToEasternTime,
@@ -152,12 +158,19 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     messages, // Provide the enriched messages
     messagesLoading,
     messagesRefreshing,
+    messagesHasMore,
+    messagesLoadingMore,
     webSocketConnected,
     webSocketReconnecting,
     webSocketEnabled,
     refreshMessages: async (bypassCache?: boolean) => {
       // Call the fetchMessages function from the hook
       fetchMessagesFromHook(bypassCache);
+      return Promise.resolve();
+    },
+    loadMoreMessages: async () => {
+      // Call the loadMoreMessages function from the hook
+      loadMoreMessagesFromHook();
       return Promise.resolve();
     },
     toggleWebSocket,

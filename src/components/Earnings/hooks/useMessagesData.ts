@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getMessages } from '../../../services/api';
+import { getMessages, PaginatedMessageResponse } from '../../../services/api';
 import { Message } from '../../../types';
 import { toast } from 'react-toastify';
 import { useWebSocket } from '../../../hooks/useWebSocket';
@@ -9,6 +9,9 @@ interface MessagesDataState {
   loading: boolean;
   refreshing: boolean;
   searchTicker: string;
+  hasMoreMessages: boolean;
+  nextKey?: string;
+  loadingMore: boolean;
 }
 
 const useMessagesData = (initialSearchTicker: string = '') => {
@@ -16,7 +19,10 @@ const useMessagesData = (initialSearchTicker: string = '') => {
     messages: [],
     loading: true,
     refreshing: false,
-    searchTicker: initialSearchTicker
+    searchTicker: initialSearchTicker,
+    hasMoreMessages: false,
+    nextKey: undefined,
+    loadingMore: false
   });
 
   const convertToEasternTime = useCallback((utcTimestamp: string): string => {
@@ -96,16 +102,17 @@ const useMessagesData = (initialSearchTicker: string = '') => {
   }, [enabled, enableWebSocket, disableWebSocket]);
 
   // Fetch messages
-  const fetchMessages = useCallback(async (bypassCache: boolean = false) => {
+  const fetchMessages = useCallback(async (bypassCache: boolean = false, resetMessages: boolean = true) => {
     try {
       // Set appropriate loading state
       setState(prev => ({
         ...prev,
-        loading: !prev.messages.length, // Only show full page loading on initial load
-        refreshing: bypassCache && prev.messages.length > 0 // Show refreshing indicator for subsequent loads
+        loading: resetMessages && !prev.messages.length, // Only show full page loading on initial load
+        refreshing: bypassCache && prev.messages.length > 0 && resetMessages // Show refreshing indicator for subsequent loads
       }));
       
-      const fetchedMessages = await getMessages(bypassCache);
+      const response: PaginatedMessageResponse = await getMessages(bypassCache);
+      const { messages: fetchedMessages, next_key } = response;
       
       // Sort messages by timestamp (newest first)
       const sortedMessages = fetchedMessages.sort((a, b) => 
@@ -114,9 +121,11 @@ const useMessagesData = (initialSearchTicker: string = '') => {
       
       setState(prev => ({
         ...prev,
-        messages: sortedMessages,
+        messages: resetMessages ? sortedMessages : [...prev.messages, ...sortedMessages],
         loading: false,
-        refreshing: false
+        refreshing: false,
+        hasMoreMessages: !!next_key,
+        nextKey: next_key
       }));
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -125,7 +134,46 @@ const useMessagesData = (initialSearchTicker: string = '') => {
     }
   }, []);
 
+  // Load more messages
+  const loadMoreMessages = useCallback(async () => {
+    if (!state.hasMoreMessages || state.loadingMore || !state.nextKey) {
+      return;
+    }
 
+    try {
+      setState(prev => ({ ...prev, loadingMore: true }));
+      
+      const response: PaginatedMessageResponse = await getMessages(true, 50, state.nextKey);
+      const { messages: fetchedMessages, next_key } = response;
+      
+      // Sort messages by timestamp (newest first)
+      const sortedMessages = fetchedMessages.sort((a, b) => 
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+      
+      setState(prev => ({
+        ...prev,
+        messages: [...prev.messages, ...sortedMessages],
+        loadingMore: false,
+        hasMoreMessages: !!next_key,
+        nextKey: next_key
+      }));
+      
+      // Update original messages ref
+      if (originalMessagesRef.current.length > 0) {
+        const originalIds = new Set(originalMessagesRef.current.map(msg => msg.message_id));
+        const newOriginalMessages = sortedMessages.filter(msg => !originalIds.has(msg.message_id));
+        if (newOriginalMessages.length > 0) {
+          originalMessagesRef.current = [...originalMessagesRef.current, ...newOriginalMessages]
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        }
+      }
+    } catch (error) {
+      console.error('Error loading more messages:', error);
+      toast.error('Failed to load more messages');
+      setState(prev => ({ ...prev, loadingMore: false }));
+    }
+  }, [state.hasMoreMessages, state.loadingMore, state.nextKey]);
 
   // Store original messages when fetched
   useEffect(() => {
@@ -189,7 +237,8 @@ const useMessagesData = (initialSearchTicker: string = '') => {
         if (!state.loading && !state.refreshing && state.messages.length > 0) {
           try {
             // Fetch new messages silently (no toast notification)
-            const fetchedMessages = await getMessages(true); // bypass cache
+            const response: PaginatedMessageResponse = await getMessages(true); // bypass cache
+            const { messages: fetchedMessages } = response;
             
             // Sort messages by timestamp (newest first)
             const sortedMessages = fetchedMessages.sort((a, b) => 
@@ -255,6 +304,8 @@ const useMessagesData = (initialSearchTicker: string = '') => {
     loading: state.loading,
     refreshing: state.refreshing,
     searchTicker: state.searchTicker,
+    hasMoreMessages: state.hasMoreMessages,
+    loadingMore: state.loadingMore,
     connected,
     reconnecting,
     enabled,
@@ -262,6 +313,7 @@ const useMessagesData = (initialSearchTicker: string = '') => {
     disableWebSocket,
     convertToEasternTime,
     fetchMessages: handleRefreshWithToast,
+    loadMoreMessages,
     updateSearchTicker,
     toggleEnabled
   };

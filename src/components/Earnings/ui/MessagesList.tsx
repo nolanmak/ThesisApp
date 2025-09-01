@@ -13,6 +13,9 @@ interface MessagesListProps {
   isMobile?: boolean;
   convertToEasternTime: (utcTimestamp: string) => string;
   onSelectMessage?: (message: Message) => void;
+  hasMoreMessages?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
 }
 
 const StaticPreview: React.FC<{ 
@@ -86,6 +89,9 @@ const MessagesList: React.FC<MessagesListProps> = ({
   isMobile,
   convertToEasternTime,
   onSelectMessage,
+  hasMoreMessages = false,
+  loadingMore = false,
+  onLoadMore,
 }) => {
   const { user } = useAuth();
   const { watchlist: userWatchlist } = useWatchlist();
@@ -867,6 +873,19 @@ const MessagesList: React.FC<MessagesListProps> = ({
           )}
         </div>
       ))}
+      
+      {/* Load More Button */}
+      {hasMoreMessages && (
+        <div className="bg-white dark:bg-neutral-800 border-t border-neutral-200 dark:border-neutral-700 px-4 py-3 text-center">
+          <button
+            onClick={onLoadMore}
+            disabled={loadingMore}
+            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed text-white rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            {loadingMore ? 'Loading more messages...' : 'Load More Messages'}
+          </button>
+        </div>
+      )}
       </div>
     </div>
   );

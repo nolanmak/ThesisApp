@@ -30,10 +30,13 @@ const Messages: React.FC = () => {
     messages,
     messagesLoading,
     messagesRefreshing: refreshing,
+    messagesHasMore,
+    messagesLoadingMore,
     webSocketConnected,
     webSocketReconnecting,
     webSocketEnabled,
     refreshMessages,
+    loadMoreMessages,
     toggleWebSocket: toggleEnabled,
     updateMessagesSearchTicker: setMessagesSearchTicker,
     convertToEasternTime
@@ -126,6 +129,9 @@ const Messages: React.FC = () => {
               convertToEasternTime={convertToEasternTime}
               onSelectMessage={handleMessageSelect}
               isMobile={isMobile}
+              hasMoreMessages={messagesHasMore}
+              loadingMore={messagesLoadingMore}
+              onLoadMore={loadMoreMessages}
             />
           </div>
           

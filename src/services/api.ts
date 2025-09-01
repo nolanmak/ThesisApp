@@ -119,32 +119,61 @@ export const submitWaitlistEmail = async (
   }
 };
 
+// Updated response structure to match backend pagination
+export interface PaginatedMessageResponse {
+  messages: Message[];
+  count: number;
+  limit: number;
+  next_key?: string;
+}
+
 export const getMessages = async (
-  bypassCache: boolean = true
-): Promise<Message[]> => {
+  bypassCache: boolean = true,
+  limit: number = 50,
+  lastKey?: string
+): Promise<PaginatedMessageResponse> => {
   const cacheKey = CACHE_KEYS.MESSAGES;
-  const cachedMessages = !bypassCache ? cache.get<Message[]>(cacheKey) : null;
+  const cachedMessages = !bypassCache && !lastKey ? cache.get<PaginatedMessageResponse>(cacheKey) : null;
 
   if (cachedMessages) {
     return cachedMessages;
   }
 
   try {
-    const messages = await fetchWithAuth<Message[]>(`/messages`);
-    console.log("Total messages fetched:", messages?.length || 0);
+    // Build query parameters
+    const queryParams = new URLSearchParams();
+    queryParams.append('limit', limit.toString());
+    if (lastKey) {
+      queryParams.append('last_key', lastKey);
+    }
 
-    cache.set(cacheKey, messages, CACHE_EXPIRY.SHORT);
-    return messages;
+    const response = await fetchWithAuth<PaginatedMessageResponse>(`/messages?${queryParams.toString()}`);
+    console.log("Total messages fetched:", response?.messages?.length || 0);
+
+    // Only cache the first page (when no lastKey is provided)
+    if (!lastKey) {
+      cache.set(cacheKey, response, CACHE_EXPIRY.SHORT);
+    }
+    
+    return response;
   } catch (error) {
     console.error("Error fetching messages:", error);
 
     // If the error is about session expiration, the fetchWithAuth function
-    // has already handled logout and redirect, so we just return empty array
+    // has already handled logout and redirect, so we just return empty response
     if (error instanceof Error && error.message.includes("Session expired")) {
-      return [];
+      return { messages: [], count: 0, limit: 50 };
     }
-    return [];
+    return { messages: [], count: 0, limit: 50 };
   }
+};
+
+// Keep the old function for backward compatibility, but mark as deprecated
+export const getMessagesLegacy = async (
+  bypassCache: boolean = true
+): Promise<Message[]> => {
+  const response = await getMessages(bypassCache);
+  return response.messages;
 };
 
 export const getMessageById = async (
