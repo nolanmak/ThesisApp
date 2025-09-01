@@ -371,6 +371,19 @@ const MessagesList: React.FC<MessagesListProps> = ({
       });
     }
     
+    // Log transcript_data for ALL messages (not just transcript_analysis)
+    console.log('=== TRANSCRIPT DATA CHECK FOR ALL MESSAGES ===');
+    deduplicatedMessages.forEach((msg, index) => {
+      console.log(`Message ${index + 1} (${msg.ticker} - ${msg.source}):`, {
+        message_id: msg.message_id,
+        ticker: msg.ticker,
+        source: msg.source,
+        hasTranscriptData: !!msg.transcript_data,
+        transcriptDataType: typeof msg.transcript_data,
+        transcriptDataContent: msg.transcript_data ? JSON.stringify(msg.transcript_data).substring(0, 200) + '...' : 'NO TRANSCRIPT DATA'
+      });
+    });
+    
     // Check message format and source types
     const messageAnalysis = deduplicatedMessages.map(msg => ({
       message_id: msg.message_id,
@@ -381,7 +394,9 @@ const MessagesList: React.FC<MessagesListProps> = ({
       sentimentFieldType: typeof msg.sentiment_additional_metrics,
       sentimentFieldValue: msg.sentiment_additional_metrics ? 'HAS_DATA' : 'NO_DATA',
       discordMessagePreview: msg.discord_message ? msg.discord_message.substring(0, 100) + '...' : 'no discord message',
-      hasLink: !!msg.link
+      hasLink: !!msg.link,
+      hasTranscriptData: !!msg.transcript_data,
+      transcriptDataType: typeof msg.transcript_data
     }));
     
     console.log('All messages analysis:', messageAnalysis);
