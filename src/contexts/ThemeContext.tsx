@@ -1,11 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useMemo, useRef } from 'react';
 
 type Theme = 'light' | 'dark';
 
 interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
-  isLoading: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -22,70 +21,63 @@ interface ThemeProviderProps {
   children: React.ReactNode;
 }
 
-const getStoredTheme = (): Theme | null => {
-  if (typeof window === 'undefined') return null;
-  try {
-    const stored = window.localStorage.getItem('theme');
-    return stored === 'light' || stored === 'dark' ? stored : null;
-  } catch {
-    return null;
-  }
-};
+let currentTheme: Theme = 'light';
+let isInitialized = false;
 
-const getSystemTheme = (): Theme => {
+const initializeTheme = (): Theme => {
+  if (isInitialized) return currentTheme;
+  
   if (typeof window === 'undefined') return 'light';
+  
   try {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    const stored = localStorage.getItem('theme');
+    if (stored === 'light' || stored === 'dark') {
+      currentTheme = stored;
+    } else {
+      currentTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    
+    // Apply immediately
+    document.documentElement.classList.toggle('dark', currentTheme === 'dark');
+    isInitialized = true;
+    return currentTheme;
   } catch {
     return 'light';
   }
 };
 
-const applyTheme = (theme: Theme) => {
-  if (typeof document === 'undefined') return;
-  try {
-    const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
+const applyThemeChange = (theme: Theme) => {
+  currentTheme = theme;
+  if (typeof document !== 'undefined') {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  }
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem('theme', theme);
+    } catch {
+      // Ignore storage errors
     }
-  } catch (error) {
-    console.warn('Failed to apply theme:', error);
   }
 };
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [theme, setTheme] = useState<Theme>('light');
+  const forceUpdate = useRef(() => {});
+  const [, updateState] = React.useState({});
+  forceUpdate.current = () => updateState({});
+  
+  const theme = initializeTheme();
 
-  useEffect(() => {
-    const storedTheme = getStoredTheme();
-    const initialTheme = storedTheme ?? getSystemTheme();
-    
-    setTheme(initialTheme);
-    applyTheme(initialTheme);
-    setIsLoading(false);
-  }, []);
-
-  useEffect(() => {
-    if (!isLoading && typeof window !== 'undefined') {
-      try {
-        window.localStorage.setItem('theme', theme);
-        applyTheme(theme);
-      } catch (error) {
-        console.warn('Failed to persist theme:', error);
-      }
+  const contextValue = useMemo(() => ({
+    theme: currentTheme,
+    toggleTheme: () => {
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      applyThemeChange(newTheme);
+      forceUpdate.current();
     }
-  }, [theme, isLoading]);
-
-  const toggleTheme = useCallback(() => {
-    if (isLoading) return;
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  }, [isLoading]);
+  }), [currentTheme]);
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, isLoading }}>
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );
