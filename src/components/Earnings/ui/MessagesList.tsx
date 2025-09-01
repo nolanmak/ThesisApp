@@ -102,6 +102,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
   const allSeenMessageIdsRef = useRef<Set<string>>(new Set());
   const prevMessagesRef = useRef<Message[]>([]);
   const initialLoadCompletedRef = useRef<boolean>(false);
+  const sessionStartTimeRef = useRef<number>(Date.now()); // Track when the session started
   
   // Calculate 24 hours ago timestamp once
   const twentyFourHoursAgo = React.useMemo(() => {
@@ -301,19 +302,32 @@ const MessagesList: React.FC<MessagesListProps> = ({
     // Skip this effect until initial load is completed
     if (!initialLoadCompletedRef.current || !messages || messages.length === 0) return;
     
-    // Find truly new messages - ones we've never seen before in any state
-    const genuinelyNewMessages = messages.filter(msg => !allSeenMessageIdsRef.current.has(msg.message_id));
+    // Find truly new messages - ones that are actually new compared to previous state
+    // This ensures pagination messages (which existed before but weren't in our previous state) don't get highlighted
+    const prevMessageIds = new Set(prevMessagesRef.current.map(msg => msg.message_id));
+    const currentMessageIds = new Set(messages.map(msg => msg.message_id));
     
-    // Update our record of all seen message IDs
+    // Find messages that are in current but not in previous (genuinely new messages)
+    const genuinelyNewMessages = messages.filter(msg => {
+      const isNewToState = !prevMessageIds.has(msg.message_id);
+      const messageTime = new Date(msg.timestamp).getTime();
+      const isRecentMessage = messageTime > (Date.now() - 2 * 60 * 1000); // Only messages from last 2 minutes
+      
+      // Only highlight if it's new to our state AND is a very recent message (likely from WebSocket)
+      return isNewToState && isRecentMessage;
+    });
+    
+    // Update our record of all seen message IDs (for all messages, not just recent ones)
     messages.forEach(msg => {
       allSeenMessageIdsRef.current.add(msg.message_id);
     });
     
-    // Get IDs of genuinely new messages
+    // Get IDs of genuinely new recent messages
     const genuinelyNewMessageIds = genuinelyNewMessages.map(msg => msg.message_id);
     
-    // If we have new messages, add them to the set and set a timer to remove them
+    // If we have new recent messages, add them to the set and set a timer to remove them
     if (genuinelyNewMessageIds.length > 0) {
+      console.log(`Highlighting ${genuinelyNewMessageIds.length} new recent messages`);
       setNewMessageIds(prev => {
         const updatedSet = new Set(prev);
         genuinelyNewMessageIds.forEach(id => updatedSet.add(id));
@@ -336,42 +350,47 @@ const MessagesList: React.FC<MessagesListProps> = ({
     prevMessagesRef.current = messages;
   }, [messages]);
 
-  // Debug sentiment detection
+  // Debug message data structure
   useEffect(() => {
-    console.log('=== SENTIMENT DEBUG ===');
+    console.log('=== MESSAGE DATA DEBUG ===');
     console.log('Total deduplicatedMessages:', deduplicatedMessages.length);
     
-    // Check every message for sentiment_additional_metrics field
-    const allMessages = deduplicatedMessages.map(msg => ({
+    // Check message format and source types
+    const messageAnalysis = deduplicatedMessages.map(msg => ({
+      message_id: msg.message_id,
       ticker: msg.ticker,
       source: msg.source || 'null',
+      timestamp: msg.timestamp,
       hasSentimentField: 'sentiment_additional_metrics' in msg,
       sentimentFieldType: typeof msg.sentiment_additional_metrics,
       sentimentFieldValue: msg.sentiment_additional_metrics ? 'HAS_DATA' : 'NO_DATA',
-      discordMessage: msg.discord_message || 'no discord message'
+      discordMessagePreview: msg.discord_message ? msg.discord_message.substring(0, 100) + '...' : 'no discord message',
+      hasLink: !!msg.link
     }));
     
-    console.log('All messages sentiment check:', allMessages);
+    console.log('All messages analysis:', messageAnalysis);
     
-    // Find DVAX messages specifically
-    const dvaxMessages = deduplicatedMessages.filter(msg => msg.ticker === 'DVAX');
-    console.log('DVAX messages:', dvaxMessages.map(m => ({
-      ticker: m.ticker,
-      discord_message: m.discord_message,
-      source: m.source,
-      has_sentiment_field: 'sentiment_additional_metrics' in m,
-      sentiment_data: m.sentiment_additional_metrics ? 'EXISTS' : 'MISSING',
-      message_id: m.message_id
-    })));
+    // Count by source type
+    const sourceTypeCounts = deduplicatedMessages.reduce((acc, msg) => {
+      const source = msg.source || 'null';
+      acc[source] = (acc[source] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
     
-    const sentimentMessages = deduplicatedMessages.filter(msg => 
-      msg.source === 'sentiment_analysis' || msg.sentiment_additional_metrics
-    );
-    console.log('Filtered sentiment messages count:', sentimentMessages.length);
+    console.log('Source type distribution:', sourceTypeCounts);
     
-    if (sentimentMessages.length > 0) {
-      console.log('Found sentiment messages:', sentimentMessages);
-    }
+    // Show first few messages of each type
+    const sourceTypes = Object.keys(sourceTypeCounts);
+    sourceTypes.forEach(sourceType => {
+      const exampleMessages = deduplicatedMessages.filter(msg => (msg.source || 'null') === sourceType).slice(0, 2);
+      console.log(`Example ${sourceType} messages:`, exampleMessages.map(m => ({
+        ticker: m.ticker,
+        source: m.source,
+        discord_message: m.discord_message?.substring(0, 150) + '...',
+        link: m.link,
+        sentiment_additional_metrics: !!m.sentiment_additional_metrics
+      })));
+    });
   }, [deduplicatedMessages]);
 
   if (loading && (!messages || messages.length === 0)) {
