@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { flushSync } from 'react-dom';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 type Theme = 'light' | 'dark';
 
@@ -22,58 +21,34 @@ interface ThemeProviderProps {
   children: React.ReactNode;
 }
 
+const applyTheme = (theme: Theme) => {
+  document.documentElement.classList.toggle('dark', theme === 'dark');
+};
+
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
     // Check localStorage first
     const saved = localStorage.getItem('theme') as Theme;
-    if (saved) {
-      // Apply theme immediately to prevent flash
-      if (saved === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
+    if (saved && (saved === 'light' || saved === 'dark')) {
+      applyTheme(saved);
       return saved;
     }
     
     // Check system preference
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      document.documentElement.classList.add('dark');
-      return 'dark';
-    }
-    
-    document.documentElement.classList.remove('dark');
-    return 'light';
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const systemTheme = prefersDark ? 'dark' : 'light';
+    applyTheme(systemTheme);
+    return systemTheme;
   });
 
   useEffect(() => {
-    // Update localStorage
     localStorage.setItem('theme', theme);
-    
-    // Ensure DOM is updated synchronously
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    applyTheme(theme);
   }, [theme]);
 
-  const toggleTheme = () => {
-    flushSync(() => {
-      setTheme(prev => {
-        const newTheme = prev === 'light' ? 'dark' : 'light';
-        
-        // Apply DOM changes immediately and synchronously
-        if (newTheme === 'dark') {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-        
-        return newTheme;
-      });
-    });
-  };
+  const toggleTheme = useCallback(() => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  }, []);
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
