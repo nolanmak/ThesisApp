@@ -102,6 +102,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
   const allSeenMessageIdsRef = useRef<Set<string>>(new Set());
   const prevMessagesRef = useRef<Message[]>([]);
   const initialLoadCompletedRef = useRef<boolean>(false);
+  const sessionStartTimeRef = useRef<number>(Date.now()); // Track when the session started
   
   // Calculate 24 hours ago timestamp once
   const twentyFourHoursAgo = React.useMemo(() => {
@@ -301,19 +302,32 @@ const MessagesList: React.FC<MessagesListProps> = ({
     // Skip this effect until initial load is completed
     if (!initialLoadCompletedRef.current || !messages || messages.length === 0) return;
     
-    // Find truly new messages - ones we've never seen before in any state
-    const genuinelyNewMessages = messages.filter(msg => !allSeenMessageIdsRef.current.has(msg.message_id));
+    // Define what constitutes a "recent" message 
+    // Use the more restrictive of: session start time or 5 minutes ago
+    const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+    const highlightThreshold = Math.max(sessionStartTimeRef.current, fiveMinutesAgo);
     
-    // Update our record of all seen message IDs
+    // Find truly new messages - ones we've never seen before AND are recent (after session start)
+    const genuinelyNewMessages = messages.filter(msg => {
+      const isUnseen = !allSeenMessageIdsRef.current.has(msg.message_id);
+      const messageTime = new Date(msg.timestamp).getTime();
+      const isRecentEnough = messageTime > highlightThreshold;
+      
+      // Only highlight if it's both unseen AND recent enough (likely from WebSocket)
+      return isUnseen && isRecentEnough;
+    });
+    
+    // Update our record of all seen message IDs (for all messages, not just recent ones)
     messages.forEach(msg => {
       allSeenMessageIdsRef.current.add(msg.message_id);
     });
     
-    // Get IDs of genuinely new messages
+    // Get IDs of genuinely new recent messages
     const genuinelyNewMessageIds = genuinelyNewMessages.map(msg => msg.message_id);
     
-    // If we have new messages, add them to the set and set a timer to remove them
+    // If we have new recent messages, add them to the set and set a timer to remove them
     if (genuinelyNewMessageIds.length > 0) {
+      console.log(`Highlighting ${genuinelyNewMessageIds.length} new recent messages`);
       setNewMessageIds(prev => {
         const updatedSet = new Set(prev);
         genuinelyNewMessageIds.forEach(id => updatedSet.add(id));
