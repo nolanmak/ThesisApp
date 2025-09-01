@@ -11,6 +11,7 @@ import PasswordReset from './components/Landing/PasswordReset';
 import ScheduleTemplate from './components/ScheduleTemplate';
 import EarningsDataTemplate from './components/EarningsDataTemplate';
 import EarningsDataTemplateDemo from './components/EarningsDataTemplate/demo';
+import EarningsDataTemplateBlank from './components/EarningsDataTemplate/blank';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import GlobalDataProvider from './providers/GlobalDataProvider';

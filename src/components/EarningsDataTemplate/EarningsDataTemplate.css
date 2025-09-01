@@ -9,8 +9,8 @@
 }
 
 .earnings-data-container .main-container {
-  width: 800px;
-  height: 600px;
+  width: 900px;
+  height: 700px;
   background: white;
   border-radius: 25px;
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15);
@@ -22,7 +22,7 @@
 
 /* Header Section */
 .earnings-data-container .header-section {
-  padding: 25px 30px;
+  padding: 20px 25px;
   background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
   color: white;
   display: flex;
@@ -34,13 +34,13 @@
 
 .earnings-data-container .logo-section {
   position: absolute;
-  left: 30px;
+  left: 25px;
   top: 50%;
   transform: translateY(-50%);
 }
 
 .earnings-data-container .logo-image {
-  height: 50px;
+  height: 40px;
   width: auto;
   object-fit: contain;
 }
@@ -51,44 +51,50 @@
 }
 
 .earnings-data-container .company-name {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   margin: 0;
   color: white;
 }
 
 .earnings-data-container .company-ticker {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.9);
-  margin-left: 10px;
+  margin-left: 8px;
 }
 
 .earnings-data-container .page-title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 400;
-  margin: 6px 0 0 0;
+  margin: 4px 0 0 0;
   color: rgba(255, 255, 255, 0.9);
 }
 
 /* Content Area */
 .earnings-data-container .content-area {
   flex: 1;
-  padding: 40px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 30px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   overflow: hidden;
+}
+
+/* Metrics Grid - Dynamic Layout */
+.earnings-data-container .metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
 }
 
 /* Section Styles */
 .earnings-data-container .section-title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #2C3E50;
-  margin: 0 0 12px 0;
-  padding-bottom: 6px;
+  margin: 0 0 8px 0;
+  padding-bottom: 4px;
   border-bottom: 2px solid #4A90E2;
   display: inline-block;
 }
@@ -96,9 +102,9 @@
 /* Metric Cards */
 .earnings-data-container .metric-card {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border-radius: 15px;
-  padding: 25px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  padding: 10px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   border: 1px solid #E8EEF3;
   transition: all 0.2s ease;
   display: flex;
@@ -111,12 +117,12 @@
 }
 
 .earnings-data-container .metric-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #2C3E50;
-  margin: 0 0 12px 0;
+  margin: 0 0 8px 0;
   text-align: center;
-  padding-bottom: 8px;
+  padding-bottom: 6px;
   border-bottom: 1px solid #E8EEF3;
 }
 
@@ -124,30 +130,30 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 6px;
 }
 
 .earnings-data-container .metric-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 0;
+  padding: 3px 0;
 }
 
 .earnings-data-container .metric-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: #64748B;
 }
 
 .earnings-data-container .metric-value {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
 }
 
 .earnings-data-container .metric-value.actual {
   color: #2C3E50;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .earnings-data-container .metric-value.expected {
@@ -156,29 +162,29 @@
 
 .earnings-data-container .metric-value.range {
   color: #64748B;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .earnings-data-container .delta-row {
   background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-  border-radius: 8px;
-  padding: 12px 15px;
-  margin-top: 8px;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-top: 4px;
 }
 
 .earnings-data-container .delta-container {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .earnings-data-container .metric-indicator {
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .earnings-data-container .metric-delta {
   font-weight: 700;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .earnings-data-container .metric-delta.positive {
@@ -189,6 +195,74 @@
   color: #EF4444;
 }
 
+/* Simple Metric Cards */
+.earnings-data-container .metric-card.simple {
+  text-align: center;
+}
+
+.earnings-data-container .simple-metric-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #4A90E2;
+  margin-top: 10px;
+}
+
+/* Highlights Section */
+.earnings-data-container .highlights-section {
+  margin-top: 10px;
+}
+
+.earnings-data-container .highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.earnings-data-container .highlight-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 6px 10px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 6px;
+  border: 1px solid #E8EEF3;
+}
+
+.earnings-data-container .highlight-bullet {
+  color: #4A90E2;
+  font-weight: 700;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.earnings-data-container .highlight-text {
+  font-size: 11px;
+  color: #2C3E50;
+  line-height: 1.3;
+}
+
+/* Additional Metrics Section */
+.earnings-data-container .additional-section {
+  margin-top: 10px;
+}
+
+.earnings-data-container .additional-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.earnings-data-container .additional-badge {
+  background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 15px;
+  font-weight: 600;
+  font-size: 11px;
+  box-shadow: 0 1px 6px rgba(74, 144, 226, 0.2);
+}
 
 /* Responsive Design */
 @media (max-width: 768px) {
