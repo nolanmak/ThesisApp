@@ -751,7 +751,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     <div className="flex items-center gap-2">
                       {/* <StockLogo ticker={message.ticker} size={16} /> */}
                       <span 
-                        className="font-medium text-neutral-800"
+                        className="font-bold text-neutral-800 dark:text-neutral-100"
                         style={{
                           display: 'flex',
                           flexDirection: 'row',
