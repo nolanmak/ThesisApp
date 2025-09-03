@@ -122,7 +122,6 @@ const Calendar: React.FC = () => {
   };
 
   const handleCloseConfigModal = () => {
-    console.log('Closing config modal');
     closeConfigModal();
   };
 
@@ -130,7 +129,6 @@ const Calendar: React.FC = () => {
   const handleRefreshCache = async () => {
     try {
       setIsRefreshing(true);
-      console.log('🔄 Refreshing cache for earnings and messages data...');
       
       // Refresh both earnings and messages data with cache bypass
       await Promise.all([
@@ -143,7 +141,6 @@ const Calendar: React.FC = () => {
         await fetchCompanyNamesForDate(selectedDate);
       }
       
-      console.log('✅ Cache refresh completed');
     } catch (error) {
       console.error('❌ Error refreshing cache:', error);
     } finally {

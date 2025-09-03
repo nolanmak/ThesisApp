@@ -353,7 +353,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
     
     // If we have new recent messages, add them to the set and set a timer to remove them
     if (genuinelyNewMessageIds.length > 0) {
-      console.log(`Highlighting ${genuinelyNewMessageIds.length} new recent messages`);
       setNewMessageIds(prev => {
         const updatedSet = new Set(prev);
         genuinelyNewMessageIds.forEach(id => updatedSet.add(id));
@@ -378,38 +377,15 @@ const MessagesList: React.FC<MessagesListProps> = ({
 
   // Debug message data structure
   useEffect(() => {
-    console.log('=== MESSAGE DATA DEBUG ===');
-    console.log('Total deduplicatedMessages:', deduplicatedMessages.length);
     
     // Focus on transcript messages specifically
     const transcriptMessages = deduplicatedMessages.filter(msg => msg.source === 'transcript_analysis');
-    console.log('Transcript messages count:', transcriptMessages.length);
     
     if (transcriptMessages.length > 0) {
-      console.log('First transcript message sample:', {
-        message_id: transcriptMessages[0].message_id,
-        ticker: transcriptMessages[0].ticker,
-        source: transcriptMessages[0].source,
-        hasDiscordMessage: !!transcriptMessages[0].discord_message,
-        discordMessageLength: transcriptMessages[0].discord_message?.length || 0,
-        discordMessagePreview: transcriptMessages[0].discord_message?.substring(0, 200) + '...',
-        hasTranscriptData: !!transcriptMessages[0].transcript_data,
-        transcriptDataType: typeof transcriptMessages[0].transcript_data,
-        parsedResult: ParseTranscriptMessage(transcriptMessages[0])
-      });
     }
     
     // Log transcript_data for ALL messages (not just transcript_analysis)
-    console.log('=== TRANSCRIPT DATA CHECK FOR ALL MESSAGES ===');
     deduplicatedMessages.forEach((msg, index) => {
-      console.log(`Message ${index + 1} (${msg.ticker} - ${msg.source}):`, {
-        message_id: msg.message_id,
-        ticker: msg.ticker,
-        source: msg.source,
-        hasTranscriptData: !!msg.transcript_data,
-        transcriptDataType: typeof msg.transcript_data,
-        transcriptDataContent: msg.transcript_data ? JSON.stringify(msg.transcript_data).substring(0, 200) + '...' : 'NO TRANSCRIPT DATA'
-      });
     });
     
     // Check message format and source types
@@ -427,7 +403,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
       transcriptDataType: typeof msg.transcript_data
     }));
     
-    console.log('All messages analysis:', messageAnalysis);
     
     // Count by source type
     const sourceTypeCounts = deduplicatedMessages.reduce((acc, msg) => {
@@ -436,7 +411,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
       return acc;
     }, {} as Record<string, number>);
     
-    console.log('Source type distribution:', sourceTypeCounts);
   }, [deduplicatedMessages]);
 
   if (loading && (!messages || messages.length === 0)) {

@@ -224,7 +224,6 @@ const EarningsList: React.FC<EarningsListProps> = ({
           {/* Company Names Section */}
           {(() => {
             const hasCompanyNames = companyNames[item.ticker] && companyNames[item.ticker].company_names.length > 0;
-            console.log(`🏢 ${item.ticker} - Has company names:`, hasCompanyNames, companyNames[item.ticker]?.company_names?.length || 0);
             return hasCompanyNames;
           })() && (
             <div 

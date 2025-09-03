@@ -36,7 +36,6 @@ class WebSocketService {
   public enable(): void {
     if (!this.isEnabled) {
       this.isEnabled = true;
-      console.log('WebSocket functionality enabled');
       this.connect();
     }
   }
@@ -45,7 +44,6 @@ class WebSocketService {
   public disable(): void {
     if (this.isEnabled) {
       this.isEnabled = false;
-      console.log('WebSocket functionality disabled');
       this.disconnect();
       
       // Notify all handlers that the connection is disabled
@@ -62,7 +60,6 @@ class WebSocketService {
   public connect(): void {
     // Don't attempt to connect if WebSocket is disabled
     if (!this.isEnabled) {
-      console.log('WebSocket is disabled, not connecting');
       return;
     }
     
@@ -71,23 +68,19 @@ class WebSocketService {
     const timeSinceLastAttempt = now - this.lastConnectionAttempt;
     
     if (timeSinceLastAttempt < this.minConnectionInterval) {
-      console.log(`Connection attempt too frequent (${timeSinceLastAttempt}ms since last attempt), minimum interval is ${this.minConnectionInterval}ms`);
       return;
     }
     
     // Don't attempt to connect if we're already connecting or connected
     if (this.isConnecting) {
-      console.log('WebSocket already connecting, skipping duplicate connect attempt');
       return;
     }
     
     if (this.socket?.readyState === WebSocket.OPEN) {
-      console.log('WebSocket already connected');
       return;
     }
     
     if (this.socket?.readyState === WebSocket.CONNECTING) {
-      console.log('WebSocket already in connecting state');
       return;
     }
     
@@ -103,7 +96,6 @@ class WebSocketService {
           // Only attempt to close if the socket is in a state that can be closed
           if (this.socket.readyState === WebSocket.OPEN || 
               this.socket.readyState === WebSocket.CONNECTING) {
-            console.log(`Closing existing WebSocket in state: ${this.socket.readyState}`);
             this.socket.close();
           }
         } catch (e) {
@@ -113,11 +105,9 @@ class WebSocketService {
         this.socket = null;
       }
       
-      console.log('Creating new WebSocket connection');
       this.socket = new WebSocket(WS_ENDPOINT);
 
       this.socket.onopen = () => {
-        console.log('WebSocket connection established');
         this.reconnectAttempts = 0;
         this.connectionFailures = 0; // Reset connection failures on successful connection
         this.reconnectDelay = 2000; // Reset reconnect delay
@@ -139,7 +129,6 @@ class WebSocketService {
       this.socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log('WebSocket message received:', data);
           
           // Handle pong response
           if (data.type === 'pong' || data.action === 'pong') {
@@ -183,12 +172,6 @@ class WebSocketService {
         console.error('WebSocket error:', error);
         
         // Log additional details about the socket state
-        console.log('WebSocket state at error:', {
-          readyState: this.socket?.readyState,
-          url: this.socket?.url,
-          protocol: this.socket?.protocol,
-          bufferedAmount: this.socket?.bufferedAmount
-        });
         
         this.isConnecting = false;
         this.hasNotifiedConnected = false;
@@ -202,7 +185,6 @@ class WebSocketService {
       };
 
       this.socket.onclose = (event) => {
-        console.log(`WebSocket connection closed: ${event.code} ${event.reason}`);
         this.isConnecting = false;
         this.hasNotifiedConnected = false;
         this.notifyConnectionStatus(false);
@@ -240,10 +222,8 @@ class WebSocketService {
         // Only attempt to close if the socket is in a state that can be closed
         if (this.socket.readyState === WebSocket.OPEN || 
             this.socket.readyState === WebSocket.CONNECTING) {
-          console.log(`Closing WebSocket in state: ${this.socket.readyState}`);
           this.socket.close();
         } else {
-          console.log(`Not closing WebSocket - already in state: ${this.socket.readyState}`);
         }
       } catch (e) {
         console.error('Error closing socket:', e);
@@ -297,7 +277,6 @@ class WebSocketService {
   // Attempt to reconnect with exponential backoff
   private attemptReconnect(): void {
     if (this.isManualClose || !this.isEnabled) {
-      console.log('Manual close or disabled, not attempting to reconnect');
       return;
     }
     
@@ -307,17 +286,14 @@ class WebSocketService {
     // If we've had too many consecutive failures, increase the minimum connection interval
     if (this.connectionFailures > this.maxConsecutiveFailures) {
       this.minConnectionInterval = Math.min(60000, this.minConnectionInterval * 1.5);
-      console.log(`Increasing minimum connection interval to ${this.minConnectionInterval}ms due to consecutive failures`);
     }
     
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.log(`Maximum reconnection attempts (${this.maxReconnectAttempts}) reached`);
       
       // Don't automatically disable - just wait longer and reset
       this.reconnectAttempts = 0;
       const resetDelay = 300000; // 5 minutes
       
-      console.log(`Resetting reconnection attempts, will try again in ${resetDelay / 60000} minutes`);
       
       setTimeout(() => {
         if (!this.isManualClose && this.isEnabled) {
@@ -334,7 +310,6 @@ class WebSocketService {
     const jitter = Math.random() * 0.2 * baseDelay; // Reduced jitter
     const delay = Math.min(120000, baseDelay + jitter); // Cap at 2 minutes
     
-    console.log(`Attempting to reconnect in ${Math.round(delay / 1000)} seconds (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
     
     // Clear any existing timeout
     if (this.reconnectTimeout) {
@@ -342,7 +317,6 @@ class WebSocketService {
     }
     
     this.reconnectTimeout = window.setTimeout(() => {
-      console.log(`Executing reconnection attempt ${this.reconnectAttempts}`);
       this.connect();
     }, delay);
   }
@@ -402,7 +376,6 @@ class WebSocketService {
       return;
     }
     
-    console.log('Sending ping to WebSocket server');
     
     try {
       this.socket!.send(JSON.stringify({ action: 'ping', timestamp: Date.now() }));
@@ -432,7 +405,6 @@ class WebSocketService {
   
   // Handle pong response
   private handlePong(): void {
-    console.log('Received pong from WebSocket server');
     this.lastPongTime = Date.now();
     
     // Clear the ping timeout

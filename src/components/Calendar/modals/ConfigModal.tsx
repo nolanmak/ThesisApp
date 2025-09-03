@@ -36,7 +36,6 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
   
   // Handle case when currentItem is missing
   if (!currentItem) {
-    console.log('Warning: ConfigModal rendered without currentItem!');
     return (
       <div className="fixed inset-0 z-50 overflow-hidden">
         <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70" onClick={onClose}></div>
@@ -80,10 +79,6 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
           const defaultConfig = getDefaultConfig(currentItem.ticker);
           const existingConfig = await getCompanyConfigByTicker(currentItem.ticker);
           
-          console.log('Config data format:', {
-            defaultConfig,
-            existingConfig
-          });
           
           // If config exists, pre-populate the form
           if (existingConfig) {
@@ -107,11 +102,9 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
               }
             };
             
-            console.log('Processed form data:', formData);
             reset(formData);
           } else {
             // Reset form with default values
-            console.log('Using default config:', defaultConfig);
             reset({
               ...defaultConfig,
               use_proxy: defaultConfig.use_proxy ?? false
@@ -149,7 +142,6 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
   }, [show, onClose]);
 
   if (!show || !currentItem) {
-    console.log('Not showing ConfigModal because:', { show, currentItem });
     return null;
   }
 

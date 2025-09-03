@@ -56,11 +56,6 @@ class CognitoAuth {
 
   async exchangeCodeForTokens(code: string, redirectUri: string): Promise<Record<string, unknown>> {
     const tokenEndpoint = `https://${this.config.domain}/oauth2/token`;
-    console.log('Token exchange debug info:');
-    console.log('- tokenEndpoint:', tokenEndpoint);
-    console.log('- client_id:', this.config.clientId);
-    console.log('- code:', code);
-    console.log('- redirect_uri:', redirectUri);
     
     const params = new URLSearchParams({
       grant_type: 'authorization_code',
@@ -69,7 +64,6 @@ class CognitoAuth {
       redirect_uri: redirectUri
     });
 
-    console.log('- request body:', params.toString());
 
     const response = await fetch(tokenEndpoint, {
       method: 'POST',
@@ -79,17 +73,13 @@ class CognitoAuth {
       body: params.toString()
     });
 
-    console.log('- response status:', response.status);
-    console.log('- response statusText:', response.statusText);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.log('- error response body:', errorText);
       throw new Error(`Failed to exchange code for tokens: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const responseData = await response.json();
-    console.log('- successful response:', responseData);
     return responseData;
   }
 
@@ -107,7 +97,6 @@ class CognitoAuth {
 
   getUserFromIdToken(idToken: string): AuthUser {
     const payload = this.parseJWT(idToken);
-    console.log('payload', payload);
     return {
       sub: payload.sub as string,
       email: payload.email as string,

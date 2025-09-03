@@ -53,15 +53,12 @@ const useConfigData = () => {
 
   // Handle opening config modal
   const handleOpenConfigModal = useCallback((item: EarningsItem) => {
-    console.log('Opening config modal for item:', item);
     
     // Set the current item first, then show the modal
     setCurrentConfigItem(item);
-    console.log('Current config item set to:', item);
     
     // Then show the modal
     setShowConfigModal(true);
-    console.log('Show config modal set to true');
     
     return item;
   }, []);
@@ -166,7 +163,6 @@ const useConfigData = () => {
     fetchConfigStatus,
     handleOpenConfigModal,
     handleCloseConfigModal: () => {
-      console.log('Closing config modal from hook');
       setShowConfigModal(false)
     },
     submitConfig,

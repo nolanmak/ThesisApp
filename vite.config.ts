@@ -28,7 +28,6 @@ export default defineConfig({
         secure: true,
         rewrite: (path) => {
           const newPath = path.replace(/^\/api\/earnings/, '');
-          console.log(`Rewriting earnings path ${path} to ${newPath}`);
           return newPath;
         },
         configure: (proxy, _options) => {
@@ -36,8 +35,6 @@ export default defineConfig({
             console.log('earnings proxy error', err);
           });
           proxy.on('proxyReq', (proxyReq, req, _res) => {
-            console.log(`Proxying earnings ${req.method} request to: ${req.url}`);
-            console.log('Earnings Headers:', req.headers);
           });
         }
       },
@@ -54,7 +51,6 @@ export default defineConfig({
         secure: true,
         rewrite: (path) => {
           const newPath = path.replace(/^\/api\/waitlist/, '');
-          console.log(`Rewriting waitlist path ${path} to ${newPath}`);
           return newPath;
         },
         configure: (proxy, _options) => {

@@ -43,7 +43,6 @@ const WatchList: React.FC = () => {
       });
       
       setCurrentWatchlist(watchlistArray);
-      console.log('Watchlist updated successfully');
     } catch (error) {
       console.error('Error updating watchlist:', error);
     } finally {

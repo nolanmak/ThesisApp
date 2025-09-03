@@ -61,7 +61,6 @@ const WaveBackground: React.FC = () => {
   const { theme } = useTheme();
 
   useEffect(() => {
-    console.log("WaveBackground mounting...");
     const canvas = canvasRef.current;
     if (!canvas) {
       console.error("Canvas reference is null");
@@ -76,7 +75,6 @@ const WaveBackground: React.FC = () => {
 
     // Initialize noise function
     noiseRef.current = createNoise2D();
-    console.log("Noise function created");
 
     // Create 3-5 focal points at random positions
     focalPointsRef.current = Array.from({ length: 3 + Math.floor(Math.random() * 3) }, () => {
@@ -90,7 +88,6 @@ const WaveBackground: React.FC = () => {
     });
 
     const resizeCanvas = () => {
-      console.log("Resizing canvas", window.innerWidth, window.innerHeight);
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       
@@ -213,10 +210,8 @@ const WaveBackground: React.FC = () => {
     resizeCanvas();
     // Start the animation with an initial time value
     animationRef.current = requestAnimationFrame(drawWaves);
-    console.log("Animation started with ID:", animationRef.current);
 
     return () => {
-      console.log("WaveBackground unmounting...");
       window.removeEventListener("resize", resizeCanvas);
       cancelAnimationFrame(animationRef.current);
     };
