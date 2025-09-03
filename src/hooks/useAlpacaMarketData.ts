@@ -153,6 +153,11 @@ export const useAlpacaMarketData = (symbols: string[]) => {
     alpacaService.requestVolumeDataForSymbols(tickers);
   }, []);
 
+  // Get market close status
+  const getMarketCloseStatus = useCallback(() => {
+    return alpacaService.getMarketCloseStatus();
+  }, []);
+
   // Fetch initial volume data when symbols change
   useEffect(() => {
     if (memoizedSymbols.length > 0 && enabled && isConnected) {
@@ -179,6 +184,7 @@ export const useAlpacaMarketData = (symbols: string[]) => {
     getCumulativeStats,
     resetAllCumulativeVolume,
     requestVolumeData,
-    requestVolumeDataForSymbols
+    requestVolumeDataForSymbols,
+    getMarketCloseStatus
   };
 };

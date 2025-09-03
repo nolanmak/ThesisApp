@@ -145,6 +145,8 @@ class AlpacaService {
   private isAuthenticated = false;
   private connectionEstablishTimeout: number | null = null;
   private isEagerConnection = false; // Flag to enable proactive connection
+  private marketCloseCheckInterval: number | null = null;
+  private periodicMarketCheckInterval: number | null = null;
   
   // Track cumulative volume and trade counts for each symbol
   private cumulativeVolume: Map<string, number> = new Map();
@@ -153,8 +155,8 @@ class AlpacaService {
 
   constructor() {
     this.initializeFromEnv();
-    // Establish connection proactively for faster volume data access
-    this.startEagerConnection();
+    // Start monitoring for market close time (4 PM EST/EDT)
+    this.startMarketCloseMonitoring();
   }
 
   private initializeFromEnv(): void {
@@ -165,26 +167,135 @@ class AlpacaService {
     this.isEagerConnection = true;
   }
 
-  private startEagerConnection(): void {
-    if (!this.isEagerConnection || !this.isEnabled) {
+  /**
+   * Check if current time is at or after 4 PM EST/EDT (market close)
+   * Handles daylight saving time automatically and works in any timezone
+   */
+  private isAfterMarketClose(): boolean {
+    const now = new Date();
+    
+    // Create a date object for today at 4 PM in New York timezone
+    const todayAt4PM = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    todayAt4PM.setHours(16, 0, 0, 0); // 4:00:00 PM exactly
+    
+    // Get current time in New York timezone
+    const nowInNY = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    
+    return nowInNY >= todayAt4PM;
+  }
+
+  /**
+   * Get time until 4 PM EST/EDT in milliseconds
+   * Returns 0 if already past 4 PM today, or ms until 4 PM tomorrow
+   */
+  private getTimeUntilMarketClose(): number {
+    const now = new Date();
+    
+    // Get current time in New York timezone
+    const nowInNY = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    
+    // Create target time (4 PM today in NY timezone)
+    const targetTime = new Date(nowInNY);
+    targetTime.setHours(16, 0, 0, 0);
+    
+    // If we're past 4 PM today, set target to 4 PM tomorrow
+    if (nowInNY >= targetTime) {
+      targetTime.setDate(targetTime.getDate() + 1);
+    }
+    
+    // Convert back to local timezone for calculation
+    const targetInLocal = new Date(targetTime.toLocaleString("en-US", {timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone}));
+    
+    return Math.max(0, targetInLocal.getTime() - now.getTime());
+  }
+
+  /**
+   * Start monitoring for market close time and connect when appropriate
+   */
+  private startMarketCloseMonitoring(): void {
+    if (!this.isEnabled) {
       return;
     }
     
-    // Start connection in background after a longer delay to avoid conflicts
-    this.connectionEstablishTimeout = window.setTimeout(() => {
-      if (!this.isConnected() && this.isEnabled && !this.isConnecting) {
-        console.log('🚀 Starting eager WebSocket connection for volume data');
+    const checkMarketClose = () => {
+      if (this.isAfterMarketClose()) {
+        // It's after 4 PM EST/EDT, start connection if not already connected
+        if (!this.isConnected() && this.isEnabled && !this.isConnecting) {
+          console.log('🕐 Market closed (4 PM EST/EDT reached), starting volume data connection');
+          this.isEagerConnection = true;
+          this.connect();
+        }
+      } else {
+        // Not yet 4 PM, schedule check for when market closes
+        const timeUntil4PM = this.getTimeUntilMarketClose();
+        const hours = Math.floor(timeUntil4PM / (1000 * 60 * 60));
+        const minutes = Math.floor((timeUntil4PM % (1000 * 60 * 60)) / (1000 * 60));
+        
+        console.log(`📅 Market not yet closed. Will start volume tracking in ${hours}h ${minutes}m (at 4 PM EST/EDT)`);
+        
+        // Clear existing timeout
+        if (this.marketCloseCheckInterval) {
+          clearTimeout(this.marketCloseCheckInterval);
+        }
+        
+        // Schedule connection for market close time
+        this.marketCloseCheckInterval = window.setTimeout(() => {
+          console.log('🔔 Market close time reached, starting volume connection');
+          this.isEagerConnection = true;
+          this.connect();
+          
+          // Continue monitoring (for next day)
+          this.startMarketCloseMonitoring();
+        }, timeUntil4PM);
+      }
+    };
+    
+    // Initial check
+    checkMarketClose();
+    
+    // Start periodic check every 30 minutes to ensure we don't miss market close
+    // This handles edge cases like browser sleep, timezone changes, or long-running sessions
+    this.startPeriodicMarketCheck();
+  }
+
+  /**
+   * Start periodic checks (every 30 minutes) to ensure we don't miss market close
+   * This provides a safety net in case the main timeout mechanism fails
+   */
+  private startPeriodicMarketCheck(): void {
+    // Clear any existing periodic check
+    if (this.periodicMarketCheckInterval) {
+      clearInterval(this.periodicMarketCheckInterval);
+    }
+    
+    // Check every 30 minutes
+    this.periodicMarketCheckInterval = window.setInterval(() => {
+      if (!this.isEnabled) {
+        return;
+      }
+      
+      console.log('🔄 Periodic market close check (every 30min safety check)');
+      
+      // If we should be connected but aren't, start connection
+      if (this.isAfterMarketClose() && !this.isConnected() && !this.isConnecting) {
+        console.log('⚠️ Periodic check detected missed market close - connecting now');
+        this.isEagerConnection = true;
         this.connect();
       }
-    }, 2000); // Longer delay to avoid conflicts with manual connections
+      
+      // If our scheduled timeout seems to have been missed, restart monitoring
+      if (!this.isAfterMarketClose() && !this.marketCloseCheckInterval) {
+        console.log('⚠️ Periodic check detected missing market close schedule - restarting monitoring');
+        this.startMarketCloseMonitoring();
+      }
+    }, 30 * 60 * 1000); // 30 minutes in milliseconds
   }
 
   public enable(): void {
     if (!this.isEnabled) {
       this.isEnabled = true;
       console.log('Alpaca WebSocket functionality enabled');
-      this.isEagerConnection = true;
-      this.connect();
+      this.startMarketCloseMonitoring();
     }
   }
 
@@ -200,6 +311,19 @@ class AlpacaService {
     if (this.isEnabled) {
       this.isEnabled = false;
       console.log('Alpaca WebSocket functionality disabled');
+      
+      // Clear market close monitoring
+      if (this.marketCloseCheckInterval) {
+        clearTimeout(this.marketCloseCheckInterval);
+        this.marketCloseCheckInterval = null;
+      }
+      
+      // Clear periodic market check
+      if (this.periodicMarketCheckInterval) {
+        clearInterval(this.periodicMarketCheckInterval);
+        this.periodicMarketCheckInterval = null;
+      }
+      
       this.disconnect();
     }
   }
@@ -839,6 +963,16 @@ class AlpacaService {
       this.connectionEstablishTimeout = null;
     }
 
+    if (this.marketCloseCheckInterval) {
+      clearTimeout(this.marketCloseCheckInterval);
+      this.marketCloseCheckInterval = null;
+    }
+
+    if (this.periodicMarketCheckInterval) {
+      clearInterval(this.periodicMarketCheckInterval);
+      this.periodicMarketCheckInterval = null;
+    }
+
     this.clearPingInterval();
 
     if (this.socket) {
@@ -866,6 +1000,37 @@ class AlpacaService {
 
   public isWebSocketEnabled(): boolean {
     return this.isEnabled;
+  }
+
+  /**
+   * Get market close status information
+   */
+  public getMarketCloseStatus(): {
+    isAfterMarketClose: boolean;
+    timeUntilMarketClose: number;
+    nextMarketCloseTime: string;
+  } {
+    const isAfterMarketClose = this.isAfterMarketClose();
+    const timeUntilMarketClose = this.getTimeUntilMarketClose();
+    
+    // Calculate next market close time
+    const now = new Date();
+    const nextClose = new Date(now.getTime() + timeUntilMarketClose);
+    const nextMarketCloseTime = nextClose.toLocaleString("en-US", {
+      timeZone: "America/New_York",
+      weekday: 'short',
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short'
+    });
+    
+    return {
+      isAfterMarketClose,
+      timeUntilMarketClose,
+      nextMarketCloseTime
+    };
   }
 
   private attemptReconnect(): void {
