@@ -17,13 +17,15 @@ import AdminRoute from './components/AdminRoute';
 import GlobalDataProvider from './providers/GlobalDataProvider';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { AudioSettingsProvider } from './contexts/AudioSettingsContext';
 
 function App() {
   return (
     <>
       <ThemeProvider>
-        <AuthProvider>
-          <GlobalDataProvider>
+        <AudioSettingsProvider>
+          <AuthProvider>
+            <GlobalDataProvider>
           <Router>
             <Routes>
               <Route path="/" element={<LandingPage />} />
@@ -47,8 +49,9 @@ function App() {
             </Routes>
           </Router>
           <ToastContainer position="top-right" />
-          </GlobalDataProvider>
-        </AuthProvider>
+            </GlobalDataProvider>
+          </AuthProvider>
+        </AudioSettingsProvider>
       </ThemeProvider>
     </>
   );
