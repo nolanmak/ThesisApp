@@ -63,9 +63,33 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   // Available tabs based on related messages
   const availableTabs = useMemo(() => {
     const tabs = [];
-    if (relatedMessages.earnings) tabs.push({ id: 'earnings', label: 'Earnings', message: relatedMessages.earnings });
-    if (relatedMessages.sentiment) tabs.push({ id: 'sentiment', label: 'Sentiment', message: relatedMessages.sentiment });
-    if (relatedMessages.transcript) tabs.push({ id: 'transcript', label: 'Transcript', message: relatedMessages.transcript });
+    if (relatedMessages.earnings) tabs.push({ 
+      id: 'earnings', 
+      label: 'Earnings', 
+      message: relatedMessages.earnings,
+      colors: {
+        active: 'bg-sky-100 dark:bg-sky-900/50 text-sky-800 dark:text-sky-200',
+        inactive: 'text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-200 hover:bg-sky-50 dark:hover:bg-sky-900/30'
+      }
+    });
+    if (relatedMessages.sentiment) tabs.push({ 
+      id: 'sentiment', 
+      label: 'Sentiment', 
+      message: relatedMessages.sentiment,
+      colors: {
+        active: 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200',
+        inactive: 'text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 hover:bg-green-50 dark:hover:bg-green-900/30'
+      }
+    });
+    if (relatedMessages.transcript) tabs.push({ 
+      id: 'transcript', 
+      label: 'Transcript', 
+      message: relatedMessages.transcript,
+      colors: {
+        active: 'bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200',
+        inactive: 'text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 hover:bg-purple-50 dark:hover:bg-purple-900/30'
+      }
+    });
     return tabs;
   }, [relatedMessages]);
 
@@ -188,8 +212,8 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                     onClick={() => setActiveTab(tab.id)}
                     className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                       activeTab === tab.id
-                        ? 'bg-white dark:bg-neutral-600 text-neutral-900 dark:text-white shadow-sm'
-                        : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-600'
+                        ? `${tab.colors.active} shadow-sm`
+                        : tab.colors.inactive
                     }`}
                   >
                     {tab.label}
