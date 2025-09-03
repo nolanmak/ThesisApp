@@ -146,6 +146,7 @@ class AlpacaService {
   private connectionEstablishTimeout: number | null = null;
   private isEagerConnection = false; // Flag to enable proactive connection
   private marketCloseCheckInterval: number | null = null;
+  private periodicMarketCheckInterval: number | null = null;
   
   // Track cumulative volume and trade counts for each symbol
   private cumulativeVolume: Map<string, number> = new Map();
@@ -251,6 +252,43 @@ class AlpacaService {
     
     // Initial check
     checkMarketClose();
+    
+    // Start periodic check every 30 minutes to ensure we don't miss market close
+    // This handles edge cases like browser sleep, timezone changes, or long-running sessions
+    this.startPeriodicMarketCheck();
+  }
+
+  /**
+   * Start periodic checks (every 30 minutes) to ensure we don't miss market close
+   * This provides a safety net in case the main timeout mechanism fails
+   */
+  private startPeriodicMarketCheck(): void {
+    // Clear any existing periodic check
+    if (this.periodicMarketCheckInterval) {
+      clearInterval(this.periodicMarketCheckInterval);
+    }
+    
+    // Check every 30 minutes
+    this.periodicMarketCheckInterval = window.setInterval(() => {
+      if (!this.isEnabled) {
+        return;
+      }
+      
+      console.log('🔄 Periodic market close check (every 30min safety check)');
+      
+      // If we should be connected but aren't, start connection
+      if (this.isAfterMarketClose() && !this.isConnected() && !this.isConnecting) {
+        console.log('⚠️ Periodic check detected missed market close - connecting now');
+        this.isEagerConnection = true;
+        this.connect();
+      }
+      
+      // If our scheduled timeout seems to have been missed, restart monitoring
+      if (!this.isAfterMarketClose() && !this.marketCloseCheckInterval) {
+        console.log('⚠️ Periodic check detected missing market close schedule - restarting monitoring');
+        this.startMarketCloseMonitoring();
+      }
+    }, 30 * 60 * 1000); // 30 minutes in milliseconds
   }
 
   public enable(): void {
@@ -278,6 +316,12 @@ class AlpacaService {
       if (this.marketCloseCheckInterval) {
         clearTimeout(this.marketCloseCheckInterval);
         this.marketCloseCheckInterval = null;
+      }
+      
+      // Clear periodic market check
+      if (this.periodicMarketCheckInterval) {
+        clearInterval(this.periodicMarketCheckInterval);
+        this.periodicMarketCheckInterval = null;
       }
       
       this.disconnect();
@@ -922,6 +966,11 @@ class AlpacaService {
     if (this.marketCloseCheckInterval) {
       clearTimeout(this.marketCloseCheckInterval);
       this.marketCloseCheckInterval = null;
+    }
+
+    if (this.periodicMarketCheckInterval) {
+      clearInterval(this.periodicMarketCheckInterval);
+      this.periodicMarketCheckInterval = null;
     }
 
     this.clearPingInterval();
