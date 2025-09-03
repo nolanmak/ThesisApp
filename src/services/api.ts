@@ -148,7 +148,6 @@ export const getMessages = async (
     }
 
     const response = await fetchWithAuth<PaginatedMessageResponse>(`/messages?${queryParams.toString()}`);
-    console.log("Total messages fetched:", response?.messages?.length || 0);
 
     // Only cache the first page (when no lastKey is provided)
     if (!lastKey) {
@@ -267,7 +266,6 @@ export const getCompanyConfigs = async (): Promise<CompanyConfig[]> => {
     // Check cache first
     const cachedData = cache.get<CompanyConfig[]>(CACHE_KEYS.COMPANY_CONFIGS);
     if (cachedData) {
-      console.log("Using cached company configs");
       return cachedData;
     }
 
@@ -293,7 +291,6 @@ export const getCompanyConfigByTicker = async (
     // Check cache first
     const cachedData = cache.get<CompanyConfig>(cacheKey);
     if (cachedData) {
-      console.log(`Using cached company config for ${ticker}`);
       return cachedData;
     }
 
@@ -439,7 +436,6 @@ export const getCompanyNames = async (
 
     if (!response.ok) {
       if (response.status === 404) {
-        console.log(`No company names found for ticker: ${ticker}`);
         return null;
       }
       throw new Error(
@@ -483,7 +479,6 @@ export const getCompanyNames = async (
       company_names,
     };
 
-    console.log(`Parsed company names for ${ticker}:`, company_names);
 
     // Cache the result for 30 minutes
     cache.set(cacheKey, data, 30 * 60 * 1000);

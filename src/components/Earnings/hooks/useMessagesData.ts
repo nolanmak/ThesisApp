@@ -40,12 +40,10 @@ const useMessagesData = (initialSearchTicker: string = '') => {
 
   // Handle new WebSocket messages
   const handleNewMessage = useCallback((newMessage: Message) => {
-    console.log('New message received via WebSocket:', newMessage);
     
     setState(prev => {
       const exists = prev.messages.some(msg => msg.message_id === newMessage.message_id);
       if (exists) {
-        console.log('Message already exists, not adding duplicate');
         return prev;
       }
       
@@ -251,7 +249,6 @@ const useMessagesData = (initialSearchTicker: string = '') => {
               const newMessages = sortedMessages.filter(msg => !currentIds.has(msg.message_id));
               
               if (newMessages.length > 0) {
-                console.log(`Found ${newMessages.length} new messages via polling`);
                 // Update original messages ref if we have new messages
                 if (originalMessagesRef.current.length > 0) {
                   const originalIds = new Set(originalMessagesRef.current.map(msg => msg.message_id));

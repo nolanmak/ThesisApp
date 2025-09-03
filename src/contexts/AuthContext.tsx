@@ -165,8 +165,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signIn = () => {
     const redirectUri = window.location.origin + '/';
     const signInUrl = cognitoAuth.getSignInUrl(redirectUri);
-    console.log('Redirect URI:', redirectUri);
-    console.log('Sign In URL:', signInUrl);
     window.location.href = signInUrl;
   };
 

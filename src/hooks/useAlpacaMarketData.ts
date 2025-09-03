@@ -54,26 +54,18 @@ export const useAlpacaMarketData = (symbols: string[]) => {
 
     // Only resubscribe if symbols have actually changed
     if (arraysEqual(memoizedSymbols, previousSymbolsRef.current)) {
-      console.log('Symbols unchanged, skipping resubscription');
       return;
     }
 
     // Clean up previous subscription if it exists
     if (unsubscribeFnRef.current) {
-      console.log('Cleaning up previous subscription');
       unsubscribeFnRef.current();
       unsubscribeFnRef.current = null;
     }
 
-    console.log('Subscribing to Alpaca symbols:', memoizedSymbols);
-    console.log('Previous symbols were:', previousSymbolsRef.current);
 
     // Subscribe to all symbols at once
     const unsubscribe = alpacaService.subscribe(memoizedSymbols, (data: TickData) => {
-      // Log volume data reception for debugging
-      if (data.cumulativeVolume > 0 || data.twentyDayAvgVolume) {
-        console.log(`📊 Volume data for ${data.symbol}: ${data.cumulativeVolume.toLocaleString()} (${data.volumePercentageOfAvg?.toFixed(1)}% of 20-day avg)`);
-      }
       
       setMarketData(prev => ({
         ...prev,
@@ -89,7 +81,6 @@ export const useAlpacaMarketData = (symbols: string[]) => {
 
     // Cleanup function
     return () => {
-      console.log('Effect cleanup: Unsubscribing from Alpaca symbols:', memoizedSymbols);
       if (unsubscribeFnRef.current) {
         unsubscribeFnRef.current();
         unsubscribeFnRef.current = null;
@@ -163,7 +154,6 @@ export const useAlpacaMarketData = (symbols: string[]) => {
     if (memoizedSymbols.length > 0 && enabled && isConnected) {
       // Add a small delay to ensure subscription is processed first
       const timer = setTimeout(() => {
-        console.log('Fetching initial volume data for symbols:', memoizedSymbols);
         alpacaService.fetchInitialData(memoizedSymbols);
       }, 300);
       

@@ -162,7 +162,6 @@ class AlpacaService {
   private initializeFromEnv(): void {
     // For proxy connection, we don't need Alpaca credentials in the frontend
     // The proxy handles authentication with Alpaca
-    console.log('Alpaca service initialized for proxy connection. Enabled:', this.isEnabled);
     // Enable eager connection for volume tracking
     this.isEagerConnection = true;
   }
@@ -221,8 +220,7 @@ class AlpacaService {
       if (this.isAfterMarketClose()) {
         // It's after 4 PM EST/EDT, start connection if not already connected
         if (!this.isConnected() && this.isEnabled && !this.isConnecting) {
-          console.log('🕐 Market closed (4 PM EST/EDT reached), starting volume data connection');
-          this.isEagerConnection = true;
+            this.isEagerConnection = true;
           this.connect();
         }
       } else {
@@ -231,7 +229,6 @@ class AlpacaService {
         const hours = Math.floor(timeUntil4PM / (1000 * 60 * 60));
         const minutes = Math.floor((timeUntil4PM % (1000 * 60 * 60)) / (1000 * 60));
         
-        console.log(`📅 Market not yet closed. Will start volume tracking in ${hours}h ${minutes}m (at 4 PM EST/EDT)`);
         
         // Clear existing timeout
         if (this.marketCloseCheckInterval) {
@@ -240,7 +237,6 @@ class AlpacaService {
         
         // Schedule connection for market close time
         this.marketCloseCheckInterval = window.setTimeout(() => {
-          console.log('🔔 Market close time reached, starting volume connection');
           this.isEagerConnection = true;
           this.connect();
           
@@ -274,18 +270,15 @@ class AlpacaService {
         return;
       }
       
-      console.log('🔄 Periodic market close check (every 30min safety check)');
       
       // If we should be connected but aren't, start connection
       if (this.isAfterMarketClose() && !this.isConnected() && !this.isConnecting) {
-        console.log('⚠️ Periodic check detected missed market close - connecting now');
         this.isEagerConnection = true;
         this.connect();
       }
       
       // If our scheduled timeout seems to have been missed, restart monitoring
       if (!this.isAfterMarketClose() && !this.marketCloseCheckInterval) {
-        console.log('⚠️ Periodic check detected missing market close schedule - restarting monitoring');
         this.startMarketCloseMonitoring();
       }
     }, 30 * 60 * 1000); // 30 minutes in milliseconds
@@ -294,7 +287,6 @@ class AlpacaService {
   public enable(): void {
     if (!this.isEnabled) {
       this.isEnabled = true;
-      console.log('Alpaca WebSocket functionality enabled');
       this.startMarketCloseMonitoring();
     }
   }
@@ -302,7 +294,6 @@ class AlpacaService {
   // Warm up the connection for faster volume data access
   public warmConnection(): void {
     if (this.isEnabled && !this.isConnected() && !this.isConnecting) {
-      console.log('🔥 Warming WebSocket connection for volume data');
       this.connect();
     }
   }
@@ -310,7 +301,6 @@ class AlpacaService {
   public disable(): void {
     if (this.isEnabled) {
       this.isEnabled = false;
-      console.log('Alpaca WebSocket functionality disabled');
       
       // Clear market close monitoring
       if (this.marketCloseCheckInterval) {
@@ -343,14 +333,11 @@ class AlpacaService {
       finalUrl = finalUrl.replace('ws://', 'wss://');
     }
     
-    console.log('🌐 Alpaca WebSocket URL from env:', finalUrl);
     return finalUrl;
   }
 
   public connect(): void {
-    console.log('🔌 Alpaca connect() called. Enabled:', this.isEnabled, 'Connecting:', this.isConnecting, 'Socket state:', this.socket?.readyState);
     if (!this.isEnabled) {
-      console.log('Alpaca WebSocket is disabled, not connecting');
       return;
     }
 
@@ -359,7 +346,6 @@ class AlpacaService {
     const timeSinceLastAttempt = now - this.lastConnectionAttempt;
     
     if (timeSinceLastAttempt < this.minConnectionInterval) {
-      console.log(`Alpaca connection attempt too frequent (${timeSinceLastAttempt}ms since last attempt), minimum interval is ${this.minConnectionInterval}ms`);
       // For volume data, allow more frequent attempts if not currently connecting
       if (this.isConnecting) {
         return;
@@ -367,17 +353,14 @@ class AlpacaService {
     }
 
     if (this.isConnecting) {
-      console.log('Alpaca WebSocket already connecting, skipping duplicate connect attempt');
       return;
     }
 
     if (this.socket?.readyState === WebSocket.OPEN) {
-      console.log('Alpaca WebSocket already connected');
       return;
     }
 
     if (this.socket?.readyState === WebSocket.CONNECTING) {
-      console.log('Alpaca WebSocket already in connecting state');
       return;
     }
 
@@ -387,7 +370,6 @@ class AlpacaService {
 
     // If there's an existing socket, close it and wait before creating new one
     if (this.socket) {
-      console.log('Closing existing Alpaca WebSocket before creating new connection');
       try {
         if (this.socket.readyState === WebSocket.OPEN || 
             this.socket.readyState === WebSocket.CONNECTING) {
@@ -414,7 +396,6 @@ class AlpacaService {
 
     try {
       const wsUrl = this.getWebSocketUrl();
-      console.log('Creating new Alpaca WebSocket connection to:', wsUrl);
       
       // Clear any existing socket first
       if (this.socket) {
@@ -425,14 +406,12 @@ class AlpacaService {
       }
       
       this.socket = new WebSocket(wsUrl);
-      console.log('WebSocket created, readyState:', this.socket.readyState);
       
       // Add connection timeout
       const connectionTimeout = setTimeout(() => {
         console.error('🚨 Alpaca WebSocket connection timeout - connection never opened');
         if (this.socket && this.socket.readyState === WebSocket.CONNECTING) {
-          console.log('Closing timed-out connection and retrying');
-          this.socket.close();
+            this.socket.close();
           this.isConnecting = false;
           if (!this.isManualClose && this.isEnabled) {
             this.attemptReconnect();
@@ -442,11 +421,9 @@ class AlpacaService {
       
       this.socket.onopen = () => {
         clearTimeout(connectionTimeout);
-        console.log('🚀 Alpaca proxy WebSocket connection established to:', wsUrl);
         this.reconnectAttempts = 0;
         this.connectionFailures = 0;
         this.reconnectDelay = 500; // Reset to initial fast delay
-        console.log('✅ Alpaca WebSocket connected successfully to CloudFront');
         this.isConnecting = false;
         
         // For proxy connection, assume we're authenticated after successful connection
@@ -456,7 +433,6 @@ class AlpacaService {
         
         // Resubscribe to any pending symbols
         if (this.pendingSubscriptions.size > 0) {
-          console.log('Resubscribing to pending symbols after reconnection:', Array.from(this.pendingSubscriptions));
           this.pendingSubscriptions.forEach(symbol => this.symbols.add(symbol));
           this.pendingSubscriptions.clear();
         }
@@ -467,7 +443,6 @@ class AlpacaService {
         // Request initial data for all subscribed symbols after connection
         if (this.symbols.size > 0) {
           setTimeout(() => {
-            console.log('Fetching initial data for all symbols after connection:', Array.from(this.symbols));
             this.fetchInitialData(Array.from(this.symbols));
           }, 200); // Wait for subscription to be processed
         }
@@ -516,13 +491,6 @@ class AlpacaService {
 
       this.socket.onclose = (event) => {
         clearTimeout(connectionTimeout);
-        console.log(`❌ Alpaca WebSocket connection closed: ${event.code} ${event.reason}`);
-        console.log('🔍 Close event details:', {
-          wasClean: event.wasClean,
-          code: event.code,
-          codeDescription: this.getCloseCodeDescription(event.code),
-          reason: event.reason || 'No reason provided'
-        });
         this.isConnecting = false;
         this.isAuthenticated = false;
         this.clearPingInterval();
@@ -548,11 +516,9 @@ class AlpacaService {
     if (message.type) {
       switch (message.type) {
         case 'connected':
-          console.log('Alpaca proxy WebSocket connected:', message.message);
           break;
 
         case 'subscription_updated':
-          console.log('Alpaca subscription confirmed:', message.symbols);
           break;
 
         case 'trade':
@@ -565,7 +531,6 @@ class AlpacaService {
           break;
 
         case 'pong':
-          console.log('Alpaca proxy pong received');
           break;
 
         case 'error':
@@ -573,7 +538,6 @@ class AlpacaService {
           break;
 
         default:
-          console.log('Unhandled proxy message type:', message.type, message);
       }
       return;
     }
@@ -581,7 +545,6 @@ class AlpacaService {
     // Handle native Alpaca message format (fallback)
     switch (message.T) {
       case 'success':
-        console.log('Alpaca WebSocket success:', message.msg);
         break;
 
       case 'error':
@@ -589,7 +552,6 @@ class AlpacaService {
         break;
 
       case 'subscription':
-        console.log('Alpaca subscription confirmed:', message);
         break;
 
       case 't': // trade
@@ -605,7 +567,6 @@ class AlpacaService {
         break;
 
       default:
-        console.log('Unhandled Alpaca message type:', message);
     }
   }
 
@@ -660,7 +621,6 @@ class AlpacaService {
   }
 
   private handleVolumeDataMessage(volumeData: VolumeDataMessage): void {
-    console.log('📊 Complete Volume Data received for', volumeData.ticker, '- Volume:', volumeData.cumulative_volume, '20-day avg:', volumeData['20_day_avg_volume']);
     
     // Update local tracking with backend data
     this.cumulativeVolume.set(volumeData.ticker, volumeData.cumulative_volume);
@@ -685,10 +645,8 @@ class AlpacaService {
     // Always notify subscribers - this is initial volume data they need
     const symbolSubscribers = this.subscribers.get(volumeData.ticker);
     if (symbolSubscribers && symbolSubscribers.size > 0) {
-      console.log(`Notifying ${symbolSubscribers.size} subscribers for ${volumeData.ticker} with volume data`);
       this.notifySubscribers(volumeData.ticker, tickData);
     } else {
-      console.log(`No subscribers found for ${volumeData.ticker}, storing data for later`);
     }
   }
 
@@ -789,18 +747,14 @@ class AlpacaService {
 
   private subscribeToSymbols(): void {
     if (!this.isAuthenticated || !this.socket || this.socket.readyState !== WebSocket.OPEN) {
-      console.log('Not ready to subscribe - storing symbols for later');
       return;
     }
 
     if (this.symbols.size === 0) {
-      console.log('No symbols to subscribe to. Current symbols:', Array.from(this.symbols));
-      console.log('Pending subscriptions:', Array.from(this.pendingSubscriptions));
       return;
     }
 
     const symbolsArray = Array.from(this.symbols);
-    console.log('Subscribing to Alpaca symbols:', symbolsArray);
 
     const subscribeMessage = {
       type: 'subscribe',
@@ -810,13 +764,11 @@ class AlpacaService {
     this.socket.send(JSON.stringify(subscribeMessage));
 
     // Request initial volume data for subscribed symbols
-    console.log('Requesting initial volume data for subscribed symbols');
     this.requestVolumeDataForSymbols(symbolsArray);
   }
 
   public subscribe(symbols: string | string[], callback: (data: TickData) => void): () => void {
     const symbolsArray = Array.isArray(symbols) ? symbols : [symbols];
-    console.log('📊 Subscribe called with symbols:', symbolsArray, 'Service enabled:', this.isEnabled, 'Connected:', this.isConnected());
 
     // Add to subscribers and symbols to track
     symbolsArray.forEach(symbol => {
@@ -842,7 +794,6 @@ class AlpacaService {
       setTimeout(() => this.fetchInitialData(symbolsArray), 100);
     } else if (!this.isConnecting) {
       // Not connected and not connecting, start connection
-      console.log('Starting connection to subscribe to symbols:', symbolsArray);
       this.connect();
     }
     // If already connecting, symbols are in pendingSubscriptions and will be handled on connect
@@ -869,17 +820,14 @@ class AlpacaService {
 
   public async fetchInitialData(symbols: string[]): Promise<void> {
     if (!this.isConnected()) {
-      console.warn('Cannot fetch initial data - WebSocket not connected, will retry when connected');
       return;
     }
     
     if (symbols.length === 0) {
-      console.log('No symbols to fetch initial data for');
       return;
     }
     
     // Request initial volume data from backend for the provided symbols
-    console.log('Fetching initial volume data for symbols:', symbols);
     
     // Add retry logic for failed requests
     try {
@@ -889,7 +837,6 @@ class AlpacaService {
       setTimeout(() => {
         symbols.forEach(symbol => {
           if (!this.cumulativeVolume.has(symbol) || this.cumulativeVolume.get(symbol) === 0) {
-            console.log('Retrying volume data request for:', symbol);
             this.requestVolumeData(symbol);
           }
         });
@@ -905,7 +852,6 @@ class AlpacaService {
       this.cumulativeVolume.set(symbol, 0);
       this.cumulativeTrades.set(symbol, 0);
       this.sessionStartTime.set(symbol, new Date());
-      console.log(`Reset cumulative volume for ${symbol}`);
     } else {
       // Reset all symbols
       for (const sym of this.symbols) {
@@ -913,7 +859,6 @@ class AlpacaService {
         this.cumulativeTrades.set(sym, 0);
         this.sessionStartTime.set(sym, new Date());
       }
-      console.log('Reset cumulative volume for all symbols');
     }
   }
 
@@ -933,7 +878,6 @@ class AlpacaService {
   // Request volume data from backend for a specific ticker
   public requestVolumeData(ticker: string): void {
     if (!this.isConnected()) {
-      console.warn('Cannot request volume data - WebSocket not connected');
       return;
     }
 
@@ -942,7 +886,6 @@ class AlpacaService {
       ticker: ticker.toUpperCase()
     };
 
-    console.log('📊 Requesting volume data for:', ticker);
     this.socket!.send(JSON.stringify(volumeRequest));
   }
 
@@ -979,7 +922,6 @@ class AlpacaService {
       try {
         if (this.socket.readyState === WebSocket.OPEN || 
             this.socket.readyState === WebSocket.CONNECTING) {
-          console.log(`Closing Alpaca WebSocket in state: ${this.socket.readyState}`);
           this.socket.close();
         }
       } catch (e) {
@@ -1035,7 +977,6 @@ class AlpacaService {
 
   private attemptReconnect(): void {
     if (this.isManualClose || !this.isEnabled) {
-      console.log('Manual close or disabled, not attempting to reconnect');
       return;
     }
     
@@ -1043,7 +984,6 @@ class AlpacaService {
     
     // Never give up - always reset counter and continue trying
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.log(`Resetting reconnection counter after ${this.maxReconnectAttempts} attempts - continuing indefinitely for volume tracking`);
       this.reconnectAttempts = 0; // Reset counter to continue forever
     }
 
@@ -1054,14 +994,12 @@ class AlpacaService {
     const jitter = Math.random() * 0.1 * baseDelay; // Small jitter
     const delay = Math.min(10000, baseDelay + jitter); // Never wait more than 10 seconds
     
-    console.log(`🔄 Reconnecting Alpaca WebSocket in ${Math.round(delay / 1000)}s (attempt ${this.reconnectAttempts}) - never giving up for volume tracking`);
     
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
     }
     
     this.reconnectTimeout = window.setTimeout(() => {
-      console.log(`Executing Alpaca WebSocket reconnection attempt ${this.reconnectAttempts}`);
       this.connect();
     }, delay);
   }
@@ -1135,7 +1073,6 @@ class AlpacaService {
     const healthCheckThreshold = this.pingIntervalTime * 3; // 2.25 minutes - more stable
     
     if (timeSinceLastData > healthCheckThreshold) {
-      console.warn(`Alpaca WebSocket appears stale (${Math.round(timeSinceLastData / 1000)}s since last activity), reconnecting`);
       if (this.socket) {
         this.socket.close();
       }

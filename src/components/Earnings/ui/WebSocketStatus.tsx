@@ -56,12 +56,10 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
     onAudioNotification: (notification) => {
       // Just add the notification to the queue - no toast popup
       const ticker = notification.data?.metadata?.ticker || notification.data?.metadata?.company_name || 'Unknown Stock';
-      console.log(`[AUDIO PLAYER] 🎧 New Earnings Audio received: ${ticker}`);
       
       // Add the notification to the queue
       setAudioQueue(prevQueue => {
         const newQueue = [...prevQueue, notification];
-        console.log('[AUDIO PLAYER] 🎧 Audio queue updated. New length:', newQueue.length);
         return newQueue;
       });
     }
@@ -73,20 +71,16 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
     e.stopPropagation();
     
     if (isToggling) {
-      console.log('[AUDIO PLAYER] Already toggling, ignoring click');
       return;
     }
     
     setIsToggling(true);
-    console.log('[AUDIO PLAYER] Audio toggle clicked. Current state - enabled:', audioEnabled, 'connected:', audioConnected);
     
     try {
       if (audioEnabled) {
-        console.log('[AUDIO PLAYER] Disabling audio...');
         
         // Stop any currently playing audio immediately
         if (isPlaying && audioRef.current) {
-          console.log('[AUDIO PLAYER] Stopping currently playing audio');
           audioRef.current.pause();
           audioRef.current.currentTime = 0; // Reset to beginning
           setIsPlaying(false);
@@ -96,18 +90,15 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
         
         await disableAudio();
       } else {
-        console.log('[AUDIO PLAYER] Enabling audio...');
         await enableAudio();
         // Enable user interaction when audio is enabled
         setUserHasInteracted(true);
         
         // If there's a current audio and it's not playing, try to play it
         if (currentAudio && !isPlaying && audioRef.current) {
-          console.log('[AUDIO PLAYER] Manual play attempt after enabling audio');
           try {
             await audioRef.current.play();
             setIsPlaying(true);
-            console.log('[AUDIO PLAYER] Manual audio play successful');
           } catch (error) {
             console.error('[AUDIO PLAYER] Manual audio play failed:', error);
           }
@@ -149,12 +140,10 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
       
       // Don't replay the same audio URL
       if (lastPlayedUrlRef.current === audioUrl) {
-        console.log('[AUDIO PLAYER] Skipping - already played this audio URL:', audioUrl);
         setCurrentAudio(null); // Clear current audio to prevent stuck state
         return;
       }
       
-      console.log('[AUDIO PLAYER] Setting up audio source:', audioUrl);
       
       // Abort any ongoing play promise to prevent interruption errors
       if (isPlaying) {
@@ -203,11 +192,9 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
             audioElement.load();
           });
           
-          console.log('[AUDIO PLAYER] Attempting to play audio...');
           await audioElement.play();
           setIsPlaying(true);
           lastPlayedUrlRef.current = audioUrl; // Mark this URL as played
-          console.log(`[AUDIO PLAYER] Audio playing successfully at ${settings.playbackSpeed}x speed`);
           
         } catch (error: any) {
           console.error('[AUDIO PLAYER] Error playing audio:', error);
@@ -218,7 +205,6 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
           if (error.name === 'NotAllowedError') {
             console.warn('[AUDIO PLAYER] Autoplay was blocked. User interaction is required to play audio.');
           } else if (error.name === 'AbortError') {
-            console.log('[AUDIO PLAYER] Play request was aborted (likely due to rapid messages)');
           } else if (error.message === 'Audio loading timeout') {
             console.error('[AUDIO PLAYER] Audio loading timed out');
           } else if (error.name === 'NetworkError') {
@@ -231,24 +217,20 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
       
       setupAudio();
     } else if (currentAudio && (!audioEnabled || !userHasInteracted)) {
-      console.log('[AUDIO PLAYER] Not playing audio - audioEnabled:', audioEnabled, 'userHasInteracted:', userHasInteracted);
     }
   }, [currentAudio]); // Only depend on currentAudio to prevent retriggering
   
   // Handle audio events
   const handleAudioEnded = () => {
-    console.log('[AUDIO PLAYER] Audio ended naturally');
     setIsPlaying(false);
     setCurrentAudio(null); // Clear current audio so next one can play
   };
 
   const handleAudioPause = () => {
-    console.log('[AUDIO PLAYER] Audio paused');
     setIsPlaying(false);
   };
 
   const handleAudioPlay = () => {
-    console.log('[AUDIO PLAYER] Audio started playing');
     setIsPlaying(true);
   };
 
@@ -263,7 +245,6 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
   };
 
   const handleAudioWaiting = () => {
-    console.log('[AUDIO PLAYER] Audio buffering...');
   };
 
   // Recovery mechanism for stuck audio playback
@@ -277,7 +258,6 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
         }
         
         if (audio && (audio.paused || audio.ended)) {
-          console.log('[AUDIO PLAYER] Detected stuck playing state, correcting...');
           setIsPlaying(false);
           if (audio.ended) {
             setCurrentAudio(null);
@@ -414,9 +394,9 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
         onError={handleAudioError}
         onStalled={handleAudioStalled}
         onWaiting={handleAudioWaiting}
-        onLoadStart={() => console.log('[AUDIO PLAYER] Started loading audio')}
-        onCanPlay={() => console.log('[AUDIO PLAYER] Audio ready to play')}
-        onAbort={() => console.log('[AUDIO PLAYER] Audio load aborted')}
+        onLoadStart={() => {}}
+        onCanPlay={() => {}}
+        onAbort={() => {}}
         style={{ display: 'none' }}
       />
     </div>

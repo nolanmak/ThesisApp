@@ -46,7 +46,6 @@ class AudioWebSocketService {
     if (!this.isEnabled) {
       this.enablePromise = new Promise((resolve) => {
         this.isEnabled = true;
-        console.log('[AUDIO WS] Enabling WebSocket service');
         
         // Start connection process
         this.connect();
@@ -65,7 +64,6 @@ class AudioWebSocketService {
   // Disable WebSocket functionality
   public async disable(): Promise<void> {
     if (this.isEnabled) {
-      console.log('[AUDIO WS] Disabling WebSocket service');
       this.isEnabled = false;
       this.disconnect();
 
@@ -109,9 +107,6 @@ class AudioWebSocketService {
     const timeSinceLastAttempt = now - this.lastConnectionAttempt;
 
     if (timeSinceLastAttempt < this.minConnectionInterval) {
-      console.log(
-        `[AUDIO WS] Connection attempt too frequent (${timeSinceLastAttempt}ms since last attempt), minimum interval is ${this.minConnectionInterval}ms`
-      );
       // Instead of returning, wait for the remaining time
       const remainingWait = this.minConnectionInterval - timeSinceLastAttempt;
       await new Promise(resolve => setTimeout(resolve, remainingWait));
@@ -144,9 +139,6 @@ class AudioWebSocketService {
             this.socket.readyState === WebSocket.OPEN ||
             this.socket.readyState === WebSocket.CONNECTING
           ) {
-            console.log(
-              `Closing existing Audio WebSocket in state: ${this.socket.readyState}`
-            );
             this.socket.close();
           }
         } catch (e) {
@@ -156,10 +148,6 @@ class AudioWebSocketService {
         this.socket = null;
       }
 
-      console.log(
-        "[AUDIO WS] 🔗 Creating new Audio WebSocket connection to:",
-        AUDIO_WS_ENDPOINT
-      );
       this.socket = new WebSocket(AUDIO_WS_ENDPOINT);
 
       this.socket.onopen = () => {
@@ -203,10 +191,8 @@ class AudioWebSocketService {
             // Check watchlist filter before notifying handlers
             const ticker = audioNotification.data?.metadata?.ticker || audioNotification.data?.metadata?.company_name || 'UNKNOWN';
             if (this.isTickerInWatchlist(ticker)) {
-              console.log("[AUDIO WS] ✅ Audio notification allowed by watchlist for ticker:", ticker);
               this.notifyMessageHandlers(audioNotification);
             } else {
-              console.log("[AUDIO WS] ❌ Audio notification filtered out by watchlist for ticker:", ticker, "Watchlist:", this.watchlistFilter);
             }
           } else {
             console.warn(
@@ -270,14 +256,8 @@ class AudioWebSocketService {
           this.socket.readyState === WebSocket.OPEN ||
           this.socket.readyState === WebSocket.CONNECTING
         ) {
-          console.log(
-            `Closing Audio WebSocket in state: ${this.socket.readyState}`
-          );
           this.socket.close();
         } else {
-          console.log(
-            `Not closing Audio WebSocket - already in state: ${this.socket.readyState}`
-          );
         }
       } catch (e) {
         console.error("Error closing audio socket:", e);
@@ -353,15 +333,11 @@ class AudioWebSocketService {
   // Attempt to reconnect with exponential backoff
   private attemptReconnect(): void {
     if (this.isManualClose) {
-      console.log("Manual close, not attempting to reconnect");
       return;
     }
 
     this.reconnectAttempts += 1;
     if (this.reconnectAttempts > this.maxReconnectAttempts) {
-      console.log(
-        `Maximum reconnect attempts (${this.maxReconnectAttempts}) reached, giving up`
-      );
       return;
     }
 
@@ -370,9 +346,6 @@ class AudioWebSocketService {
       30000,
       this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts - 1)
     );
-    console.log(
-      `Scheduling reconnect attempt ${this.reconnectAttempts} in ${delay}ms`
-    );
 
     // Clear any existing timeout
     if (this.reconnectTimeout) {
@@ -380,9 +353,6 @@ class AudioWebSocketService {
     }
 
     this.reconnectTimeout = window.setTimeout(() => {
-      console.log(
-        `Attempting to reconnect to Audio WebSocket (attempt ${this.reconnectAttempts})`
-      );
       this.connect();
       this.reconnectTimeout = null;
     }, delay);
