@@ -237,9 +237,9 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                   type="checkbox"
                   id="use_proxy"
                   {...register("use_proxy")}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 rounded border-gray-300 dark:border-neutral-600 text-blue-600 focus:ring-blue-500 bg-white dark:bg-neutral-900"
                 />
-                <label htmlFor="use_proxy" className="ml-2 block text-sm text-gray-700">
+                <label htmlFor="use_proxy" className="ml-2 block text-sm text-gray-700 dark:text-neutral-300">
                   Use Proxy
                 </label>
               </div>
@@ -248,9 +248,9 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                   type="checkbox"
                   id="requires_network_idle"
                   {...register("requires_network_idle")}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 rounded border-gray-300 dark:border-neutral-600 text-blue-600 focus:ring-blue-500 bg-white dark:bg-neutral-900"
                 />
-                <label htmlFor="requires_network_idle" className="ml-2 block text-sm text-gray-700">
+                <label htmlFor="requires_network_idle" className="ml-2 block text-sm text-gray-700 dark:text-neutral-300">
                   Requires Network Idle
                 </label>
               </div>
@@ -288,7 +288,7 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                 </label>
                 <textarea
                   {...register("url_ignore_list")}
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 h-20"
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 h-20 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
                   placeholder="https://example.com/archive&#10;https://example.com/old-releases"
                 />
               </div>
@@ -299,13 +299,13 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                 </label>
                 <textarea
                   {...register("href_ignore_words")}
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 h-30"
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 h-30 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
                   placeholder="archive&#10;old&#10;history"
                 />
               </div>
               
-              <div className="border p-3 rounded-md bg-gray-50">
-                <h3 className="font-medium text-neutral-800 mb-2">Verify Keywords</h3>
+              <div className="border border-neutral-300 dark:border-neutral-600 p-3 rounded-md bg-gray-50 dark:bg-neutral-800">
+                <h3 className="font-medium text-neutral-800 dark:text-neutral-100 mb-2">Verify Keywords</h3>
                 
                 <div className="space-y-3">
                   <div>
@@ -314,7 +314,7 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                     </label>
                     <textarea
                       {...register("verify_keywords.fixed_terms")}
-                      className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 h-20"
+                      className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 h-20 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
                       placeholder="financial results&#10;earnings&#10;quarterly"
                     />
                   </div>
@@ -327,7 +327,7 @@ const ConfigModal: React.FC<ConfigModalProps> = ({
                         {...register("verify_keywords.quarter_as_string")}
                         className="h-4 w-4 rounded border-gray-300 dark:border-neutral-600 text-blue-600 focus:ring-blue-500 bg-white dark:bg-neutral-900"
                       />
-                      <label htmlFor="quarter_as_string" className="ml-2 block text-sm text-gray-700">
+                      <label htmlFor="quarter_as_string" className="ml-2 block text-sm text-gray-700 dark:text-neutral-300">
                         Quarter as String
                       </label>
                     </div>
