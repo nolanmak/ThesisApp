@@ -143,6 +143,7 @@ const Messages: React.FC = () => {
             convertToEasternTime={convertToEasternTime}
             handleCloseAnalysisPanel={handleCloseAnalysisPanel}
             setFeedbackModalOpen={setFeedbackModalOpen}
+            messages={messages}
           />
         </div>
       </div>

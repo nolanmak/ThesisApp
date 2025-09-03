@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Message } from '../../../types';
 import { ThumbsDown, X } from 'lucide-react';
 import { ParseMessagePayload, ParseTranscriptMessage, ParseTranscriptData, ParseSentimentMessage, ParseSentimentData } from '../utils/messageUtils';
@@ -10,6 +10,7 @@ interface AnalysisPanelProps {
   convertToEasternTime: (utcTimestamp: string) => string;
   handleCloseAnalysisPanel: () => void;
   setFeedbackModalOpen: (open: boolean) => void;
+  messages?: Message[]; // Add messages prop to access all messages for tab filtering
 }
 
 const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
@@ -18,11 +19,80 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   showAnalysisPanel,
   convertToEasternTime,
   handleCloseAnalysisPanel,
-  setFeedbackModalOpen
+  setFeedbackModalOpen,
+  messages = []
 }) => {
-  const parsedMessage = selectedMessage ? ParseMessagePayload(selectedMessage) : null;
-  const parsedTranscriptData = selectedMessage ? ParseTranscriptData(selectedMessage) : null;
-  const parsedSentimentData = selectedMessage ? ParseSentimentData(selectedMessage) : null;
+  const [activeTab, setActiveTab] = useState<string>('earnings');
+  
+  // Get message type for tab identification
+  const getMessageType = (message: Message): string => {
+    if (message.link) return 'link';
+    if (message.source === 'transcript_analysis') return 'transcript';
+    if (message.source === 'sentiment_analysis' || message.sentiment_additional_metrics) return 'sentiment';
+    return 'earnings';
+  };
+
+  // Find related messages for the same ticker within 72 hours
+  const relatedMessages = useMemo(() => {
+    if (!selectedMessage) return {};
+    
+    const selectedTime = new Date(selectedMessage.timestamp).getTime();
+    const seventyTwoHoursMs = 72 * 60 * 60 * 1000;
+    const timeWindow = { start: selectedTime - seventyTwoHoursMs, end: selectedTime + seventyTwoHoursMs };
+    
+    const related = messages.filter(msg => {
+      if (msg.ticker !== selectedMessage.ticker) return false;
+      if (msg.link) return false; // Exclude link messages from tabs
+      
+      const msgTime = new Date(msg.timestamp).getTime();
+      return msgTime >= timeWindow.start && msgTime <= timeWindow.end;
+    });
+    
+    // Group by message type
+    const grouped: Record<string, Message> = {};
+    related.forEach(msg => {
+      const type = getMessageType(msg);
+      if (!grouped[type] || new Date(msg.timestamp) > new Date(grouped[type].timestamp)) {
+        grouped[type] = msg; // Keep the most recent message of each type
+      }
+    });
+    
+    return grouped;
+  }, [selectedMessage, messages]);
+
+  // Available tabs based on related messages
+  const availableTabs = useMemo(() => {
+    const tabs = [];
+    if (relatedMessages.earnings) tabs.push({ id: 'earnings', label: 'Earnings', message: relatedMessages.earnings });
+    if (relatedMessages.sentiment) tabs.push({ id: 'sentiment', label: 'Sentiment', message: relatedMessages.sentiment });
+    if (relatedMessages.transcript) tabs.push({ id: 'transcript', label: 'Transcript', message: relatedMessages.transcript });
+    return tabs;
+  }, [relatedMessages]);
+
+  // Current message to display based on active tab
+  const currentMessage = useMemo(() => {
+    const tabMessage = availableTabs.find(tab => tab.id === activeTab)?.message;
+    return tabMessage || selectedMessage;
+  }, [activeTab, availableTabs, selectedMessage]);
+
+  // Reset active tab when selected message changes
+  useEffect(() => {
+    if (selectedMessage) {
+      const messageType = getMessageType(selectedMessage);
+      const availableTabIds = availableTabs.map(tab => tab.id);
+      
+      // Set to the selected message's type if available, otherwise first available tab
+      if (availableTabIds.includes(messageType)) {
+        setActiveTab(messageType);
+      } else if (availableTabIds.length > 0) {
+        setActiveTab(availableTabIds[0]);
+      }
+    }
+  }, [selectedMessage, availableTabs]);
+
+  const parsedMessage = currentMessage ? ParseMessagePayload(currentMessage) : null;
+  const parsedTranscriptData = currentMessage ? ParseTranscriptData(currentMessage) : null;
+  const parsedSentimentData = currentMessage ? ParseSentimentData(currentMessage) : null;
 
   return (
     <div 
@@ -38,78 +108,100 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
       {selectedMessage ? (
         <div className="h-full flex flex-col">
           {/* Header */}
-          <div 
-            className="flex items-center justify-between pb-4 border-b border-neutral-200 dark:border-neutral-700 mb-4"
-            style={{
-              flexWrap: isMobile ? 'wrap' : 'nowrap',
-              gap: isMobile ? '8px' : undefined
-            }}
-          >
+          <div className="pb-4 border-b border-neutral-200 dark:border-neutral-700 mb-4">
+            {/* Title row */}
             <div 
-              className="flex items-center space-x-2"
+              className="flex items-center justify-between mb-3"
               style={{
                 flexWrap: isMobile ? 'wrap' : 'nowrap',
-                gap: isMobile ? '8px' : undefined,
-                width: isMobile ? 'calc(100% - 30px)' : undefined
+                gap: isMobile ? '8px' : undefined
               }}
             >
               <div 
-                className="flex items-center bg-primary-50 dark:bg-primary-900/30 px-3 py-1 rounded-md"
+                className="flex items-center space-x-2"
                 style={{
-                  flexDirection: isMobile ? 'column' : 'row',
-                  alignItems: isMobile ? 'flex-start' : 'center',
-                  padding: isMobile ? '6px 10px' : undefined,
-                  width: isMobile ? '100%' : 'auto'
+                  flexWrap: isMobile ? 'wrap' : 'nowrap',
+                  gap: isMobile ? '8px' : undefined,
+                  width: isMobile ? 'calc(100% - 30px)' : undefined
                 }}
               >
-                <div className="flex items-center">
-                  <span className="font-medium text-primary-700 dark:text-primary-300">{selectedMessage.ticker}</span>
-                  <span className="mx-1 text-neutral-400 dark:text-neutral-500">|</span>
-                  <span className="text-neutral-600 dark:text-neutral-300">Q{selectedMessage.quarter}</span>
+                <div 
+                  className="flex items-center bg-primary-50 dark:bg-primary-900/30 px-3 py-1 rounded-md"
+                  style={{
+                    flexDirection: isMobile ? 'column' : 'row',
+                    alignItems: isMobile ? 'flex-start' : 'center',
+                    padding: isMobile ? '6px 10px' : undefined,
+                    width: isMobile ? '100%' : 'auto'
+                  }}
+                >
+                  <div className="flex items-center">
+                    <span className="font-medium text-primary-700 dark:text-primary-300">{selectedMessage.ticker}</span>
+                    <span className="mx-1 text-neutral-400 dark:text-neutral-500">|</span>
+                    <span className="text-neutral-600 dark:text-neutral-300">Q{selectedMessage.quarter}</span>
+                  </div>
+                  {selectedMessage.company_name && isMobile && (
+                    <span 
+                      className="text-xs text-neutral-500 dark:text-neutral-400"
+                      style={{
+                        marginTop: '2px',
+                        maxWidth: '100%',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {selectedMessage.company_name}
+                    </span>
+                  )}
                 </div>
-                {selectedMessage.company_name && isMobile && (
-                  <span 
-                    className="text-xs text-neutral-500 dark:text-neutral-400"
-                    style={{
-                      marginTop: '2px',
-                      maxWidth: '100%',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    {selectedMessage.company_name}
-                  </span>
-                )}
+                <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                  {convertToEasternTime(currentMessage?.timestamp || selectedMessage.timestamp)}
+                </span>
+                
+                {/* Feedback icon */}
+                <div 
+                  className="ml-1 cursor-pointer hover:opacity-80 transition-opacity text-blue-500 dark:text-blue-400"
+                  onClick={() => setFeedbackModalOpen(true)}
+                  title="Provide feedback"
+                >
+                  <ThumbsDown size={16} />
+                </div>
               </div>
-              <span className="text-sm text-neutral-500 dark:text-neutral-400">
-                {convertToEasternTime(selectedMessage.timestamp)}
-              </span>
               
-              {/* Feedback icon */}
-              <div 
-                className="ml-1 cursor-pointer hover:opacity-80 transition-opacity text-blue-500 dark:text-blue-400"
-                onClick={() => setFeedbackModalOpen(true)}
-                title="Provide feedback"
-              >
-                <ThumbsDown size={16} />
-              </div>
+              {/* Close button for mobile */}
+              {isMobile && (
+                <button 
+                  onClick={handleCloseAnalysisPanel}
+                  className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 flex items-center justify-center w-[30px] h-[30px] rounded-full bg-neutral-200 dark:bg-neutral-700"
+                >
+                  <X size={16} />
+                </button>
+              )}
             </div>
-            
-            {/* Close button for mobile */}
-            {isMobile && (
-              <button 
-                onClick={handleCloseAnalysisPanel}
-                className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 flex items-center justify-center w-[30px] h-[30px] rounded-full bg-neutral-200 dark:bg-neutral-700"
-              >
-                <X size={16} />
-              </button>
+
+            {/* Tabs row - only show if multiple tabs available */}
+            {availableTabs.length > 1 && (
+              <div className="flex space-x-1 bg-neutral-100 dark:bg-neutral-700 rounded-lg p-1">
+                {availableTabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      activeTab === tab.id
+                        ? 'bg-white dark:bg-neutral-600 text-neutral-900 dark:text-white shadow-sm'
+                        : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-600'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
           
           {/* Content */}
           <div className="flex-1 overflow-auto">
-            {!selectedMessage.link && (
+            {!currentMessage?.link && (
               <div
                 className="text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap markdown-content break-words overflow-wrap-anywhere"
                 style={{
@@ -117,12 +209,12 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                   lineHeight: isMobile ? '1.5' : undefined,
                 }}
               >
-                {selectedMessage.source === 'transcript_analysis' ? (
+                {currentMessage?.source === 'transcript_analysis' ? (
                   // Display transcript analysis with structured data
                   <div className="space-y-4">
                     {/* Show just the preview text */}
                     <div className="text-purple-700 dark:text-purple-400 font-semibold mb-3">
-                      {ParseTranscriptMessage(selectedMessage) || '📊 Earnings Call Transcript Analysis'}
+                      {ParseTranscriptMessage(currentMessage) || '📊 Earnings Call Transcript Analysis'}
                     </div>
                     
                     {/* Display structured transcript data in human-readable format */}
@@ -147,12 +239,12 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                       </div>
                     )}
                   </div>
-                ) : (selectedMessage.source === 'sentiment_analysis' || selectedMessage.sentiment_additional_metrics) ? (
+                ) : (currentMessage?.source === 'sentiment_analysis' || currentMessage?.sentiment_additional_metrics) ? (
                   // Display sentiment analysis with structured data
                   <div className="space-y-4">
                     {/* Show the preview text */}
                     <div className="text-green-700 dark:text-green-400 font-semibold mb-3">
-                      {ParseSentimentMessage(selectedMessage) || '📈 Sentiment Analysis'}
+                      {ParseSentimentMessage(currentMessage) || '📈 Sentiment Analysis'}
                     </div>
                     
                     {/* Display structured sentiment data in human-readable format */}
@@ -243,10 +335,10 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
               </div>
             )}
 
-            {selectedMessage.link && (
+            {currentMessage?.link && (
               <div className="pt-4 border-neutral-200 dark:border-neutral-700">
                 <a 
-                  href={selectedMessage.link} 
+                  href={currentMessage.link} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="inline-flex items-center px-4 py-2 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-md hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
@@ -256,7 +348,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                     fontSize: isMobile ? '0.9rem' : undefined
                   }}
                 >
-                  <span>View {selectedMessage.ticker} Report</span>
+                  <span>View {currentMessage.ticker} Report</span>
                 </a>
               </div>
             )}
