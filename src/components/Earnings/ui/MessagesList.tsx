@@ -580,7 +580,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                   
                   {/* Inline transcript preview */}
                   <span className="text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 px-2 py-1 rounded border border-purple-200 dark:border-purple-800 ml-2 font-medium truncate">
-                    {ParseTranscriptMessage(message) || 'Transcript analysis available'}
+                    Transcript analysis
                   </span>
                   
                   <InlineVolume ticker={message.ticker} />
@@ -664,7 +664,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                   
                   {/* Inline sentiment preview */}
                   <span className="text-xs bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200 px-2 py-1 rounded border border-green-200 dark:border-green-800 ml-2 font-medium truncate">
-                    {ParseSentimentMessage(message) || 'Sentiment analysis available'}
+                    Sentiment analysis
                   </span>
                   
                   <InlineVolume ticker={message.ticker} />
