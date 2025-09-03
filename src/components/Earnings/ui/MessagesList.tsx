@@ -236,32 +236,58 @@ const MessagesList: React.FC<MessagesListProps> = ({
       } else if (message.source === 'sentiment_analysis' || message.sentiment_additional_metrics) {
         messageType = 'sentiment';
       } else {
-        messageType = 'analysis';
+        messageType = 'earnings'; // Changed from 'analysis' to match tab logic
       }
       
       const messageTimestamp = new Date(message.timestamp);
-      const messageDate = messageTimestamp.toISOString().split('T')[0];
-      const key = `${message.ticker}-${messageDate}-${messageType}`;
+      // Use quarter and year instead of date for deduplication key
+      const key = `${message.ticker}-Q${message.quarter}-${message.year}-${messageType}`;
       
-      // Only keep the first occurrence (earliest) of each unique key
+      // Keep the earliest message for each unique key
       if (!uniqueMessagesMap.has(key)) {
         uniqueMessagesMap.set(key, message);
         addedMessages.push({
           ticker: message.ticker,
           messageType,
-          date: messageDate,
+          date: `Q${message.quarter} ${message.year}`,
           timestamp: messageTimestamp.toISOString(),
           message
         });
       } else {
-        skippedMessages.push({
-          ticker: message.ticker,
-          messageType,
-          date: messageDate,
-          timestamp: messageTimestamp.toISOString(),
-          reason: `Duplicate ${messageType} for same date`,
-          message
-        });
+        // Compare timestamps and keep the earlier one
+        const existingMessage = uniqueMessagesMap.get(key)!;
+        const existingTimestamp = new Date(existingMessage.timestamp);
+        
+        if (messageTimestamp < existingTimestamp) {
+          // This message is earlier, replace the existing one
+          uniqueMessagesMap.set(key, message);
+          addedMessages.push({
+            ticker: message.ticker,
+            messageType,
+            date: `Q${message.quarter} ${message.year}`,
+            timestamp: messageTimestamp.toISOString(),
+            message
+          });
+          
+          skippedMessages.push({
+            ticker: existingMessage.ticker,
+            messageType,
+            date: `Q${existingMessage.quarter} ${existingMessage.year}`,
+            timestamp: existingTimestamp.toISOString(),
+            reason: `Replaced by earlier ${messageType} for same quarter/year`,
+            message: existingMessage
+          });
+        } else {
+          // Existing message is earlier, skip this one
+          skippedMessages.push({
+            ticker: message.ticker,
+            messageType,
+            date: `Q${message.quarter} ${message.year}`,
+            timestamp: messageTimestamp.toISOString(),
+            reason: `Duplicate ${messageType} for same quarter/year (later timestamp)`,
+            message
+          });
+        }
       }
     });
     

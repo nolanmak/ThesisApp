@@ -49,8 +49,8 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     const grouped: Record<string, Message> = {};
     related.forEach(msg => {
       const type = getMessageType(msg);
-      if (!grouped[type] || new Date(msg.timestamp) > new Date(grouped[type].timestamp)) {
-        grouped[type] = msg; // Keep the most recent message of each type
+      if (!grouped[type] || new Date(msg.timestamp) < new Date(grouped[type].timestamp)) {
+        grouped[type] = msg; // Keep the earliest message of each type
       }
     });
     
