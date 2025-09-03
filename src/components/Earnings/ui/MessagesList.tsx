@@ -29,26 +29,28 @@ const StaticPreview: React.FC<{
       className={`
         bg-sky-50 dark:bg-sky-900/30 border border-sky-200 dark:border-sky-800 rounded flex items-center w-full max-w-full box-border overflow-hidden my-[2px]
         ${isMobile
-          ? 'py-[5px] px-[8px] min-h-6 max-h-[100px]'
+          ? 'py-[2px] px-[4px] min-h-4 max-h-[60px]'
           : 'py-[3px] px-[8px] min-h-[20px] max-h-[80px]'}
       `}
       >
-        <div key={previewKey} className="flex flex-row flex-nowrap gap-2 items-center w-full overflow-hidden whitespace-nowrap">
+        <div key={previewKey} className={`flex w-full overflow-hidden ${isMobile ? 'flex-col gap-0.5' : 'flex-row flex-nowrap gap-2 items-center whitespace-nowrap'}`}>
           {content ? (
-            <div key={previewKey} className="flex flex-col flex-nowrap gap-2 items-start">
+            <div key={previewKey} className={`flex ${isMobile ? 'flex-col gap-0.5' : 'flex-col flex-nowrap gap-2'} items-start`}>
               {Object.keys(content)
               .filter((key) => ['Current Quarter', 'Next Quarter', 'Historical Growth', 'Current Year', 'Next Year'].includes(key))
               .slice(0, 3)
               .map((key, index) => (
-                <div key={`${key}-${index}`} className="flex items-center gap-1 flex-shrink-0">
-                  <div className="font-bold text-[0.7rem] text-blue-800 dark:text-blue-300">{key}:</div>
+                <div key={`${key}-${index}`} className={`flex items-center flex-shrink-0 ${isMobile ? 'gap-0.5 flex-nowrap whitespace-nowrap' : 'gap-1'}`}>
+                  <div className={`font-bold text-blue-800 dark:text-blue-300 flex-shrink-0 ${isMobile ? 'text-[0.45rem]' : 'text-[0.7rem]'}`}>
+                    {key}:
+                  </div>
                   {content[key]
                   .map((metric: MetricItem, itemIndex: number) => (
                     <React.Fragment key={`${key}-metric-${itemIndex}`}>
                     {typeof metric === 'string' ? (
-                      <div className="font-medium text-[0.7rem] text-blue-800 dark:text-blue-300">{metric}</div>
+                      <div className={`font-medium text-blue-800 dark:text-blue-300 flex-shrink-0 ${isMobile ? 'text-[0.45rem]' : 'text-[0.7rem]'}`}>{metric}</div>
                     ) : metric.text ? (
-                      <div className="font-medium text-[0.7rem] text-blue-800 dark:text-blue-300">{metric.text}</div>
+                      <div className={`font-medium text-blue-800 dark:text-blue-300 flex-shrink-0 ${isMobile ? 'text-[0.45rem]' : 'text-[0.7rem]'}`}>{metric.text}</div>
                     ) : null}
                     </React.Fragment>
                   ))}
@@ -56,7 +58,7 @@ const StaticPreview: React.FC<{
               ))}
             </div>
           ) : (
-            <div key={previewKey} className="text-blue-800 dark:text-blue-300 font-medium text-[0.7rem] text-center">No metrics available</div>
+            <div key={previewKey} className={`text-blue-800 dark:text-blue-300 font-medium text-center ${isMobile ? 'text-[0.45rem]' : 'text-[0.7rem]'}`}>No metrics available</div>
           )}
         </div>
       </div>
@@ -67,13 +69,13 @@ const StaticPreview: React.FC<{
     <div key={previewKey}
       className={`bg-sky-50 dark:bg-sky-900/30 border border-sky-200 dark:border-sky-800 rounded flex items-center w-full max-w-full box-border overflow-hidden my-[2px]
       ${isMobile
-        ? 'py-[5px] px-[8px] min-h-6 max-h-[100px]'
+        ? 'py-[2px] px-[4px] min-h-4 max-h-[60px]'
         : 'py-[3px] px-[8px] min-h-[20px] max-h-[80px]'}`}
     >
       <div key={previewKey} className={`
-          text-blue-800 dark:text-blue-300 font-medium w-full overflow-hidden leading-[1.4]
+          text-blue-800 dark:text-blue-300 font-medium w-full overflow-hidden leading-[1.1]
           ${isMobile
-            ? 'text-[0.8rem] whitespace-pre-wrap text-clip break-words'
+            ? 'text-[0.45rem] whitespace-pre-wrap text-clip break-words'
             : 'text-[0.7rem] whitespace-nowrap truncate break-normal'}
         `}
       >
@@ -143,8 +145,8 @@ const MessagesList: React.FC<MessagesListProps> = ({
     
     if (!tickData || !isConnected) {
       return (
-        <span className="text-xs text-neutral-400 ml-2">
-          • Vol: --
+        <span className="text-xs text-neutral-400 ml-2 opacity-0">
+          • --
         </span>
       );
     }
@@ -154,7 +156,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
     
     return (
       <span className="text-xs text-neutral-500 ml-2">
-        • Vol: {volumeDisplay}
+        • {volumeDisplay}
         {hasPercentage && (
           <span className={`ml-1 font-medium ${
             tickData.volumePercentageOfAvg! >= 20 
@@ -529,21 +531,21 @@ const MessagesList: React.FC<MessagesListProps> = ({
                 >
                   {/* Ticker and company name */}
                   <div 
-                    className="flex items-center space-x-1 px-1.5 py-0.5 text-xs"
+                    className={`flex items-center space-x-1 px-1.5 py-0.5 ${isMobile ? 'text-xs' : 'text-xs'}`}
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
-                      padding: '2px 6px',
+                      padding: isMobile ? '4px 2px' : '2px 6px',
                       width: 'auto',
-                      maxWidth: isMobile ? 'calc(100% - 30px)' : '100%',
+                      maxWidth: isMobile ? '40%' : '100%',
                       boxSizing: 'border-box',
                       overflowX: 'hidden'
                     }}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       {/* <StockLogo ticker={message.ticker} size={16} /> */}
                       <span 
-                        className="font-bold text-neutral-800 dark:text-neutral-100"
+                        className={`font-bold text-neutral-800 dark:text-neutral-100 ${isMobile ? 'text-sm' : 'text-xs'}`}
                         style={{
                           display: 'flex',
                           flexDirection: 'row',
@@ -555,11 +557,11 @@ const MessagesList: React.FC<MessagesListProps> = ({
                       </span>
                     </div>
 
-                    {message.company_name && (
+                    {message.company_name && !isMobile && (
                       <span 
                         className="text-neutral-500 dark:text-neutral-400"
                         style={{
-                          maxWidth: isMobile ? '60px' : '200px',
+                          maxWidth: '200px',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap'
@@ -569,18 +571,18 @@ const MessagesList: React.FC<MessagesListProps> = ({
                       </span>
                     )}
 
-                    <span className="text-neutral-600 dark:text-neutral-400 mx-1">
-                      Q{message.quarter}
+                    <span className={`text-neutral-600 dark:text-neutral-400 ${isMobile ? 'text-xs ml-1' : 'mx-1'}`}>
+                      Q{message.quarter}{!isMobile && ` ${message.year}`}
                     </span>
                   </div>
 
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400 ml-1">
-                    {convertToEasternTime(message.timestamp)}
+                  <span className={`text-neutral-500 dark:text-neutral-400 ${isMobile ? 'text-xs flex-shrink-0' : 'text-xs ml-1'}`}>
+                    {isMobile ? convertToEasternTime(message.timestamp).split(',')[1]?.trim() || convertToEasternTime(message.timestamp) : convertToEasternTime(message.timestamp)}
                   </span>
                   
                   {/* Inline transcript preview */}
-                  <span className="text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 px-2 py-1 rounded border border-purple-200 dark:border-purple-800 ml-2 font-medium truncate">
-                    Transcript analysis
+                  <span className={`bg-purple-50 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 px-2 py-1 rounded border border-purple-200 dark:border-purple-800 font-medium truncate flex-shrink-0 ${isMobile ? 'text-xs ml-1' : 'text-xs ml-2'}`}>
+                    {isMobile ? 'Transcript' : 'Transcript analysis'}
                   </span>
                   
                   <InlineVolume ticker={message.ticker} />
@@ -613,21 +615,21 @@ const MessagesList: React.FC<MessagesListProps> = ({
                 >
                   {/* Ticker and company name */}
                   <div 
-                    className="flex items-center space-x-1 px-1.5 py-0.5 text-xs"
+                    className={`flex items-center space-x-1 px-1.5 py-0.5 ${isMobile ? 'text-xs' : 'text-xs'}`}
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
-                      padding: '2px 6px',
+                      padding: isMobile ? '4px 2px' : '2px 6px',
                       width: 'auto',
-                      maxWidth: isMobile ? 'calc(100% - 30px)' : '100%',
+                      maxWidth: isMobile ? '40%' : '100%',
                       boxSizing: 'border-box',
                       overflowX: 'hidden'
                     }}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       {/* <StockLogo ticker={message.ticker} size={16} /> */}
                       <span 
-                        className="font-bold text-neutral-800 dark:text-neutral-100"
+                        className={`font-bold text-neutral-800 dark:text-neutral-100 ${isMobile ? 'text-sm' : 'text-xs'}`}
                         style={{
                           display: 'flex',
                           flexDirection: 'row',
@@ -639,11 +641,11 @@ const MessagesList: React.FC<MessagesListProps> = ({
                       </span>
                     </div>
 
-                    {message.company_name && (
+                    {message.company_name && !isMobile && (
                       <span 
                         className="text-neutral-500 dark:text-neutral-400"
                         style={{
-                          maxWidth: isMobile ? '60px' : '200px',
+                          maxWidth: '200px',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap'
@@ -653,18 +655,18 @@ const MessagesList: React.FC<MessagesListProps> = ({
                       </span>
                     )}
 
-                    <span className="text-neutral-600 dark:text-neutral-400 mx-1">
-                      Q{message.quarter}
+                    <span className={`text-neutral-600 dark:text-neutral-400 ${isMobile ? 'text-xs ml-1' : 'mx-1'}`}>
+                      Q{message.quarter}{!isMobile && ` ${message.year}`}
                     </span>
                   </div>
 
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400 ml-1">
-                    {convertToEasternTime(message.timestamp)}
+                  <span className={`text-neutral-500 dark:text-neutral-400 ${isMobile ? 'text-xs flex-shrink-0' : 'text-xs ml-1'}`}>
+                    {isMobile ? convertToEasternTime(message.timestamp).split(',')[1]?.trim() || convertToEasternTime(message.timestamp) : convertToEasternTime(message.timestamp)}
                   </span>
                   
                   {/* Inline sentiment preview */}
-                  <span className="text-xs bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200 px-2 py-1 rounded border border-green-200 dark:border-green-800 ml-2 font-medium truncate">
-                    Sentiment analysis
+                  <span className={`bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200 px-2 py-1 rounded border border-green-200 dark:border-green-800 font-medium truncate flex-shrink-0 ${isMobile ? 'text-xs ml-1' : 'text-xs ml-2'}`}>
+                    {isMobile ? 'Sentiment' : 'Sentiment analysis'}
                   </span>
                   
                   <InlineVolume ticker={message.ticker} />
@@ -697,21 +699,21 @@ const MessagesList: React.FC<MessagesListProps> = ({
                 >
                   {/* Ticker and company name */}
                   <div 
-                    className="flex items-center space-x-1 px-1.5 py-0.5 text-xs"
+                    className={`flex items-center space-x-1 px-1.5 py-0.5 ${isMobile ? 'text-xs' : 'text-xs'}`}
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
-                      padding: '2px 6px',
+                      padding: isMobile ? '4px 2px' : '2px 6px',
                       width: 'auto',
-                      maxWidth: isMobile ? 'calc(100% - 30px)' : '100%',
+                      maxWidth: isMobile ? '35%' : '100%',
                       boxSizing: 'border-box',
                       overflowX: 'hidden'
                     }}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       {/* <StockLogo ticker={message.ticker} size={16} /> */}
                       <span 
-                        className="font-bold text-neutral-800 dark:text-neutral-100"
+                        className={`font-bold text-neutral-800 dark:text-neutral-100 ${isMobile ? 'text-sm' : 'text-xs'}`}
                         style={{
                           display: 'flex',
                           flexDirection: 'row',
@@ -723,11 +725,11 @@ const MessagesList: React.FC<MessagesListProps> = ({
                       </span>
                     </div>
                     
-                    {message.company_name && (
+                    {message.company_name && !isMobile && (
                       <span
                         className="text-neutral-500 dark:text-neutral-400"
                         style={{
-                          maxWidth: isMobile ? '60px' : '200px',
+                          maxWidth: '200px',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -737,13 +739,13 @@ const MessagesList: React.FC<MessagesListProps> = ({
                       </span>
                     )}
                     
-                    <span className="text-neutral-600 dark:text-neutral-400 mx-1">
-                      Q{message.quarter}
+                    <span className={`text-neutral-600 dark:text-neutral-400 ${isMobile ? 'text-xs ml-1' : 'mx-1'}`}>
+                      Q{message.quarter}{!isMobile && ` ${message.year}`}
                     </span>
                   </div>
                   
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400 ml-1">
-                    {convertToEasternTime(message.timestamp)}
+                  <span className={`text-neutral-500 dark:text-neutral-400 ${isMobile ? 'text-xs flex-shrink-0' : 'text-xs ml-1'}`}>
+                    {isMobile ? convertToEasternTime(message.timestamp).split(',')[1]?.trim() || convertToEasternTime(message.timestamp) : convertToEasternTime(message.timestamp)}
                   </span>
                   <InlineVolume ticker={message.ticker} />
                 </div>
@@ -796,21 +798,21 @@ const MessagesList: React.FC<MessagesListProps> = ({
                 >
                   {/* Ticker and company name */}
                   <div 
-                    className="flex items-center space-x-1 px-1.5 py-0.5 text-xs"
+                    className={`flex items-center space-x-1 px-1.5 py-0.5 ${isMobile ? 'text-xs' : 'text-xs'}`}
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
-                      padding: '2px 6px',
+                      padding: isMobile ? '4px 2px' : '2px 6px',
                       width: 'auto',
-                      maxWidth: isMobile ? 'calc(100% - 30px)' : '100%',
+                      maxWidth: isMobile ? '40%' : '100%',
                       boxSizing: 'border-box',
                       overflowX: 'hidden'
                     }}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       {/* <StockLogo ticker={message.ticker} size={16} /> */}
                       <span 
-                        className="font-bold text-neutral-800 dark:text-neutral-100"
+                        className={`font-bold text-neutral-800 dark:text-neutral-100 ${isMobile ? 'text-sm' : 'text-xs'}`}
                         style={{
                           display: 'flex',
                           flexDirection: 'row',
@@ -822,11 +824,11 @@ const MessagesList: React.FC<MessagesListProps> = ({
                       </span>
                     </div>
 
-                    {message.company_name && (
+                    {message.company_name && !isMobile && (
                       <span 
                         className="text-neutral-500 dark:text-neutral-400"
                         style={{
-                          maxWidth: isMobile ? '60px' : '200px',
+                          maxWidth: '200px',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap'
@@ -836,13 +838,13 @@ const MessagesList: React.FC<MessagesListProps> = ({
                       </span>
                     )}
 
-                    <span className="text-neutral-600 dark:text-neutral-400 mx-1">
-                      Q{message.quarter}
+                    <span className={`text-neutral-600 dark:text-neutral-400 ${isMobile ? 'text-xs ml-1' : 'mx-1'}`}>
+                      Q{message.quarter}{!isMobile && ` ${message.year}`}
                     </span>
                   </div>
 
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400 ml-1">
-                    {convertToEasternTime(message.timestamp)}
+                  <span className={`text-neutral-500 dark:text-neutral-400 ${isMobile ? 'text-xs flex-shrink-0' : 'text-xs ml-1'}`}>
+                    {isMobile ? convertToEasternTime(message.timestamp).split(',')[1]?.trim() || convertToEasternTime(message.timestamp) : convertToEasternTime(message.timestamp)}
                   </span>
                   <InlineVolume ticker={message.ticker} />
                   {/* <div
