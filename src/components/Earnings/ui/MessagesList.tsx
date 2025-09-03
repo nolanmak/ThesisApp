@@ -747,6 +747,12 @@ const MessagesList: React.FC<MessagesListProps> = ({
                   <span className={`text-neutral-500 dark:text-neutral-400 ${isMobile ? 'text-xs flex-shrink-0' : 'text-xs ml-1'}`}>
                     {isMobile ? convertToEasternTime(message.timestamp).split(',')[1]?.trim() || convertToEasternTime(message.timestamp) : convertToEasternTime(message.timestamp)}
                   </span>
+                  
+                  {/* Inline report preview */}
+                  <span className={`bg-sky-50 dark:bg-sky-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded border border-sky-200 dark:border-sky-800 font-medium flex-shrink-0 ${isMobile ? 'text-xs ml-1' : 'text-xs ml-2'}`}>
+                    Report released
+                  </span>
+                  
                   <InlineVolume ticker={message.ticker} />
                 </div>
                 <div
