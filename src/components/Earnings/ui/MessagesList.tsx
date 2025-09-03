@@ -504,26 +504,17 @@ const MessagesList: React.FC<MessagesListProps> = ({
           }}
         >
           {message.source === 'transcript_analysis' ? (
-            /* Transcript analysis message with preview */
-            <div
-              className="flex flex-col transition-colors"
-              style={{
-                gap: isMobile ? '8px' : undefined,
-                width: '100%',
-                maxWidth: '100%',
-                overflow: 'hidden',
-              }}
-            >
+            /* Transcript analysis message - single line layout */
+            <div className="flex flex-col">
               <div
-                className="flex justify-between items-center mb-1"
+                className="flex justify-between items-center cursor-pointer transition-colors"
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: undefined,
-                  marginBottom: '4px',
+                  gap: '0',
                   width: '100%',
                   maxWidth: '100%',
-                  overflow: 'hidden'
+                  overflow: 'hidden',
                 }}
               >
                 <div
@@ -586,61 +577,28 @@ const MessagesList: React.FC<MessagesListProps> = ({
                   <span className="text-xs text-neutral-500 dark:text-neutral-400 ml-1">
                     {convertToEasternTime(message.timestamp)}
                   </span>
+                  
+                  {/* Inline transcript preview */}
+                  <span className="text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 px-2 py-1 rounded border border-purple-200 dark:border-purple-800 ml-2 font-medium truncate">
+                    {ParseTranscriptMessage(message) || 'Transcript analysis available'}
+                  </span>
+                  
                   <InlineVolume ticker={message.ticker} />
-                  {/* <div
-                    className="inline-flex items-center justify-center w-5 h-5 bg-purple-50 text-purple-600 rounded-full hover:bg-purple-100 transition-colors"
-                    style={{
-                      alignSelf: undefined,
-                      marginTop: '0',
-                      marginLeft: '4px',
-                    }}
-                  >
-                    <Mic size={14} />
-                  </div> */}
-                </div>
-              </div>
-
-              {/* Static preview of the transcript message */}
-              <div
-                className="bg-purple-50 border border-purple-200 rounded flex items-center w-full max-w-full box-border overflow-hidden my-[2px]"
-                style={{
-                  padding: isMobile ? '5px 8px' : '3px 8px',
-                  minHeight: isMobile ? '24px' : '20px',
-                  maxHeight: isMobile ? '100px' : '80px'
-                }}
-              >
-                <div 
-                  className={`text-purple-800 font-medium w-full overflow-hidden leading-[1.4] ${
-                    isMobile
-                      ? 'text-[0.8rem] whitespace-pre-wrap text-clip break-words'
-                      : 'text-[0.7rem] whitespace-nowrap truncate break-normal'
-                  }`}
-                >
-                  {ParseTranscriptMessage(message) || 'Transcript analysis available'}
                 </div>
               </div>
             </div>
           ) : (message.source === 'sentiment_analysis' || message.sentiment_additional_metrics) ? (
-            /* Sentiment analysis message with preview */
-            <div
-              className="flex flex-col transition-colors"
-              style={{
-                gap: isMobile ? '8px' : undefined,
-                width: '100%',
-                maxWidth: '100%',
-                overflow: 'hidden',
-              }}
-            >
+            /* Sentiment analysis message - single line layout */
+            <div className="flex flex-col">
               <div
-                className="flex justify-between items-center mb-1"
+                className="flex justify-between items-center cursor-pointer transition-colors"
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: undefined,
-                  marginBottom: '4px',
+                  gap: '0',
                   width: '100%',
                   maxWidth: '100%',
-                  overflow: 'hidden'
+                  overflow: 'hidden',
                 }}
               >
                 <div
@@ -703,37 +661,13 @@ const MessagesList: React.FC<MessagesListProps> = ({
                   <span className="text-xs text-neutral-500 dark:text-neutral-400 ml-1">
                     {convertToEasternTime(message.timestamp)}
                   </span>
+                  
+                  {/* Inline sentiment preview */}
+                  <span className="text-xs bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200 px-2 py-1 rounded border border-green-200 dark:border-green-800 ml-2 font-medium truncate">
+                    {ParseSentimentMessage(message) || 'Sentiment analysis available'}
+                  </span>
+                  
                   <InlineVolume ticker={message.ticker} />
-                  {/* <div
-                    className="inline-flex items-center justify-center w-5 h-5 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
-                    style={{
-                      alignSelf: undefined,
-                      marginTop: '0',
-                      marginLeft: '4px',
-                    }}
-                  >
-                    <TrendingUp size={14} />
-                  </div> */}
-                </div>
-              </div>
-
-              {/* Static preview of the sentiment message */}
-              <div
-                className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded flex items-center w-full max-w-full box-border overflow-hidden my-[2px]"
-                style={{
-                  padding: isMobile ? '5px 8px' : '3px 8px',
-                  minHeight: isMobile ? '24px' : '20px',
-                  maxHeight: isMobile ? '100px' : '80px'
-                }}
-              >
-                <div 
-                  className={`text-green-800 dark:text-green-300 font-medium w-full overflow-hidden leading-[1.4] ${
-                    isMobile
-                      ? 'text-[0.8rem] whitespace-pre-wrap text-clip break-words'
-                      : 'text-[0.7rem] whitespace-nowrap truncate break-normal'
-                  }`}
-                >
-                  {ParseSentimentMessage(message) || 'Sentiment analysis available'}
                 </div>
               </div>
             </div>
