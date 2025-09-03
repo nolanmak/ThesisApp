@@ -524,7 +524,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     }}
                   >
                     <div className="flex items-center gap-2">
-                      <StockLogo ticker={message.ticker} size={16} />
+                      {/* <StockLogo ticker={message.ticker} size={16} /> */}
                       <span 
                         className="font-bold text-neutral-800 dark:text-neutral-100"
                         style={{
@@ -561,7 +561,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     {convertToEasternTime(message.timestamp)}
                   </span>
                   <InlineVolume ticker={message.ticker} />
-                  <div
+                  {/* <div
                     className="inline-flex items-center justify-center w-5 h-5 bg-purple-50 text-purple-600 rounded-full hover:bg-purple-100 transition-colors"
                     style={{
                       alignSelf: undefined,
@@ -570,7 +570,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     }}
                   >
                     <Mic size={14} />
-                  </div>
+                  </div> */}
                 </div>
               </div>
 
@@ -641,7 +641,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     }}
                   >
                     <div className="flex items-center gap-2">
-                      <StockLogo ticker={message.ticker} size={16} />
+                      {/* <StockLogo ticker={message.ticker} size={16} /> */}
                       <span 
                         className="font-bold text-neutral-800 dark:text-neutral-100"
                         style={{
@@ -678,7 +678,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     {convertToEasternTime(message.timestamp)}
                   </span>
                   <InlineVolume ticker={message.ticker} />
-                  <div
+                  {/* <div
                     className="inline-flex items-center justify-center w-5 h-5 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
                     style={{
                       alignSelf: undefined,
@@ -687,7 +687,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     }}
                   >
                     <TrendingUp size={14} />
-                  </div>
+                  </div> */}
                 </div>
               </div>
 
@@ -848,7 +848,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     }}
                   >
                     <div className="flex items-center gap-2">
-                      <StockLogo ticker={message.ticker} size={16} />
+                      {/* <StockLogo ticker={message.ticker} size={16} /> */}
                       <span 
                         className="font-bold text-neutral-800 dark:text-neutral-100"
                         style={{
@@ -885,7 +885,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     {convertToEasternTime(message.timestamp)}
                   </span>
                   <InlineVolume ticker={message.ticker} />
-                  <div
+                  {/* <div
                     className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors"
                     style={{
                       alignSelf: undefined,
@@ -894,7 +894,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     }}
                   >
                     <BarChart2 size={14} />
-                  </div>
+                  </div> */}
                 </div>
               </div>
 

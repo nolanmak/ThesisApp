@@ -32,20 +32,17 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     return 'earnings';
   };
 
-  // Find related messages for the same ticker within 72 hours
+  // Find related messages for the same ticker, quarter, and year
   const relatedMessages = useMemo(() => {
     if (!selectedMessage) return {};
-    
-    const selectedTime = new Date(selectedMessage.timestamp).getTime();
-    const seventyTwoHoursMs = 72 * 60 * 60 * 1000;
-    const timeWindow = { start: selectedTime - seventyTwoHoursMs, end: selectedTime + seventyTwoHoursMs };
     
     const related = messages.filter(msg => {
       if (msg.ticker !== selectedMessage.ticker) return false;
       if (msg.link) return false; // Exclude link messages from tabs
+      if (msg.quarter !== selectedMessage.quarter) return false;
+      if (msg.year !== selectedMessage.year) return false;
       
-      const msgTime = new Date(msg.timestamp).getTime();
-      return msgTime >= timeWindow.start && msgTime <= timeWindow.end;
+      return true;
     });
     
     // Group by message type
