@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, Calendar, MessageCircle, Menu, List } from 'lucide-react';
+import { LogOut, Calendar, MessageCircle, Menu, List, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import ThemeToggle from './ui/ThemeToggle';
+import AudioSettings from './ui/AudioSettings';
 
 const Layout: React.FC = () => {
   const { user } = useAuth();
@@ -10,6 +11,7 @@ const Layout: React.FC = () => {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
   
   const isAdmin = user?.email === 'nolanmak7@gmail.com';
   
@@ -64,13 +66,31 @@ const Layout: React.FC = () => {
               This is an alpha version. Please validate any data through other sources.
             </div>
             
-            {/* Theme Toggle (desktop only) */}
-            {!isMobile && <ThemeToggle />}
+            {/* Theme Toggle and Settings (desktop only) */}
+            {!isMobile && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setAudioSettingsOpen(true)}
+                  className="flex items-center justify-center p-2 rounded-md transition-colors duration-200 ease-in-out text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  aria-label="Audio settings"
+                >
+                  <Settings size={18} />
+                </button>
+                <ThemeToggle />
+              </div>
+            )}
           </div>
           
-          {/* Mobile Menu Button and Theme Toggle */}
+          {/* Mobile Menu Button, Settings and Theme Toggle */}
           {isMobile && (
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => setAudioSettingsOpen(true)}
+                className="flex items-center justify-center p-2 rounded-md transition-colors duration-200 ease-in-out text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                aria-label="Audio settings"
+              >
+                <Settings size={18} />
+              </button>
               <ThemeToggle />
               <button
                 onClick={toggleMenu}
@@ -192,6 +212,12 @@ const Layout: React.FC = () => {
           <Outlet />
         </div>
       </div>
+
+      {/* Audio Settings Modal */}
+      <AudioSettings 
+        isOpen={audioSettingsOpen}
+        onClose={() => setAudioSettingsOpen(false)}
+      />
     </div>
   );
 };

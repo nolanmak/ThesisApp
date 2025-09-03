@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { useAudioWebSocket } from '../../../hooks/useAudioWebSocket';
 import { AudioNotification } from '../../../services/audioWebsocket';
 import { useWatchlist } from '../../../hooks/useWatchlist';
+import { useAudioSettings } from '../../../contexts/AudioSettingsContext';
 
 
 interface WebSocketStatusProps {
@@ -29,6 +30,9 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
 }) => {
   // Watchlist hook (automatically updates audio service filter)
   useWatchlist();
+  
+  // Audio settings hook
+  const { settings } = useAudioSettings();
   
   // Audio playback state
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -130,12 +134,12 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
     }
   }, [audioQueue, isPlaying, userHasInteracted, audioEnabled]);
   
-  // Set default playback speed to 1.5x
+  // Set playback speed from settings
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.playbackRate = 1.5;
+      audioRef.current.playbackRate = settings.playbackSpeed;
     }
-  }, []);
+  }, [settings.playbackSpeed]);
 
   // Set up audio source when currentAudio changes
   useEffect(() => {
@@ -163,7 +167,7 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
         try {
           // Set the new source and wait for it to be ready
           audioElement.src = audioUrl;
-          audioElement.playbackRate = 1.5;
+          audioElement.playbackRate = settings.playbackSpeed;
           
           // Wait for the audio to be ready to play with timeout
           await new Promise((resolve, reject) => {
@@ -203,7 +207,7 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
           await audioElement.play();
           setIsPlaying(true);
           lastPlayedUrlRef.current = audioUrl; // Mark this URL as played
-          console.log('[AUDIO PLAYER] Audio playing successfully at 1.5x speed');
+          console.log(`[AUDIO PLAYER] Audio playing successfully at ${settings.playbackSpeed}x speed`);
           
         } catch (error: any) {
           console.error('[AUDIO PLAYER] Error playing audio:', error);
