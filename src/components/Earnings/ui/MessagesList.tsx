@@ -143,7 +143,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
   const InlineVolume: React.FC<{ ticker: string }> = ({ ticker }) => {
     const tickData = marketData[ticker];
     
-    if (!tickData || !isConnected) {
+    if (!tickData || !isConnected || tickData.cumulativeVolume === 0) {
       return null;
     }
     

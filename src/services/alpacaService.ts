@@ -171,16 +171,14 @@ class AlpacaService {
    * Handles daylight saving time automatically and works in any timezone
    */
   private isAfterMarketClose(): boolean {
-    const now = new Date();
-    
-    // Create a date object for today at 4 PM in New York timezone
-    const todayAt4PM = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
-    todayAt4PM.setHours(16, 0, 0, 0); // 4:00:00 PM exactly
-    
     // Get current time in New York timezone
-    const nowInNY = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    const nowInNY = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
+    const nyTime = new Date(nowInNY);
     
-    return nowInNY >= todayAt4PM;
+    // Market closes at 4 PM (16:00) in NY time
+    const marketCloseHour = 16;
+    
+    return nyTime.getHours() >= marketCloseHour;
   }
 
   /**
@@ -792,8 +790,8 @@ class AlpacaService {
       this.subscribeToSymbols();
       // Wait a bit before requesting initial data to ensure subscription is processed
       setTimeout(() => this.fetchInitialData(symbolsArray), 100);
-    } else if (!this.isConnecting) {
-      // Not connected and not connecting, start connection
+    } else if (!this.isConnecting && this.isAfterMarketClose()) {
+      // Only connect if it's after market hours (4 PM EST/EDT)
       this.connect();
     }
     // If already connecting, symbols are in pendingSubscriptions and will be handled on connect
