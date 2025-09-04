@@ -404,26 +404,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
 
   return (
     <div className="flex flex-col">
-      {/* Market Data Controls */}
-      {uniqueTickers.length > 0 && (
-        <div className="bg-white dark:bg-neutral-800 border-b border-neutral-100 dark:border-neutral-700 px-3 py-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-              <span className="text-xs text-neutral-600 dark:text-neutral-400">
-                {isConnected ? 'Market data connected' : 'Market data disconnected'}
-              </span>
-            </div>
-            <button
-              onClick={resetAllCumulativeVolume}
-              className="text-xs px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded border border-blue-200 dark:border-blue-800 transition-colors"
-              title="Reset session volume tracking for all symbols"
-            >
-              Reset Volume
-            </button>
-          </div>
-        </div>
-      )}
       
       <div 
         className="flex-1 overflow-auto scrollbar-hide"
