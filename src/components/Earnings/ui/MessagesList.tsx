@@ -263,13 +263,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
         if (messageTimestamp < existingTimestamp) {
           // This message is earlier, replace the existing one
           uniqueMessagesMap.set(key, message);
-          addedMessages.push({
-            ticker: message.ticker,
-            messageType,
-            date: `Q${message.quarter} ${message.year}`,
-            timestamp: messageTimestamp.toISOString(),
-            message
-          });
           
           skippedMessages.push({
             ticker: existingMessage.ticker,
@@ -377,40 +370,22 @@ const MessagesList: React.FC<MessagesListProps> = ({
 
   // Debug message data structure
   useEffect(() => {
-    
     // Focus on transcript messages specifically
     const transcriptMessages = deduplicatedMessages.filter(msg => msg.source === 'transcript_analysis');
     
     if (transcriptMessages.length > 0) {
+      // Debug transcript messages if needed
     }
     
-    // Log transcript_data for ALL messages (not just transcript_analysis)
-    deduplicatedMessages.forEach((msg, index) => {
-    });
-    
-    // Check message format and source types
-    const messageAnalysis = deduplicatedMessages.map(msg => ({
-      message_id: msg.message_id,
-      ticker: msg.ticker,
-      source: msg.source || 'null',
-      timestamp: msg.timestamp,
-      hasSentimentField: 'sentiment_additional_metrics' in msg,
-      sentimentFieldType: typeof msg.sentiment_additional_metrics,
-      sentimentFieldValue: msg.sentiment_additional_metrics ? 'HAS_DATA' : 'NO_DATA',
-      discordMessagePreview: msg.discord_message ? msg.discord_message.substring(0, 100) + '...' : 'no discord message',
-      hasLink: !!msg.link,
-      hasTranscriptData: !!msg.transcript_data,
-      transcriptDataType: typeof msg.transcript_data
-    }));
-    
-    
-    // Count by source type
+    // Count by source type for debugging
     const sourceTypeCounts = deduplicatedMessages.reduce((acc, msg) => {
       const source = msg.source || 'null';
       acc[source] = (acc[source] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
     
+    // Log source counts if needed for debugging
+    console.log('Message counts by source:', sourceTypeCounts);
   }, [deduplicatedMessages]);
 
   if (loading && (!messages || messages.length === 0)) {
