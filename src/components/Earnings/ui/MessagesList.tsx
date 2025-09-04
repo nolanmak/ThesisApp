@@ -144,11 +144,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
     const tickData = marketData[ticker];
     
     if (!tickData || !isConnected) {
-      return (
-        <span className="text-xs text-neutral-400 ml-2 opacity-0">
-          • --
-        </span>
-      );
+      return null;
     }
     
     const volumeDisplay = formatVolume(tickData.cumulativeVolume);
