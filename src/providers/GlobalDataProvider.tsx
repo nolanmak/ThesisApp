@@ -48,8 +48,8 @@ export const GlobalDataContext = createContext<GlobalDataContextType | undefined
 
 // Provider component
 export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Initialize with empty search terms - we'll update these via the exposed methods
-  const searchMessageTicker = '';
+  // State for search terms - these will be updated via the exposed methods
+  const [searchMessageTicker, setSearchMessageTicker] = useState('');
   const searchTicker = '';
   const filterActive = null;
   const releaseTime = null;
@@ -174,7 +174,10 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return Promise.resolve();
     },
     toggleWebSocket,
-    updateMessagesSearchTicker,
+    updateMessagesSearchTicker: (searchTerm: string) => {
+      setSearchMessageTicker(searchTerm);
+      updateMessagesSearchTicker(searchTerm);
+    },
     convertToEasternTime,
     
     // Earnings data
