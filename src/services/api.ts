@@ -157,13 +157,17 @@ export const getMessages = async (
     // Add search parameters
     if (searchTicker) {
       queryParams.append('ticker', searchTicker);
+      console.log(`🔍 API: Searching for ticker: "${searchTicker}"`);
     }
     
     if (searchCompany) {
       queryParams.append('company_name', searchCompany);
+      console.log(`🔍 API: Searching for company: "${searchCompany}"`);
     }
 
-    const response = await fetchWithAuth<PaginatedMessageResponse>(`/messages?${queryParams.toString()}`);
+    const finalUrl = `/messages?${queryParams.toString()}`;
+    console.log(`🔍 API: Making request to: ${finalUrl}`);
+    const response = await fetchWithAuth<PaginatedMessageResponse>(finalUrl);
 
     // Only cache the first page when no search/pagination params are used
     if (!lastKey && !hasSearchParams) {
