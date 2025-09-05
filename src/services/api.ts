@@ -130,10 +130,16 @@ export interface PaginatedMessageResponse {
 export const getMessages = async (
   bypassCache: boolean = true,
   limit: number = 50,
-  lastKey?: string
+  lastKey?: string,
+  searchTicker?: string,
+  searchCompany?: string
 ): Promise<PaginatedMessageResponse> => {
   const cacheKey = CACHE_KEYS.MESSAGES;
-  const cachedMessages = !bypassCache && !lastKey ? cache.get<PaginatedMessageResponse>(cacheKey) : null;
+  const hasSearchParams = searchTicker || searchCompany;
+  
+  // Don't use cache when searching or paginating
+  const cachedMessages = !bypassCache && !lastKey && !hasSearchParams ? 
+    cache.get<PaginatedMessageResponse>(cacheKey) : null;
 
   if (cachedMessages) {
     return cachedMessages;
@@ -143,14 +149,24 @@ export const getMessages = async (
     // Build query parameters
     const queryParams = new URLSearchParams();
     queryParams.append('limit', limit.toString());
+    
     if (lastKey) {
       queryParams.append('last_key', lastKey);
+    }
+    
+    // Add search parameters
+    if (searchTicker) {
+      queryParams.append('ticker', searchTicker);
+    }
+    
+    if (searchCompany) {
+      queryParams.append('company_name', searchCompany);
     }
 
     const response = await fetchWithAuth<PaginatedMessageResponse>(`/messages?${queryParams.toString()}`);
 
-    // Only cache the first page (when no lastKey is provided)
-    if (!lastKey) {
+    // Only cache the first page when no search/pagination params are used
+    if (!lastKey && !hasSearchParams) {
       cache.set(cacheKey, response, CACHE_EXPIRY.SHORT);
     }
     
