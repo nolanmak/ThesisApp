@@ -131,11 +131,10 @@ export const getMessages = async (
   bypassCache: boolean = true,
   limit: number = 50,
   lastKey?: string,
-  searchTicker?: string,
-  searchCompany?: string
+  searchTerm?: string
 ): Promise<PaginatedMessageResponse> => {
   const cacheKey = CACHE_KEYS.MESSAGES;
-  const hasSearchParams = searchTicker || searchCompany;
+  const hasSearchParams = searchTerm;
   
   // Don't use cache when searching or paginating
   const cachedMessages = !bypassCache && !lastKey && !hasSearchParams ? 
@@ -154,15 +153,11 @@ export const getMessages = async (
       queryParams.append('last_key', lastKey);
     }
     
-    // Add search parameters
-    if (searchTicker) {
-      queryParams.append('ticker', searchTicker);
-      console.log(`🔍 API: Searching for ticker: "${searchTicker}"`);
-    }
-    
-    if (searchCompany) {
-      queryParams.append('company_name', searchCompany);
-      console.log(`🔍 API: Searching for company: "${searchCompany}"`);
+    // Add search parameters - send search term as both ticker and company_name for hybrid search
+    if (searchTerm) {
+      queryParams.append('ticker', searchTerm);
+      queryParams.append('company_name', searchTerm);
+      console.log(`🔍 API: Hybrid search for: "${searchTerm}" (both ticker and company name)`);
     }
 
     const finalUrl = `/messages?${queryParams.toString()}`;

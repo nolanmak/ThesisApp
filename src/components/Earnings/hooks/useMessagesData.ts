@@ -95,7 +95,7 @@ const useMessagesData = (initialSearchTicker: string = '') => {
   }, [enabled, enableWebSocket, disableWebSocket]);
 
   // Fetch messages with optional search parameters
-  const fetchMessages = useCallback(async (bypassCache: boolean = false, resetMessages: boolean = true, searchTicker?: string) => {
+  const fetchMessages = useCallback(async (bypassCache: boolean = false, resetMessages: boolean = true, searchTerm?: string) => {
     try {
       // Set appropriate loading state
       setState(prev => ({
@@ -104,18 +104,18 @@ const useMessagesData = (initialSearchTicker: string = '') => {
         refreshing: bypassCache && prev.messages.length > 0 && resetMessages // Show refreshing indicator for subsequent loads
       }));
       
-      // Use backend search if searchTicker is provided, otherwise get all messages
+      // Use backend search if searchTerm is provided, otherwise get all messages
       const response: PaginatedMessageResponse = await getMessages(
         bypassCache, 
         50, // limit
         undefined, // lastKey
-        searchTicker // search ticker parameter
+        searchTerm // hybrid search parameter (searches both ticker and company name)
       );
       const { messages: fetchedMessages, next_key } = response;
       
       // Log search results for debugging
-      if (searchTicker) {
-        console.log(`Search results for "${searchTicker}": ${fetchedMessages.length} messages, hasMore: ${!!next_key}`);
+      if (searchTerm) {
+        console.log(`Search results for "${searchTerm}": ${fetchedMessages.length} messages, hasMore: ${!!next_key}`);
       }
       
       // Sort messages by timestamp (newest first)
@@ -147,12 +147,12 @@ const useMessagesData = (initialSearchTicker: string = '') => {
     try {
       setState(prev => ({ ...prev, loadingMore: true }));
       
-      // Pass current search ticker to maintain search context during pagination
+      // Pass current search term to maintain search context during pagination
       const response: PaginatedMessageResponse = await getMessages(
         true, // bypassCache
         50, // limit
         state.nextKey, // lastKey
-        state.searchTicker || undefined // searchTicker
+        state.searchTicker || undefined // searchTerm (hybrid search)
       );
       const { messages: fetchedMessages, next_key } = response;
       
@@ -229,7 +229,7 @@ const useMessagesData = (initialSearchTicker: string = '') => {
               true, // bypass cache
               50, // limit
               undefined, // lastKey
-              state.searchTicker || undefined // maintain search context
+              state.searchTicker || undefined // maintain hybrid search context
             );
             const { messages: fetchedMessages } = response;
             
