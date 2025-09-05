@@ -242,7 +242,6 @@ const useEarningsData = (
     state.filterActive,
     state.selectedDate,
     state.releaseTime,
-    applyFilters,
   ]);
 
   // Initial data fetch
