@@ -447,7 +447,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                 <div
                   className="flex items-center"
                   style={{
-                    flexWrap: 'nowrap',
+                   flexWrap: 'nowrap',
                     gap: '4px',
                     width: isMobile ? 'calc(100% - 30px)' : undefined,
                     maxWidth: '100%',
