@@ -7,7 +7,7 @@ import EarningsModal from './modals/EarningsModal';
 import ConfigModal from './modals/ConfigModal';
 import AdminMessagesList from './ui/AdminMessagesList';
 import AdminMessageSearch from './ui/AdminMessageSearch';
-import AnalysisPanel from '../Earnings/ui/AnalysisPanel';
+import AdminAnalysisPanel from './ui/AdminAnalysisPanel';
 import FeedbackModal from '../Earnings/ui/FeedbackModal';
 import useGlobalData from '../../hooks/useGlobalData';
 
@@ -331,14 +331,13 @@ const Calendar: React.FC = () => {
               </div>
               
               {/* Analysis panel */}
-              <AnalysisPanel
+              <AdminAnalysisPanel
                 selectedMessage={selectedMessage}
                 isMobile={isMobile}
                 showAnalysisPanel={showAnalysisPanel}
                 convertToEasternTime={convertToEasternTime}
                 handleCloseAnalysisPanel={handleCloseAnalysisPanel}
                 setFeedbackModalOpen={setFeedbackModalOpen}
-                messages={messages}
               />
             </div>
           </div>
