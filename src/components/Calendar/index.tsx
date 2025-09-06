@@ -6,6 +6,7 @@ import SearchFilters from './ui/SearchFilters';
 import EarningsModal from './modals/EarningsModal';
 import ConfigModal from './modals/ConfigModal';
 import AdminMessagesList from './ui/AdminMessagesList';
+import AdminMessageSearch from './ui/AdminMessageSearch';
 import AnalysisPanel from '../Earnings/ui/AnalysisPanel';
 import FeedbackModal from '../Earnings/ui/FeedbackModal';
 import useGlobalData from '../../hooks/useGlobalData';
@@ -47,6 +48,9 @@ const Calendar: React.FC = () => {
   const [filterActive, setFilterActive] = useState<boolean | null>(null);
   const [releaseTime, setReleaseTime] = useState<string | null>(null);
 
+  // Message search state
+  const [searchMessageTicker, setSearchMessageTicker] = useState<string>('');
+
   // Analysis panel states - must be declared before useEffect that uses them
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [showAnalysisPanel, setShowAnalysisPanel] = useState<boolean>(false);
@@ -68,9 +72,15 @@ const Calendar: React.FC = () => {
     // Add messages data for the unfiltered feed
     messages,
     messagesLoading,
+    messagesRefreshing,
     messagesHasMore,
     messagesLoadingMore,
+    webSocketConnected,
+    webSocketReconnecting,
+    webSocketEnabled,
     loadMoreMessages,
+    toggleWebSocket,
+    updateMessagesSearchTicker,
     convertToEasternTime
   } = useGlobalData();
   
@@ -174,6 +184,12 @@ const Calendar: React.FC = () => {
   
   const handleCloseAnalysisPanel = () => {
     setShowAnalysisPanel(false);
+  };
+
+  // Handler for message search
+  const handleMessageSearchChange = (value: string) => {
+    setSearchMessageTicker(value);
+    updateMessagesSearchTicker(value);
   };
 
   // Handler for cache refresh
@@ -291,6 +307,17 @@ const Calendar: React.FC = () => {
                   minHeight: 0
                 }}
               >
+                <AdminMessageSearch
+                  searchMessageTicker={searchMessageTicker}
+                  refreshing={messagesRefreshing}
+                  enabled={webSocketEnabled}
+                  connected={webSocketConnected}
+                  reconnecting={webSocketReconnecting}
+                  onSearchChange={handleMessageSearchChange}
+                  onRefresh={refreshMessages}
+                  onToggleWebSocket={toggleWebSocket}
+                />
+                
                 <AdminMessagesList
                   messages={messages}
                   loading={messagesLoading}
