@@ -131,16 +131,38 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
 
   // Handle audio playback when new notifications arrive
   useEffect(() => {
-    if (audioQueue.length > 0 && !isPlaying && audioEnabled && userHasInteracted) {
+    // Only process queue when:
+    // 1. There are items in the queue
+    // 2. No audio is currently playing
+    // 3. No audio is currently loading
+    // 4. Audio is enabled and user has interacted
+    // 5. No audio lock is active
+    if (audioQueue.length > 0 && !isPlaying && !audioLoading && audioEnabled && userHasInteracted && !audioLockRef.current) {
+      console.log(`[AUDIO QUEUE] 🎯 Processing queue: ${audioQueue.length} items waiting`);
+      
       // Play the next audio in the queue
       const nextAudio = audioQueue[0];
+      const ticker = nextAudio.data?.metadata?.ticker || 'Unknown';
+      console.log(`[AUDIO QUEUE] ▶️ Playing next audio for ${ticker}`);
+      
       setCurrentAudio(nextAudio);
       setAudioQueue(prevQueue => {
         const newQueue = prevQueue.slice(1);
+        console.log(`[AUDIO QUEUE] 📋 Queue updated: ${newQueue.length} items remaining`);
         return newQueue;
       });
+    } else if (audioQueue.length > 0) {
+      // Log why we're not processing the queue
+      const reasons = [];
+      if (isPlaying) reasons.push('already playing');
+      if (audioLoading) reasons.push('loading');
+      if (!audioEnabled) reasons.push('disabled');
+      if (!userHasInteracted) reasons.push('no user interaction');
+      if (audioLockRef.current) reasons.push('locked');
+      
+      console.log(`[AUDIO QUEUE] ⏸️ Queue paused (${audioQueue.length} items): ${reasons.join(', ')}`);
     }
-  }, [audioQueue, isPlaying, userHasInteracted, audioEnabled]);
+  }, [audioQueue, isPlaying, audioLoading, userHasInteracted, audioEnabled]);
   
   // Set playback speed from settings
   useEffect(() => {
@@ -151,29 +173,38 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
 
   // Set up audio source when currentAudio changes
   useEffect(() => {
-    if (currentAudio && audioRef.current && audioEnabled && userHasInteracted && !isPlaying) {
+    if (currentAudio && audioRef.current && audioEnabled && userHasInteracted && !audioLockRef.current) {
       const audioElement = audioRef.current;
       const audioUrl = currentAudio.data.audio_url;
+      const ticker = currentAudio.data?.metadata?.ticker || 'Unknown';
       
       // Don't replay the same audio URL
       if (lastPlayedUrlRef.current === audioUrl) {
-        setCurrentAudio(null); // Clear current audio to prevent stuck state
+        console.log(`[AUDIO PLAYER] 🔁 Skipping duplicate audio URL: ${audioUrl}`);
+        setCurrentAudio(null);
         return;
       }
       
+      console.log(`[AUDIO PLAYER] 🔄 Setting up audio for ${ticker}: ${audioUrl}`);
       
-      // Abort any ongoing play promise to prevent interruption errors
-      if (isPlaying) {
-        audioElement.pause();
-        setIsPlaying(false);
-      }
+      // Set the audio lock to prevent interruptions
+      audioLockRef.current = true;
+      setAudioLoading(true);
       
-      // Wait for any pending operations to complete before setting new source
+      // Setup and play audio
       const setupAudio = async () => {
         try {
-          // Set the new source and wait for it to be ready
+          // Stop any currently playing audio first
+          if (!audioElement.paused) {
+            audioElement.pause();
+            audioElement.currentTime = 0;
+          }
+          
+          // Set the new source and playback rate
           audioElement.src = audioUrl;
           audioElement.playbackRate = settings.playbackSpeed;
+          
+          console.log(`[AUDIO PLAYER] ⏳ Loading audio for ${ticker}...`);
           
           // Wait for the audio to be ready to play with timeout
           await new Promise((resolve, reject) => {
@@ -209,19 +240,27 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
             audioElement.load();
           });
           
+          console.log(`[AUDIO PLAYER] ▶️ Playing audio for ${ticker}`);
           await audioElement.play();
+          
           setIsPlaying(true);
-          lastPlayedUrlRef.current = audioUrl; // Mark this URL as played
+          setAudioLoading(false);
+          lastPlayedUrlRef.current = audioUrl;
           
         } catch (error: any) {
-          console.error('[AUDIO PLAYER] Error playing audio:', error);
-          setIsPlaying(false);
-          setCurrentAudio(null); // Clear current audio to try next one
+          console.error(`[AUDIO PLAYER] ❌ Error playing audio for ${ticker}:`, error);
           
-          // Handle specific error cases - only log, no toast popups
+          // Reset states on error
+          setIsPlaying(false);
+          setAudioLoading(false);
+          setCurrentAudio(null);
+          audioLockRef.current = false;
+          
+          // Handle specific error cases
           if (error.name === 'NotAllowedError') {
-            console.warn('[AUDIO PLAYER] Autoplay was blocked. User interaction is required to play audio.');
+            console.warn('[AUDIO PLAYER] Autoplay was blocked. User interaction is required.');
           } else if (error.name === 'AbortError') {
+            console.warn('[AUDIO PLAYER] Audio playback was aborted.');
           } else if (error.message === 'Audio loading timeout') {
             console.error('[AUDIO PLAYER] Audio loading timed out');
           } else if (error.name === 'NetworkError') {
@@ -234,57 +273,85 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
       
       setupAudio();
     } else if (currentAudio && (!audioEnabled || !userHasInteracted)) {
+      console.log(`[AUDIO PLAYER] ⏸️ Audio ready but conditions not met - enabled: ${audioEnabled}, interacted: ${userHasInteracted}`);
     }
-  }, [currentAudio]); // Only depend on currentAudio to prevent retriggering
+  }, [currentAudio, settings.playbackSpeed]); // Depend on currentAudio and playback speed
   
   // Handle audio events
   const handleAudioEnded = () => {
+    console.log('[AUDIO PLAYER] 🏁 Audio finished playing');
     setIsPlaying(false);
-    setCurrentAudio(null); // Clear current audio so next one can play
+    setAudioLoading(false);
+    setCurrentAudio(null);
+    audioLockRef.current = false; // Release the lock so next audio can play
   };
 
   const handleAudioPause = () => {
+    console.log('[AUDIO PLAYER] ⏸️ Audio paused');
     setIsPlaying(false);
+    // Note: Don't release lock on pause in case we need to resume
   };
 
   const handleAudioPlay = () => {
+    console.log('[AUDIO PLAYER] ▶️ Audio started playing');
     setIsPlaying(true);
+    setAudioLoading(false); // Audio is now playing, no longer loading
   };
 
   const handleAudioError = (e: Event) => {
-    console.error('[AUDIO PLAYER] Audio error during playback:', e);
+    console.error('[AUDIO PLAYER] ❌ Audio error during playback:', e);
     setIsPlaying(false);
-    setCurrentAudio(null); // Clear to move to next audio
+    setAudioLoading(false);
+    setCurrentAudio(null);
+    audioLockRef.current = false; // Release lock on error so next audio can try
   };
 
   const handleAudioStalled = () => {
-    console.warn('[AUDIO PLAYER] Audio playback stalled - network issues?');
+    console.warn('[AUDIO PLAYER] 📶 Audio playback stalled - network issues?');
+    // Don't change playing state, just log - it might recover
   };
 
   const handleAudioWaiting = () => {
+    console.log('[AUDIO PLAYER] ⏳ Audio waiting for data...');
+    // Audio is buffering, don't change state
   };
 
   // Recovery mechanism for stuck audio playback
   useEffect(() => {
-    if (isPlaying && audioRef.current) {
+    if ((isPlaying || audioLoading) && audioRef.current) {
       const checkPlaybackInterval = setInterval(() => {
         const audio = audioRef.current;
-        if (audio && !audio.paused && audio.currentTime > 0 && audio.duration > 0) {
-          // Audio is actually playing, all good
-          return;
-        }
         
-        if (audio && (audio.paused || audio.ended)) {
+        if (!audio) return;
+        
+        // If we're supposed to be playing but audio is paused/ended
+        if (isPlaying && (audio.paused || audio.ended)) {
+          console.warn('[AUDIO PLAYER] 🔧 Recovery: Audio state mismatch detected');
           setIsPlaying(false);
+          
           if (audio.ended) {
+            console.log('[AUDIO PLAYER] 🔧 Recovery: Audio ended, cleaning up');
             setCurrentAudio(null);
+            audioLockRef.current = false;
           }
         }
+        
+        // If we've been loading for too long, something might be stuck
+        if (audioLoading && audioLockRef.current) {
+          const loadTime = Date.now();
+          if (!audio.src || audio.networkState === audio.NETWORK_NO_SOURCE) {
+            console.warn('[AUDIO PLAYER] 🔧 Recovery: Audio loading stuck, resetting');
+            setAudioLoading(false);
+            setCurrentAudio(null);
+            audioLockRef.current = false;
+          }
+        }
+        
       }, 1000); // Check every second
 
       return () => clearInterval(checkPlaybackInterval);
     }
-  }, [isPlaying]);
+  }, [isPlaying, audioLoading]);
   return (
     <div className="mb-3 flex items-center">
       {/* Message search box */}
