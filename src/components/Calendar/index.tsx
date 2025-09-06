@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { EarningsItem } from '../../types';
+import { EarningsItem, Message } from '../../types';
 import useConfigData from './hooks/useConfigData';
 import EarningsList from './ui/EarningsList';
 import SearchFilters from './ui/SearchFilters';
 import EarningsModal from './modals/EarningsModal';
 import ConfigModal from './modals/ConfigModal';
 import AdminMessagesList from './ui/AdminMessagesList';
+import AdminMessageSearch from './ui/AdminMessageSearch';
+import AnalysisPanel from '../Earnings/ui/AnalysisPanel';
+import FeedbackModal from '../Earnings/ui/FeedbackModal';
 import useGlobalData from '../../hooks/useGlobalData';
 
 // Helper function to get local date in YYYY-MM-DD format
@@ -45,6 +48,15 @@ const Calendar: React.FC = () => {
   const [filterActive, setFilterActive] = useState<boolean | null>(null);
   const [releaseTime, setReleaseTime] = useState<string | null>(null);
 
+  // Message search state
+  const [searchMessageTicker, setSearchMessageTicker] = useState<string>('');
+
+  // Analysis panel states - must be declared before useEffect that uses them
+  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  const [showAnalysisPanel, setShowAnalysisPanel] = useState<boolean>(false);
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState<boolean>(false);
+  const [initialMessageSet, setInitialMessageSet] = useState<boolean>(false);
+
   // Use global data provider instead of local hook
   const {
     filteredEarningsItems,
@@ -60,9 +72,15 @@ const Calendar: React.FC = () => {
     // Add messages data for the unfiltered feed
     messages,
     messagesLoading,
+    messagesRefreshing,
     messagesHasMore,
     messagesLoadingMore,
+    webSocketConnected,
+    webSocketReconnecting,
+    webSocketEnabled,
     loadMoreMessages,
+    toggleWebSocket,
+    updateMessagesSearchTicker,
     convertToEasternTime
   } = useGlobalData();
   
@@ -87,6 +105,29 @@ const Calendar: React.FC = () => {
       fetchCompanyNamesForDate(selectedDate);
     }
   }, [selectedDate, fetchCompanyNamesForDate]);
+
+  // Set initial message when messages are loaded
+  useEffect(() => {
+    if (!initialMessageSet && messages.length > 0 && !messagesLoading) {
+      const analysisMessages = messages.filter(msg => !msg.link);
+      
+      if (analysisMessages.length > 0) {
+        const sortedAnalysisMessages = [...analysisMessages].sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+        
+        setSelectedMessage(sortedAnalysisMessages[0]);
+      } else if (messages.length > 0) {
+        const sortedMessages = [...messages].sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+        
+        setSelectedMessage(sortedMessages[0]);
+      }
+      
+      setInitialMessageSet(true);
+    }
+  }, [messages, messagesLoading, initialMessageSet]);
 
   // Modal states
   const [showEarningsModal, setShowEarningsModal] = useState<boolean>(false);
@@ -131,6 +172,24 @@ const Calendar: React.FC = () => {
 
   const handleCloseConfigModal = () => {
     closeConfigModal();
+  };
+
+  // Handler for message selection
+  const handleMessageSelect = (message: Message) => {
+    setSelectedMessage(message);
+    if (isMobile) {
+      setShowAnalysisPanel(true);
+    }
+  };
+  
+  const handleCloseAnalysisPanel = () => {
+    setShowAnalysisPanel(false);
+  };
+
+  // Handler for message search
+  const handleMessageSearchChange = (value: string) => {
+    setSearchMessageTicker(value);
+    updateMessagesSearchTicker(value);
   };
 
   // Handler for cache refresh
@@ -214,7 +273,7 @@ const Calendar: React.FC = () => {
           />
         </div>
 
-        {/* Unfiltered Messages Feed */}
+        {/* Unfiltered Messages Feed with Analysis Panel */}
         <div 
           className="w-full bg-white dark:bg-neutral-800 rounded-md shadow-md border border-neutral-100 dark:border-neutral-700 mt-6"
           style={{
@@ -222,18 +281,67 @@ const Calendar: React.FC = () => {
             width: '100%',
             maxWidth: '100%',
             boxSizing: 'border-box',
-            overflowX: 'hidden'
+            overflowX: 'hidden',
+            height: '600px' // Fixed height for the split view
           }}
         >
-          <AdminMessagesList
-            messages={messages}
-            loading={messagesLoading}
-            isMobile={isMobile}
-            convertToEasternTime={convertToEasternTime}
-            hasMoreMessages={messagesHasMore}
-            loadingMore={messagesLoadingMore}
-            onLoadMore={loadMoreMessages}
-          />
+          <div className="h-full flex flex-col">
+            <h3 className="text-lg font-semibold text-neutral-800 dark:text-neutral-200 mb-4">
+              Messages Feed & Analysis
+            </h3>
+            
+            <div 
+              className="flex-1 flex"
+              style={{
+                flexDirection: isMobile ? 'column' : 'row',
+                minHeight: 0
+              }}
+            >
+              {/* Messages list panel */}
+              <div 
+                style={{
+                  width: isMobile ? '100%' : '65%',
+                  display: isMobile && showAnalysisPanel ? 'none' : 'flex',
+                  flexDirection: 'column',
+                  marginRight: isMobile ? 0 : '1rem',
+                  minHeight: 0
+                }}
+              >
+                <AdminMessageSearch
+                  searchMessageTicker={searchMessageTicker}
+                  refreshing={messagesRefreshing}
+                  enabled={webSocketEnabled}
+                  connected={webSocketConnected}
+                  reconnecting={webSocketReconnecting}
+                  onSearchChange={handleMessageSearchChange}
+                  onRefresh={refreshMessages}
+                  onToggleWebSocket={toggleWebSocket}
+                />
+                
+                <AdminMessagesList
+                  messages={messages}
+                  loading={messagesLoading}
+                  isMobile={isMobile}
+                  convertToEasternTime={convertToEasternTime}
+                  hasMoreMessages={messagesHasMore}
+                  loadingMore={messagesLoadingMore}
+                  onLoadMore={loadMoreMessages}
+                  onSelectMessage={handleMessageSelect}
+                />
+              </div>
+              
+              {/* Analysis panel */}
+              <AnalysisPanel
+                selectedMessage={selectedMessage}
+                isMobile={isMobile}
+                showAnalysisPanel={showAnalysisPanel}
+                convertToEasternTime={convertToEasternTime}
+                handleCloseAnalysisPanel={handleCloseAnalysisPanel}
+                setFeedbackModalOpen={setFeedbackModalOpen}
+                messages={messages}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -252,6 +360,16 @@ const Calendar: React.FC = () => {
         currentItem={selectedConfigItem}
         getDefaultConfig={getDefaultConfig}
       />
+
+      {/* Feedback Modal */}
+      {feedbackModalOpen && selectedMessage && (
+        <FeedbackModal 
+          isOpen={feedbackModalOpen}
+          onClose={() => setFeedbackModalOpen(false)}
+          message={selectedMessage}
+          convertToEasternTime={convertToEasternTime}
+        />
+      )}
     </div>
   );
 };
