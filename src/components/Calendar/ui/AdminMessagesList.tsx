@@ -10,6 +10,7 @@ interface AdminMessagesListProps {
   hasMoreMessages?: boolean;
   loadingMore?: boolean;
   onLoadMore?: () => void;
+  onSelectMessage?: (message: Message) => void;
 }
 
 const AdminMessagesList: React.FC<AdminMessagesListProps> = ({
@@ -20,6 +21,7 @@ const AdminMessagesList: React.FC<AdminMessagesListProps> = ({
   hasMoreMessages = false,
   loadingMore = false,
   onLoadMore,
+  onSelectMessage,
 }) => {
   // Sort messages by timestamp (newest first) without any filtering
   const sortedMessages = React.useMemo(() => {
@@ -45,18 +47,15 @@ const AdminMessagesList: React.FC<AdminMessagesListProps> = ({
   }
 
   return (
-    <div className="flex flex-col">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold text-neutral-800 dark:text-neutral-200">
-          All Messages ({sortedMessages.length})
-        </h3>
+    <div className="flex flex-col h-full">
+      <div className="mb-3">
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
-          Unfiltered message feed showing all earnings communications
+          All Messages ({sortedMessages.length}) - Click to view analysis
         </p>
       </div>
       
       <div 
-        className="flex-1 overflow-auto scrollbar-hide max-h-96"
+        className="flex-1 overflow-auto scrollbar-hide"
         style={{
           width: '100%',
           maxWidth: '100%',
@@ -66,7 +65,8 @@ const AdminMessagesList: React.FC<AdminMessagesListProps> = ({
       {sortedMessages.map((message) => (
         <div 
           key={message.message_id}
-          className="bg-white dark:bg-neutral-800 py-2 px-2 border-b border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700"
+          className="bg-white dark:bg-neutral-800 py-2 px-2 border-b border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700 cursor-pointer transition-colors"
+          onClick={() => onSelectMessage && onSelectMessage(message)}
           style={{
             padding: isMobile ? '10px 8px' : undefined,
             width: '100%',
@@ -127,10 +127,14 @@ const AdminMessagesList: React.FC<AdminMessagesListProps> = ({
 
             {/* External link icon for reports */}
             {message.link && (
-              <div className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors ml-2">
-                <a href={message.link} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink size={12} />
-                </a>
+              <div 
+                className="inline-flex items-center justify-center w-5 h-5 bg-primary-50 text-primary-600 rounded-full hover:bg-primary-100 transition-colors ml-2"
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent message selection when clicking link
+                  window.open(message.link, '_blank', 'noopener,noreferrer');
+                }}
+              >
+                <ExternalLink size={12} />
               </div>
             )}
           </div>
