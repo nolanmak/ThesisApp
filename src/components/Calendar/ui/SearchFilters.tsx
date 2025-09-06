@@ -92,7 +92,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
           }}
         >
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+            <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none z-10">
               <CalendarIcon size={14} className="text-neutral-400 dark:text-neutral-500" />
             </div>
             <input
@@ -100,12 +100,13 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
               id="date-selector"
               value={selectedDate}
               onChange={(e) => onDateChange(e.target.value)}
-              className="pl-8 block w-full rounded-md border-neutral-300 dark:border-neutral-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-xs bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
+              className="pl-8 block w-full rounded-md border-neutral-300 dark:border-neutral-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-xs bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 cursor-pointer"
               style={{
                 height: '32px',
                 fontSize: isMobile ? '13px' : '12px',
                 width: '100%',
-                boxSizing: 'border-box'
+                boxSizing: 'border-box',
+                colorScheme: 'light dark'
               }}
             />
           </div>

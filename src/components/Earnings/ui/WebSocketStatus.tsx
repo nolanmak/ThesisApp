@@ -41,7 +41,9 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
   const [audioQueue, setAudioQueue] = useState<AudioNotification[]>([]);
   const [userHasInteracted, setUserHasInteracted] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+  const [audioLoading, setAudioLoading] = useState(false);
   const lastPlayedUrlRef = useRef<string | null>(null);
+  const audioLockRef = useRef<boolean>(false);
   
   // Audio WebSocket integration
   const {
@@ -54,12 +56,22 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
     autoConnect: false,
     persistConnection: true,
     onAudioNotification: (notification) => {
-      // Just add the notification to the queue - no toast popup
       const ticker = notification.data?.metadata?.ticker || notification.data?.metadata?.company_name || 'Unknown Stock';
+      console.log(`[AUDIO QUEUE] 🎵 New audio notification for ${ticker}, currently playing: ${isPlaying}, queue length: ${audioQueue.length}`);
       
-      // Add the notification to the queue
+      // Always add to queue - the queue processing logic will handle when to play
       setAudioQueue(prevQueue => {
+        // Check for duplicate audio URLs in the queue to prevent the same audio from being queued multiple times
+        const audioUrl = notification.data.audio_url;
+        const isDuplicate = prevQueue.some(item => item.data.audio_url === audioUrl);
+        
+        if (isDuplicate) {
+          console.log(`[AUDIO QUEUE] 🔁 Ignoring duplicate audio URL: ${audioUrl}`);
+          return prevQueue;
+        }
+        
         const newQueue = [...prevQueue, notification];
+        console.log(`[AUDIO QUEUE] ✅ Added to queue. New queue length: ${newQueue.length}`);
         return newQueue;
       });
     }
@@ -78,15 +90,20 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
     
     try {
       if (audioEnabled) {
+        console.log('[AUDIO TOGGLE] 🛑 Disabling audio');
         
-        // Stop any currently playing audio immediately
-        if (isPlaying && audioRef.current) {
+        // Stop any currently playing audio immediately and reset all states
+        if (audioRef.current) {
           audioRef.current.pause();
-          audioRef.current.currentTime = 0; // Reset to beginning
-          setIsPlaying(false);
-          setCurrentAudio(null);
-          setAudioQueue([]); // Clear the entire queue
+          audioRef.current.currentTime = 0;
         }
+        
+        // Reset all audio states
+        setIsPlaying(false);
+        setCurrentAudio(null);
+        setAudioQueue([]);
+        setAudioLoading(false);
+        audioLockRef.current = false;
         
         await disableAudio();
       } else {
