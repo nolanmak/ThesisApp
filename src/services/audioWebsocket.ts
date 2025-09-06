@@ -36,6 +36,7 @@ class AudioWebSocketService {
   private minConnectionInterval = 2000; // 2 seconds minimum between connection attempts (reduced from 5s)
   private watchlistFilter: string[] = []; // Watchlist filter for notifications
   private enablePromise: Promise<void> | null = null; // Track enable operation
+  private processedMessageIds = new Set<string>(); // Track processed message IDs to prevent duplicates
 
   // Enable WebSocket functionality
   public async enable(): Promise<void> {
@@ -155,6 +156,9 @@ class AudioWebSocketService {
         this.reconnectDelay = 2000; // Reset reconnect delay
         this.isConnecting = false;
 
+        // Clear processed message IDs on new connection to avoid stale duplicates
+        this.processedMessageIds.clear();
+
         // Notify of connection
         this.notifyConnectionStatus(true);
       };
@@ -186,6 +190,25 @@ class AudioWebSocketService {
                   }
                 }
               };
+            }
+            
+            // Check for duplicate messages using message_id
+            const messageId = audioNotification.data?.message_id;
+            if (messageId && this.processedMessageIds.has(messageId)) {
+              console.debug("[AUDIO WS] 🔁 Ignoring duplicate message:", messageId);
+              return;
+            }
+            
+            // Mark message as processed
+            if (messageId) {
+              this.processedMessageIds.add(messageId);
+              
+              // Clean up old message IDs to prevent memory leaks (keep last 1000)
+              if (this.processedMessageIds.size > 1000) {
+                const ids = Array.from(this.processedMessageIds);
+                const toRemove = ids.slice(0, ids.length - 1000);
+                toRemove.forEach(id => this.processedMessageIds.delete(id));
+              }
             }
             
             // Check watchlist filter before notifying handlers

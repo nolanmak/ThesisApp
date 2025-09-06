@@ -5,6 +5,7 @@ import EarningsList from './ui/EarningsList';
 import SearchFilters from './ui/SearchFilters';
 import EarningsModal from './modals/EarningsModal';
 import ConfigModal from './modals/ConfigModal';
+import AdminMessagesList from './ui/AdminMessagesList';
 import useGlobalData from '../../hooks/useGlobalData';
 
 // Helper function to get local date in YYYY-MM-DD format
@@ -55,7 +56,14 @@ const Calendar: React.FC = () => {
     updateEarningsFilters: updateFilters,
     fetchCompanyNamesForDate,
     refreshEarningsItems,
-    refreshMessages
+    refreshMessages,
+    // Add messages data for the unfiltered feed
+    messages,
+    messagesLoading,
+    messagesHasMore,
+    messagesLoadingMore,
+    loadMoreMessages,
+    convertToEasternTime
   } = useGlobalData();
   
   const {
@@ -203,6 +211,28 @@ const Calendar: React.FC = () => {
             onOpenConfigModal={handleOpenConfigModal}
             configExists={configExists}
             isMobile={isMobile}
+          />
+        </div>
+
+        {/* Unfiltered Messages Feed */}
+        <div 
+          className="w-full bg-white dark:bg-neutral-800 rounded-md shadow-md border border-neutral-100 dark:border-neutral-700 mt-6"
+          style={{
+            padding: isMobile ? '12px 8px' : '24px',
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box',
+            overflowX: 'hidden'
+          }}
+        >
+          <AdminMessagesList
+            messages={messages}
+            loading={messagesLoading}
+            isMobile={isMobile}
+            convertToEasternTime={convertToEasternTime}
+            hasMoreMessages={messagesHasMore}
+            loadingMore={messagesLoadingMore}
+            onLoadMore={loadMoreMessages}
           />
         </div>
       </div>
