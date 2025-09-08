@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, Calendar, MessageCircle, Menu, List, Settings } from 'lucide-react';
+import { LogOut, Calendar, MessageCircle, Menu, List, Settings, TrendingUp } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import ThemeToggle from './ui/ThemeToggle';
 import AudioSettings from './ui/AudioSettings';
@@ -115,6 +115,15 @@ const Layout: React.FC = () => {
                     <span>Earnings</span>
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    to="/dashboard/research"
+                    className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/research')}`}
+                  >
+                    <TrendingUp className="mr-1" size={14} />
+                    <span>Research</span>
+                  </Link>
+                </li>
                 {isAdmin && (
                   <li>
                     <Link
@@ -163,6 +172,16 @@ const Layout: React.FC = () => {
                     >
                       <MessageCircle className="mr-2" size={18} />
                       <span>Earnings</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/dashboard/research"
+                      className={`flex items-center px-3 py-2 text-base rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/research')}`}
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <TrendingUp className="mr-2" size={18} />
+                      <span>Research</span>
                     </Link>
                   </li>
                   {isAdmin && (
