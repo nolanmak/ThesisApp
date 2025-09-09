@@ -44,6 +44,7 @@ const FinancialResearch: React.FC = () => {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [currentLogId, setCurrentLogId] = useState<string | null>(null);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Research API endpoints from environment variables
@@ -73,8 +74,10 @@ const FinancialResearch: React.FC = () => {
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (shouldAutoScroll) {
+      scrollToBottom();
+    }
+  }, [messages, shouldAutoScroll]);
 
   // Load conversation history on component mount
   const loadHistory = useCallback(async () => {
@@ -168,18 +171,27 @@ const FinancialResearch: React.FC = () => {
       setCurrentConversationId(conversationId);
       setCurrentLogId(conversationId);
       
-      // Load conversation messages
+      // Disable auto-scroll when loading historical conversations
+      setShouldAutoScroll(false);
+      
+      // Load conversation messages with proper UTC handling
+      const parseTimestamp = (timestamp: string) => {
+        // Ensure UTC timestamp is properly parsed
+        const utcString = timestamp.endsWith('Z') ? timestamp : timestamp + 'Z';
+        return new Date(utcString);
+      };
+
       const conversationMessages: Message[] = [
         {
           id: `user-${selectedConversation.timestamp}`,
           content: selectedConversation.prompt,
-          timestamp: new Date(selectedConversation.timestamp),
+          timestamp: parseTimestamp(selectedConversation.timestamp),
           isUser: true
         },
         {
           id: `ai-${selectedConversation.timestamp}`,
           content: selectedConversation.response,
-          timestamp: new Date(selectedConversation.timestamp),
+          timestamp: parseTimestamp(selectedConversation.timestamp),
           isUser: false,
           metadata: {
             query_type: selectedConversation.query_type,
@@ -197,6 +209,8 @@ const FinancialResearch: React.FC = () => {
     setCurrentConversationId(null);
     setCurrentLogId(null);
     setMessages([]);
+    // Re-enable auto-scroll for new conversations
+    setShouldAutoScroll(true);
   };
 
   // Load history on component mount
@@ -211,6 +225,9 @@ const FinancialResearch: React.FC = () => {
       console.error('User email not available');
       return;
     }
+
+    // Re-enable auto-scroll when sending new messages
+    setShouldAutoScroll(true);
 
     // Add user message
     const userMessage: Message = {
