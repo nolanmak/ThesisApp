@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -80,7 +80,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
               {isLoading ? (
                 <Loader2 size={16} className="animate-spin" />
               ) : (
-                <Send size={16} />
+                <ArrowRight size={16} />
               )}
             </button>
           </div>
