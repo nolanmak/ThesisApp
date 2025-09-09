@@ -53,21 +53,56 @@ const Layout: React.FC = () => {
     <div className="flex flex-col h-screen bg-neutral-50 dark:bg-neutral-900">
       {/* Top Navigation Bar */}
       <div className="text-neutral-100">
-        <div className="max-w-7xl mx-auto px-4 py-4 pb-2 flex justify-between items-center">
-          <h1 className="text-lg font-light flex items-center text-neutral-900 dark:text-neutral-100">
-            <img src="/favicon.svg" alt="Logo" className="mr-2" width={30} height={30} />
-            Thesis
-          </h1>
-          
-          {/* Center container for banner and theme toggle */}
-          <div className="flex items-center gap-4">
-            {/* Alpha version disclosure banner */}
-            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-4 py-2 text-xs rounded-md border border-red-200 dark:border-red-800 max-w-[200px] md:max-w-[1000px]">
-              This is an alpha version. Please validate any data through other sources.
+        <div className="max-w-7xl mx-auto px-4 py-4 pb-2">
+          {/* Mobile: Stack vertically */}
+          <div className="md:hidden">
+            {/* Top row: Logo and controls */}
+            <div className="flex justify-between items-center mb-3">
+              <h1 className="text-lg font-light flex items-center text-neutral-900 dark:text-neutral-100">
+                <img src="/favicon.svg" alt="Logo" className="mr-2" width={30} height={30} />
+                Thesis
+              </h1>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setAudioSettingsOpen(true)}
+                  className="flex items-center justify-center p-2 rounded-md transition-colors duration-200 ease-in-out text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  aria-label="Audio settings"
+                >
+                  <Settings size={18} />
+                </button>
+                <ThemeToggle />
+                <button
+                  onClick={toggleMenu}
+                  className="flex items-center text-neutral-500 dark:text-neutral-400"
+                  style={{ zIndex: 30 }}
+                >
+                  <Menu size={24} />
+                </button>
+              </div>
             </div>
             
-            {/* Theme Toggle and Settings (desktop only) */}
-            {!isMobile && (
+            {/* Bottom row: Alpha banner */}
+            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-3 py-2 text-xs rounded-md border border-red-200 dark:border-red-800">
+              This is an alpha version. Please validate any data through other sources.
+            </div>
+          </div>
+
+          {/* Desktop: Horizontal layout */}
+          <div className="hidden md:flex justify-between items-center">
+            <h1 className="text-lg font-light flex items-center text-neutral-900 dark:text-neutral-100">
+              <img src="/favicon.svg" alt="Logo" className="mr-2" width={30} height={30} />
+              Thesis
+            </h1>
+            
+            {/* Center container for banner and theme toggle */}
+            <div className="flex items-center gap-4">
+              {/* Alpha version disclosure banner */}
+              <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-4 py-2 text-xs rounded-md border border-red-200 dark:border-red-800 max-w-[200px] md:max-w-[1000px]">
+                This is an alpha version. Please validate any data through other sources.
+              </div>
+              
+              {/* Theme Toggle and Settings (desktop only) */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setAudioSettingsOpen(true)}
@@ -78,29 +113,8 @@ const Layout: React.FC = () => {
                 </button>
                 <ThemeToggle />
               </div>
-            )}
-          </div>
-          
-          {/* Mobile Menu Button, Settings and Theme Toggle */}
-          {isMobile && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setAudioSettingsOpen(true)}
-                className="flex items-center justify-center p-2 rounded-md transition-colors duration-200 ease-in-out text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                aria-label="Audio settings"
-              >
-                <Settings size={18} />
-              </button>
-              <ThemeToggle />
-              <button
-                onClick={toggleMenu}
-                className="flex items-center text-neutral-500 dark:text-neutral-400"
-                style={{ zIndex: 30 }}
-              >
-                <Menu size={24} />
-              </button>
             </div>
-          )}
+          </div>
           
           {/* Desktop Navigation */}
           {!isMobile && (

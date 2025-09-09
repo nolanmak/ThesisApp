@@ -34,8 +34,9 @@ const FinancialResearch: React.FC = () => {
   const [currentLogId, setCurrentLogId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Production API endpoints
-  const API_BASE = 'https://47mvxdbu6f.execute-api.us-east-1.amazonaws.com/prod';
+  // Research API endpoints from environment variables
+  const API_BASE = import.meta.env.VITE_RESEARCH_API_BASE_URL;
+  const API_KEY = import.meta.env.VITE_USER_PROFILE_API_KEY;
   const API_ENDPOINTS = {
     research: `${API_BASE}/research`,
     history: `${API_BASE}/research/reports`
@@ -68,7 +69,11 @@ const FinancialResearch: React.FC = () => {
 
     setIsLoadingHistory(true);
     try {
-      const response = await fetch(`${API_ENDPOINTS.history}?user=${encodeURIComponent(user.email)}&limit=30`);
+      const response = await fetch(`${API_ENDPOINTS.history}?user=${encodeURIComponent(user.email)}&limit=30`, {
+        headers: {
+          'X-API-Key': API_KEY,
+        }
+      });
       
       if (!response.ok) {
         throw new Error(`Failed to load history: ${response.status}`);
@@ -185,6 +190,7 @@ const FinancialResearch: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-API-Key': API_KEY,
         },
         body: JSON.stringify(requestBody)
       });
