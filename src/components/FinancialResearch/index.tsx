@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ChatMessage from './ui/ChatMessage';
 import ChatInput from './ui/ChatInput';
-import { TrendingUp, MessageCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import ConversationSidebar from './ui/ConversationSidebar';
+import { TrendingUp, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface Message {
@@ -25,9 +26,20 @@ interface APIResponse {
   context_used: boolean;
 }
 
+interface Conversation {
+  logId: string;
+  title: string;
+  timestamp: string;
+  prompt: string;
+  response: string;
+  query_type: string;
+}
+
 const FinancialResearch: React.FC = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -36,10 +48,11 @@ const FinancialResearch: React.FC = () => {
 
   // Research API endpoints from environment variables
   const API_BASE = import.meta.env.VITE_RESEARCH_API_BASE_URL;
+  const LAMBDA_URL = import.meta.env.VITE_RESEARCH_LAMBDA_URL;
   const API_KEY = import.meta.env.VITE_USER_PROFILE_API_KEY;
   const API_ENDPOINTS = {
-    research: `${API_BASE}/research`,
-    history: `${API_BASE}/research/reports`
+    research: LAMBDA_URL, // Direct Lambda function URL (no API key needed)
+    history: `${API_BASE}/research/reports` // API Gateway endpoint (needs API key)
   };
 
   // Check if mobile on mount and resize
@@ -64,7 +77,7 @@ const FinancialResearch: React.FC = () => {
   }, [messages]);
 
   // Load conversation history on component mount
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     if (!user?.email) return;
 
     setIsLoadingHistory(true);
@@ -81,55 +94,51 @@ const FinancialResearch: React.FC = () => {
 
       const historyData = await response.json();
       console.log('Loaded history:', historyData);
+      console.log('History data type:', typeof historyData);
+      console.log('Is array:', Array.isArray(historyData));
 
-      // Convert history to messages format
-      if (historyData && Array.isArray(historyData)) {
-        const historyMessages: Message[] = [];
+      // Check if we got actual conversation data or just a health check
+      if (historyData && typeof historyData === 'object' && historyData.message === "Research Reports API is healthy") {
+        console.log('API returned health check instead of conversation history');
+        showWelcomeMessage();
+        return;
+      }
+
+      // Extract reports array from the response object
+      let conversations = [];
+      if (historyData && historyData.reports && Array.isArray(historyData.reports)) {
+        conversations = historyData.reports;
+        console.log(`Found ${conversations.length} reports in API response`);
+      } else if (historyData && Array.isArray(historyData)) {
+        // Fallback for direct array response
+        conversations = historyData;
+        console.log(`Found direct array with ${conversations.length} conversations`);
+      }
+
+      // Convert history to conversations format for sidebar
+      if (conversations.length > 0) {
+        console.log(`Processing ${conversations.length} conversation records for sidebar`);
         
-        historyData.forEach((conversation: any) => {
-          // Add user message
-          if (conversation.user_prompt) {
-            historyMessages.push({
-              id: `history-user-${conversation.timestamp || Date.now()}`,
-              content: conversation.user_prompt,
-              timestamp: conversation.timestamp ? new Date(conversation.timestamp) : new Date(),
-              isUser: true
-            });
-          }
-
-          // Add AI response
-          if (conversation.ai_response || conversation.response) {
-            historyMessages.push({
-              id: `history-ai-${conversation.timestamp || Date.now()}`,
-              content: conversation.ai_response || conversation.response,
-              timestamp: conversation.timestamp ? new Date(conversation.timestamp) : new Date(),
-              isUser: false,
-              metadata: {
-                query_type: conversation.query_type,
-                sources_count: conversation.sources_count,
-                context_used: conversation.context_used
-              }
-            });
-          }
-
-          // Set the most recent logId for conversation continuity
-          if (conversation.logId || conversation.log_id) {
-            setCurrentLogId(conversation.logId || conversation.log_id);
-          }
+        const sidebarConversations: Conversation[] = conversations.map((conversation: any, index: number) => {
+          console.log(`Processing conversation ${index}:`, conversation);
+          return {
+            logId: conversation.logId,
+            title: conversation.prompt.length > 50 ? `${conversation.prompt.substring(0, 50)}...` : conversation.prompt,
+            timestamp: conversation.timestamp,
+            prompt: conversation.prompt,
+            response: conversation.response,
+            query_type: conversation.query_type
+          };
         });
 
-        // Sort by timestamp (oldest first for proper conversation flow)
-        historyMessages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+        // Sort by timestamp (newest first for sidebar)
+        sidebarConversations.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
         
-        if (historyMessages.length > 0) {
-          setMessages(historyMessages);
-        } else {
-          // Show welcome message if no history
-          showWelcomeMessage();
-        }
+        console.log(`Setting ${sidebarConversations.length} conversations in sidebar`);
+        setConversations(sidebarConversations);
       } else {
-        // Show welcome message if no history data
-        showWelcomeMessage();
+        console.log('No valid history data received');
+        setConversations([]);
       }
 
     } catch (error) {
@@ -139,7 +148,7 @@ const FinancialResearch: React.FC = () => {
     } finally {
       setIsLoadingHistory(false);
     }
-  };
+  }, [API_ENDPOINTS.history, API_KEY, user?.email]);
 
   const showWelcomeMessage = () => {
     // For the Gemini-style interface, we don't need a welcome message in the chat
@@ -149,7 +158,45 @@ const FinancialResearch: React.FC = () => {
 
   const clearConversation = () => {
     setCurrentLogId(null);
-    showWelcomeMessage();
+    setCurrentConversationId(null);
+    setMessages([]);
+  };
+
+  const handleSelectConversation = (conversationId: string) => {
+    const selectedConversation = conversations.find(conv => conv.logId === conversationId);
+    if (selectedConversation) {
+      setCurrentConversationId(conversationId);
+      setCurrentLogId(conversationId);
+      
+      // Load conversation messages
+      const conversationMessages: Message[] = [
+        {
+          id: `user-${selectedConversation.timestamp}`,
+          content: selectedConversation.prompt,
+          timestamp: new Date(selectedConversation.timestamp),
+          isUser: true
+        },
+        {
+          id: `ai-${selectedConversation.timestamp}`,
+          content: selectedConversation.response,
+          timestamp: new Date(selectedConversation.timestamp),
+          isUser: false,
+          metadata: {
+            query_type: selectedConversation.query_type,
+            sources_count: 0, // Default since not in conversation data
+            context_used: false
+          }
+        }
+      ];
+      
+      setMessages(conversationMessages);
+    }
+  };
+
+  const handleNewChat = () => {
+    setCurrentConversationId(null);
+    setCurrentLogId(null);
+    setMessages([]);
   };
 
   // Load history on component mount
@@ -157,7 +204,7 @@ const FinancialResearch: React.FC = () => {
     if (user?.email) {
       loadHistory();
     }
-  }, [user?.email]);
+  }, [loadHistory]);
 
   const handleSendMessage = async (content: string) => {
     if (!user?.email) {
@@ -190,7 +237,6 @@ const FinancialResearch: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': API_KEY,
         },
         body: JSON.stringify(requestBody)
       });
@@ -241,16 +287,22 @@ const FinancialResearch: React.FC = () => {
     }
   };
 
-  const formatTime = (timestamp: Date) => {
-    return timestamp.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-neutral-900">
+    <div className="flex h-full bg-white dark:bg-neutral-900">
+      {/* Sidebar - hide on mobile */}
+      <div className="hidden md:flex">
+        <ConversationSidebar
+          conversations={conversations}
+          currentConversationId={currentConversationId}
+          onSelectConversation={handleSelectConversation}
+          onNewChat={handleNewChat}
+          isLoading={isLoadingHistory}
+        />
+      </div>
+
+      {/* Main Chat Interface */}
+      <div className="flex-1 flex flex-col min-w-0">
       {/* Simplified Header - mobile optimized */}
       <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-4 sm:px-6 py-3 sm:py-4">
         <div className="flex items-center justify-between max-w-4xl mx-auto">
@@ -260,15 +312,26 @@ const FinancialResearch: React.FC = () => {
             </h1>
           </div>
           
-          {/* Clear conversation button - mobile optimized */}
-          {!isLoadingHistory && messages.length > 1 && (
+          {/* New chat button for mobile / Clear conversation button */}
+          {isMobile && (
             <button
-              onClick={clearConversation}
+              onClick={handleNewChat}
               className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors"
               title="Start new conversation"
             >
               <RefreshCw size={14} className="sm:w-4 sm:h-4" />
-              {!isMobile && <span className="text-xs sm:text-sm">New chat</span>}
+              <span className="text-xs sm:text-sm">New chat</span>
+            </button>
+          )}
+          
+          {!isMobile && messages.length > 0 && (
+            <button
+              onClick={handleNewChat}
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors"
+              title="Start new conversation"
+            >
+              <RefreshCw size={14} className="sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm">New chat</span>
             </button>
           )}
         </div>
@@ -296,7 +359,7 @@ const FinancialResearch: React.FC = () => {
           <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 pb-16 sm:pb-32">
             <div className="text-center max-w-2xl">
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-light text-neutral-900 dark:text-neutral-100 mb-6 sm:mb-8 leading-tight">
-                Hello, {user?.name?.split(' ')[0] || user?.email?.split('@')[0] || 'there'}
+                Hello, {user?.email?.split('@')[0] || 'there'}
               </h2>
               <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400 mb-8 sm:mb-12">
                 How can I help you with financial research today?
@@ -379,13 +442,15 @@ const FinancialResearch: React.FC = () => {
         </div>
       </div>
 
-      {/* Simplified Disclaimer */}
-      <div className="flex-shrink-0 px-6 pb-4">
-        <div className="max-w-4xl mx-auto">
-          <p className="text-center text-xs text-neutral-500 dark:text-neutral-400">
-            This AI provides information for educational purposes only. Not financial advice. Consult professionals for investment decisions.
-          </p>
+        {/* Simplified Disclaimer */}
+        <div className="flex-shrink-0 px-6 pb-4">
+          <div className="max-w-4xl mx-auto">
+            <p className="text-center text-xs text-neutral-500 dark:text-neutral-400">
+              This AI provides information for educational purposes only. Not financial advice. Consult professionals for investment decisions.
+            </p>
+          </div>
         </div>
+        
       </div>
     </div>
   );
