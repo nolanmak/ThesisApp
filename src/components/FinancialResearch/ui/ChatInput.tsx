@@ -53,10 +53,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
   }, [message]);
 
   return (
-    <div className="bg-white dark:bg-neutral-900">
-      <form onSubmit={handleSubmit}>
-        <div className="relative flex items-end gap-3">
-          <div className="flex-1 relative">
+    <div className="w-full">
+      <form onSubmit={handleSubmit} className="w-full">
+        <div className="w-full">
+          <div className="relative bg-neutral-200 dark:bg-neutral-700 rounded-full flex items-center px-4 py-1.5 shadow-lg w-full">
             <textarea
               ref={textareaRef}
               value={message}
@@ -64,9 +64,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
               disabled={isLoading}
-              className="w-full px-6 py-4 pr-14 border border-neutral-300 dark:border-neutral-700 rounded-full bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+              className="flex-1 bg-transparent text-neutral-100 placeholder-neutral-400 focus:outline-none resize-none disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden text-base leading-tight py-0.5"
               style={{
-                minHeight: '56px',
+                minHeight: '18px',
                 maxHeight: '120px'
               }}
               rows={1}
@@ -75,19 +75,15 @@ const ChatInput: React.FC<ChatInputProps> = ({
             <button
               type="submit"
               disabled={!message.trim() || isLoading}
-              className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-10 h-10 bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600 disabled:bg-neutral-200 dark:disabled:bg-neutral-700 disabled:cursor-not-allowed text-neutral-600 dark:text-neutral-300 disabled:text-neutral-400 dark:disabled:text-neutral-500 rounded-full transition-colors flex-shrink-0"
+              className="flex items-center justify-center w-6 h-6 text-neutral-400 hover:text-neutral-300 disabled:text-neutral-500 disabled:cursor-not-allowed flex-shrink-0 ml-2"
             >
               {isLoading ? (
                 <Loader2 size={16} className="animate-spin" />
               ) : (
-                <Send size={16} className="transform rotate-45" />
+                <Send size={16} />
               )}
             </button>
           </div>
-        </div>
-        
-        <div className="mt-2 text-xs text-neutral-500 dark:text-neutral-400 text-center">
-          Press Enter to send, Shift+Enter for new line
         </div>
       </form>
     </div>

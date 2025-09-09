@@ -356,14 +356,53 @@ const FinancialResearch: React.FC = () => {
           </div>
         ) : messages.length === 0 ? (
           /* Gemini-style welcome state - mobile optimized */
-          <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 pb-16 sm:pb-32">
-            <div className="text-center max-w-2xl">
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-light text-neutral-900 dark:text-neutral-100 mb-6 sm:mb-8 leading-tight">
+          <div className="flex-1 flex flex-col px-4 sm:px-6 pt-20">
+            <div className="text-center max-w-2xl mx-auto">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-light text-neutral-900 dark:text-neutral-100 mb-4 leading-tight">
                 Hello, {user?.email?.split('@')[0] || 'there'}
               </h2>
-              <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400 mb-8 sm:mb-12">
+              <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400 mb-8">
                 How can I help you with financial research today?
               </p>
+            </div>
+            
+            {/* Suggestion buttons immediately after welcome message */}
+            <div className="max-w-4xl mx-auto mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 max-w-lg sm:max-w-2xl mx-auto">
+                <button
+                  onClick={() => handleSendMessage("What are the key financial metrics I should analyze for tech stocks?")}
+                  className="px-4 py-3 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-full text-sm transition-colors text-center"
+                >
+                  Analyze tech stocks
+                </button>
+                <button
+                  onClick={() => handleSendMessage("What's the current market outlook for renewable energy investments?")}
+                  className="px-4 py-3 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-full text-sm transition-colors text-center"
+                >
+                  Renewable energy outlook
+                </button>
+                <button
+                  onClick={() => handleSendMessage("Explain the impact of Federal Reserve rate changes on the stock market")}
+                  className="px-4 py-3 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-full text-sm transition-colors text-center"
+                >
+                  Fed rate impact
+                </button>
+                <button
+                  onClick={() => handleSendMessage("What are the best value investing strategies for beginners?")}
+                  className="px-4 py-3 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-full text-sm transition-colors text-center"
+                >
+                  Value investing strategies
+                </button>
+              </div>
+            </div>
+            
+            {/* Input area right after suggestion buttons */}
+            <div className="w-full px-4 sm:px-8">
+              <ChatInput 
+                onSendMessage={handleSendMessage}
+                isLoading={isLoading}
+                placeholder=""
+              />
             </div>
           </div>
         ) : (
@@ -400,46 +439,16 @@ const FinancialResearch: React.FC = () => {
           </div>
         )}
 
-        {/* Input Area - mobile optimized */}
-        <div className="flex-shrink-0 px-4 sm:px-6 pb-4 sm:pb-6">
-          <div className="max-w-4xl mx-auto">
-            {/* Suggestion buttons for empty state - mobile optimized */}
-            {messages.length === 0 && !isLoadingHistory && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mb-6 max-w-lg sm:max-w-2xl mx-auto">
-                <button
-                  onClick={() => handleSendMessage("What are the key financial metrics I should analyze for tech stocks?")}
-                  className="px-4 py-3 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-full text-sm transition-colors text-center"
-                >
-                  Analyze tech stocks
-                </button>
-                <button
-                  onClick={() => handleSendMessage("What's the current market outlook for renewable energy investments?")}
-                  className="px-4 py-3 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-full text-sm transition-colors text-center"
-                >
-                  Renewable energy outlook
-                </button>
-                <button
-                  onClick={() => handleSendMessage("Explain the impact of Federal Reserve rate changes on the stock market")}
-                  className="px-4 py-3 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-full text-sm transition-colors text-center"
-                >
-                  Fed rate impact
-                </button>
-                <button
-                  onClick={() => handleSendMessage("What are the best value investing strategies for beginners?")}
-                  className="px-4 py-3 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-full text-sm transition-colors text-center"
-                >
-                  Value investing strategies
-                </button>
-              </div>
-            )}
-            
+        {/* Input Area for messages view - mobile optimized */}
+        {messages.length > 0 && (
+          <div className="flex-shrink-0 px-4 sm:px-8 pb-4 sm:pb-6">
             <ChatInput 
               onSendMessage={handleSendMessage}
               isLoading={isLoading}
-              placeholder="Ask about financial markets, company analysis, or investment insights..."
+              placeholder=""
             />
           </div>
-        </div>
+        )}
       </div>
 
         {/* Simplified Disclaimer */}
