@@ -38,23 +38,24 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     conv.response.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Format timestamp for display
+  // Format timestamp for display - convert UTC to local time
   const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
+    // Ensure UTC timestamp is properly parsed
+    const utcDate = new Date(timestamp.endsWith('Z') ? timestamp : timestamp + 'Z');
     const now = new Date();
-    const diffInMs = now.getTime() - date.getTime();
+    const diffInMs = now.getTime() - utcDate.getTime();
     const diffInHours = diffInMs / (1000 * 60 * 60);
     
     if (diffInHours < 24) {
-      return date.toLocaleTimeString('en-US', { 
+      return utcDate.toLocaleTimeString('en-US', { 
         hour: 'numeric', 
         minute: '2-digit',
         hour12: true 
       });
     } else if (diffInHours < 168) { // 7 days
-      return date.toLocaleDateString('en-US', { weekday: 'short' });
+      return utcDate.toLocaleDateString('en-US', { weekday: 'short' });
     } else {
-      return date.toLocaleDateString('en-US', { 
+      return utcDate.toLocaleDateString('en-US', { 
         month: 'short', 
         day: 'numeric' 
       });

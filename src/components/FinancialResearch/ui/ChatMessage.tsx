@@ -22,10 +22,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, convertToEasternTime
     if (convertToEasternTime) {
       return convertToEasternTime(timestamp.toISOString());
     }
-    return timestamp.toLocaleTimeString('en-US', {
+    // Ensure proper local timezone conversion
+    return timestamp.toLocaleTimeString(undefined, {
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true
+      hour12: true,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
     });
   };
 
