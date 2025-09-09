@@ -56,7 +56,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     <div className="w-full">
       <form onSubmit={handleSubmit} className="w-full">
         <div className="w-full">
-          <div className="relative bg-neutral-200 dark:bg-neutral-700 rounded-full flex items-center px-4 py-1.5 shadow-lg w-full">
+          <div className="relative bg-neutral-200 dark:bg-neutral-700 rounded-full flex items-center px-4 py-1.5 w-full border-0 ring-0 outline-none">
             <textarea
               ref={textareaRef}
               value={message}
@@ -64,7 +64,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
               disabled={isLoading}
-              className="flex-1 bg-transparent text-neutral-100 placeholder-neutral-400 focus:outline-none resize-none disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden text-base leading-tight py-0.5"
+              className="flex-1 bg-neutral-200 dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-0 focus:border-0 resize-none disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden text-base leading-tight py-0.5 border-0 ring-0 outline-none"
               style={{
                 minHeight: '18px',
                 maxHeight: '120px'
@@ -75,7 +75,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
             <button
               type="submit"
               disabled={!message.trim() || isLoading}
-              className="flex items-center justify-center w-6 h-6 text-neutral-400 hover:text-neutral-300 disabled:text-neutral-500 disabled:cursor-not-allowed flex-shrink-0 ml-2"
+              className="flex items-center justify-center w-6 h-6 text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-300 disabled:text-neutral-400 dark:disabled:text-neutral-500 disabled:cursor-not-allowed flex-shrink-0 ml-2"
             >
               {isLoading ? (
                 <Loader2 size={16} className="animate-spin" />
