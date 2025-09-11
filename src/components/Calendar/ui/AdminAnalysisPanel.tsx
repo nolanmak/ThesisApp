@@ -1,7 +1,7 @@
 import React from 'react';
 import { Message } from '../../../types';
 import { ThumbsDown, X } from 'lucide-react';
-import { ParseMessagePayload, ParseTranscriptMessage, ParseTranscriptData, ParseSentimentMessage, ParseSentimentData } from '../../Earnings/utils/messageUtils';
+import { ParseMessagePayload, ParseTranscriptMessage, ParseTranscriptData, ParseSentimentMessage, ParseSentimentData, ParseSwingAnalysisData } from '../../Earnings/utils/messageUtils';
 
 interface AdminAnalysisPanelProps {
   selectedMessage: Message | null;
@@ -22,7 +22,9 @@ const AdminAnalysisPanel: React.FC<AdminAnalysisPanelProps> = ({
 }) => {
   const parsedMessage = selectedMessage ? ParseMessagePayload(selectedMessage) : null;
   const parsedTranscriptData = selectedMessage ? ParseTranscriptData(selectedMessage) : null;
-  const parsedSentimentData = selectedMessage ? ParseSentimentData(selectedMessage) : null;
+  // Try new Bull/Bear format first, then fall back to legacy sentiment format
+  const parsedSwingData = selectedMessage ? ParseSwingAnalysisData(selectedMessage) : null;
+  const parsedSentimentData = parsedSwingData || (selectedMessage ? ParseSentimentData(selectedMessage) : null);
 
   return (
     <div 
@@ -149,7 +151,7 @@ const AdminAnalysisPanel: React.FC<AdminAnalysisPanelProps> = ({
                   <div className="space-y-4">
                     {/* Show just the preview text */}
                     <div className="text-purple-700 dark:text-purple-400 font-semibold mb-3">
-                      {ParseTranscriptMessage(selectedMessage) || '=Ê Earnings Call Transcript Analysis'}
+                      {ParseTranscriptMessage(selectedMessage) || '=ï¿½ Earnings Call Transcript Analysis'}
                     </div>
                     
                     {/* Display structured transcript data in human-readable format */}
@@ -179,7 +181,7 @@ const AdminAnalysisPanel: React.FC<AdminAnalysisPanelProps> = ({
                   <div className="space-y-4">
                     {/* Show the preview text */}
                     <div className="text-green-700 dark:text-green-400 font-semibold mb-3">
-                      {ParseSentimentMessage(selectedMessage) || '=È Sentiment Analysis'}
+                      {ParseSentimentMessage(selectedMessage) || '=ï¿½ Sentiment Analysis'}
                     </div>
                     
                     {/* Display structured sentiment data in human-readable format */}

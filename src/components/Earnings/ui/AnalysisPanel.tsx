@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Message } from '../../../types';
 import { ThumbsDown, X } from 'lucide-react';
-import { ParseMessagePayload, ParseTranscriptMessage, ParseTranscriptData, ParseSentimentMessage, ParseSentimentData } from '../utils/messageUtils';
+import { ParseMessagePayload, ParseTranscriptMessage, ParseTranscriptData, ParseSentimentMessage, ParseSentimentData, ParseSwingAnalysisData } from '../utils/messageUtils';
 
 interface AnalysisPanelProps {
   selectedMessage: Message | null;
@@ -113,7 +113,9 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
 
   const parsedMessage = currentMessage ? ParseMessagePayload(currentMessage) : null;
   const parsedTranscriptData = currentMessage ? ParseTranscriptData(currentMessage) : null;
-  const parsedSentimentData = currentMessage ? ParseSentimentData(currentMessage) : null;
+  // Try new Bull/Bear format first, then fall back to legacy sentiment format
+  const parsedSwingData = currentMessage ? ParseSwingAnalysisData(currentMessage) : null;
+  const parsedSentimentData = parsedSwingData || (currentMessage ? ParseSentimentData(currentMessage) : null);
 
   return (
     <div 
