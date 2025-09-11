@@ -164,7 +164,7 @@ const LandingPage: React.FC = () => {
                   width={isMobile ? 36 : 48} 
                   height={isMobile ? 36 : 48} 
                 />
-                Thesis
+                EarningsOwl
               </h1>
               <p 
                 className="bg-neutral-50/80 dark:bg-neutral-800/80 backdrop-blur-sm text-neutral-600 dark:text-neutral-300 w-fit mx-auto"

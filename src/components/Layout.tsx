@@ -60,7 +60,7 @@ const Layout: React.FC = () => {
             <div className="flex justify-between items-center mb-3">
               <h1 className="text-lg font-light flex items-center text-neutral-900 dark:text-neutral-100">
                 <img src="/favicon.svg" alt="Logo" className="mr-2" width={30} height={30} />
-                Thesis
+                EarningsOwl
               </h1>
               
               <div className="flex items-center gap-2">
@@ -92,7 +92,7 @@ const Layout: React.FC = () => {
           <div className="hidden md:flex justify-between items-center">
             <h1 className="text-lg font-light flex items-center text-neutral-900 dark:text-neutral-100">
               <img src="/favicon.svg" alt="Logo" className="mr-2" width={30} height={30} />
-              Thesis
+              EarningsOwl
             </h1>
             
             {/* Center container for banner and theme toggle */}

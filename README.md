@@ -1,4 +1,4 @@
-# Earnings Manager
+# EarningsOwl
 
 A comprehensive React application for tracking, configuring, and analyzing company earnings announcements with real-time features and financial research capabilities.
 
