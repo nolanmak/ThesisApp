@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings as SettingsIcon, X, RotateCcw, Volume2, LogOut, User } from 'lucide-react';
+import { Settings as SettingsIcon, X, RotateCcw, Volume2, LogOut, User, List } from 'lucide-react';
 import { useAudioSettings } from '../../contexts/AudioSettingsContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useWatchlistToggle } from '../../hooks/useWatchlistToggle';
 
 interface SettingsProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   const { settings, updatePlaybackSpeed, resetSettings } = useAudioSettings();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { watchlist, watchListOn, toggleWatchlist, loading: watchlistLoading } = useWatchlistToggle();
   const [tempSpeed, setTempSpeed] = useState(settings.playbackSpeed);
   const [activeTab, setActiveTab] = useState<'audio' | 'account'>('audio');
   const modalRef = useRef<HTMLDivElement>(null);
@@ -68,6 +70,10 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
     // Close modal and redirect to landing page
     onClose();
     navigate('/');
+  };
+
+  const handleWatchlistToggle = async (enabled: boolean) => {
+    await toggleWatchlist(enabled);
   };
 
   const speedOptions = [
@@ -186,6 +192,58 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                   ))}
                 </div>
               </div>
+
+              {/* Watchlist Filter Section */}
+              {watchlist.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <List size={16} className="text-neutral-600 dark:text-neutral-400" />
+                      <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        Watchlist Filter
+                      </label>
+                    </div>
+                    <button
+                      onClick={() => handleWatchlistToggle(!watchListOn)}
+                      disabled={watchlistLoading}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                        watchListOn
+                          ? 'bg-blue-600'
+                          : 'bg-neutral-200 dark:bg-neutral-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          watchListOn ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
+                    {watchListOn 
+                      ? `Filtering notifications to your ${watchlist.length} watchlist stock${watchlist.length !== 1 ? 's' : ''}`
+                      : 'Receiving notifications for all stocks'
+                    }
+                  </p>
+                  {watchListOn && (
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-md p-3">
+                      <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-2">
+                        Your Watchlist ({watchlist.length}):
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {watchlist.map((ticker) => (
+                          <span
+                            key={ticker}
+                            className="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300"
+                          >
+                            {ticker}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
