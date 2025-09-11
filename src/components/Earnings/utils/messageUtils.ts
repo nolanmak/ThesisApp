@@ -199,7 +199,85 @@ export const ParseSentimentMessage = (message: Message): string | null => {
 };
 
 /**
- * Parse sentiment additional metrics into human-readable format
+ * Parse Bull/Bear swing trader analysis into human-readable format
+ */
+export const ParseSwingAnalysisData = (message: Message): { [key: string]: MetricItem[] } | null => {
+  if (!message.sentiment_additional_metrics) {
+    return null;
+  }
+
+  const sections: { [key: string]: MetricItem[] } = {};
+
+  try {
+    // Parse sentiment_additional_metrics if it's a string, otherwise use as object
+    const data = typeof message.sentiment_additional_metrics === 'string' 
+      ? JSON.parse(message.sentiment_additional_metrics)
+      : message.sentiment_additional_metrics;
+
+    // Check if this is the new Bull/Bear format
+    if (data.bull_case || data.bear_case || data.key_elements) {
+      
+      // Bull Case (Reasons to Buy/Invest)
+      if (data.bull_case && Array.isArray(data.bull_case)) {
+        const bullItems: MetricItem[] = [];
+        data.bull_case.forEach((item: any) => {
+          if (item && item.reason_title && item.reason_detail) {
+            bullItems.push({
+              label: item.reason_title,
+              text: item.reason_detail
+            });
+          }
+        });
+        if (bullItems.length > 0) {
+          sections["🐂 Bull Case (Reasons to Buy)"] = bullItems;
+        }
+      }
+
+      // Bear Case (Reasons to Sell/Avoid)
+      if (data.bear_case && Array.isArray(data.bear_case)) {
+        const bearItems: MetricItem[] = [];
+        data.bear_case.forEach((item: any) => {
+          if (item && item.reason_title && item.reason_detail) {
+            bearItems.push({
+              label: item.reason_title,
+              text: item.reason_detail
+            });
+          }
+        });
+        if (bearItems.length > 0) {
+          sections["🐻 Bear Case (Reasons to Sell)"] = bearItems;
+        }
+      }
+
+      // Key Elements & Metrics
+      if (data.key_elements && Array.isArray(data.key_elements)) {
+        const keyItems: MetricItem[] = [];
+        data.key_elements.forEach((item: any) => {
+          if (item && item.metric_title && item.metric_detail) {
+            keyItems.push({
+              label: item.metric_title,
+              text: item.metric_detail
+            });
+          }
+        });
+        if (keyItems.length > 0) {
+          sections["📊 Key Trading Metrics"] = keyItems;
+        }
+      }
+
+      return Object.keys(sections).length > 0 ? sections : null;
+    }
+
+    // If not Bull/Bear format, return null so ParseSentimentData can handle it
+    return null;
+
+  } catch (error) {
+    return null;
+  }
+};
+
+/**
+ * Parse sentiment additional metrics into human-readable format (Legacy)
  */
 export const ParseSentimentData = (message: Message): { [key: string]: MetricItem[] } | null => {
   if (!message.sentiment_additional_metrics) {
