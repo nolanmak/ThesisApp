@@ -117,16 +117,7 @@ const Layout: React.FC = () => {
                     className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/earnings')}`}
                   >
                     <MessageCircle className="mr-1" size={14} />
-                    <span>Earnings</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/dashboard/research"
-                    className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/research')}`}
-                  >
-                    <TrendingUp className="mr-1" size={14} />
-                    <span>Research</span>
+                    <span>Real Time Feed</span>
                   </Link>
                 </li>
                 {isAdmin && (
@@ -167,17 +158,7 @@ const Layout: React.FC = () => {
                       onClick={() => setMenuOpen(false)}
                     >
                       <MessageCircle className="mr-2" size={18} />
-                      <span>Earnings</span>
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/dashboard/research"
-                      className={`flex items-center px-3 py-2 text-base rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/research')}`}
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      <TrendingUp className="mr-2" size={18} />
-                      <span>Research</span>
+                      <span>Real Time Feed</span>
                     </Link>
                   </li>
                   {isAdmin && (
