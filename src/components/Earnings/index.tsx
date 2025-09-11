@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import MessagesList from './ui/MessagesList';
 import WebSocketStatus from './ui/WebSocketStatus';
+import WatchlistToggle from './ui/WatchlistToggle';
 import AnalysisPanel from './ui/AnalysisPanel';
 import FeedbackModal from './ui/FeedbackModal';
 import { Message } from '../../types';
@@ -122,6 +123,8 @@ const Messages: React.FC = () => {
               onRefresh={refreshMessages}
               onToggleWebSocket={toggleEnabled}
             />
+            
+            <WatchlistToggle />
             
             <MessagesList
               messages={messages}

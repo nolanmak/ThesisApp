@@ -347,9 +347,10 @@ export const createOrUpdateCompanyConfig = async (
 };
 
 // UserProfile API
-interface UserProfile {
+export interface UserProfile {
   email: string;
   watchlist?: string[];
+  watchListOn?: boolean;
   settings?: Record<string, unknown>;
 }
 

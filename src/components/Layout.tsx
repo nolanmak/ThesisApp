@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, Calendar, MessageCircle, Menu, List, Settings, TrendingUp } from 'lucide-react';
+import { Calendar, MessageCircle, Menu, List, Settings, TrendingUp } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import ThemeToggle from './ui/ThemeToggle';
-import AudioSettings from './ui/AudioSettings';
+import SettingsModal from './ui/Settings';
 
 const Layout: React.FC = () => {
   const { user } = useAuth();
@@ -11,7 +11,7 @@ const Layout: React.FC = () => {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   
   const isAdmin = user?.email === 'nolanmak7@gmail.com';
   
@@ -35,15 +35,6 @@ const Layout: React.FC = () => {
     return location.pathname === path ? 'text-blue-500 dark:text-blue-400' : 'text-neutral-500 dark:text-neutral-400 hover:text-blue-400 dark:hover:text-blue-300';
   };
   
-  const handleLogout = () => {
-    // Clear the auth tokens from local storage
-    localStorage.removeItem('user_data');
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('id_token');
-    localStorage.removeItem('refresh_token');
-    // Redirect to landing page
-    navigate('/');
-  };
   
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -60,14 +51,14 @@ const Layout: React.FC = () => {
             <div className="flex justify-between items-center mb-3">
               <h1 className="text-lg font-light flex items-center text-neutral-900 dark:text-neutral-100">
                 <img src="/favicon.svg" alt="Logo" className="mr-2" width={30} height={30} />
-                Thesis
+                EarningsOwl
               </h1>
               
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setAudioSettingsOpen(true)}
+                  onClick={() => setSettingsOpen(true)}
                   className="flex items-center justify-center p-2 rounded-md transition-colors duration-200 ease-in-out text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                  aria-label="Audio settings"
+                  aria-label="Settings"
                 >
                   <Settings size={18} />
                 </button>
@@ -92,7 +83,7 @@ const Layout: React.FC = () => {
           <div className="hidden md:flex justify-between items-center">
             <h1 className="text-lg font-light flex items-center text-neutral-900 dark:text-neutral-100">
               <img src="/favicon.svg" alt="Logo" className="mr-2" width={30} height={30} />
-              Thesis
+              EarningsOwl
             </h1>
             
             {/* Center container for banner and theme toggle */}
@@ -105,9 +96,9 @@ const Layout: React.FC = () => {
               {/* Theme Toggle and Settings (desktop only) */}
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setAudioSettingsOpen(true)}
+                  onClick={() => setSettingsOpen(true)}
                   className="flex items-center justify-center p-2 rounded-md transition-colors duration-200 ease-in-out text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                  aria-label="Audio settings"
+                  aria-label="Settings"
                 >
                   <Settings size={18} />
                 </button>
@@ -126,16 +117,7 @@ const Layout: React.FC = () => {
                     className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/earnings')}`}
                   >
                     <MessageCircle className="mr-1" size={14} />
-                    <span>Earnings</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/dashboard/research"
-                    className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/research')}`}
-                  >
-                    <TrendingUp className="mr-1" size={14} />
-                    <span>Research</span>
+                    <span>Real Time Feed</span>
                   </Link>
                 </li>
                 {isAdmin && (
@@ -158,15 +140,6 @@ const Layout: React.FC = () => {
                     <span>Watch List</span>
                   </Link>
                 </li>
-                <li>
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out text-neutral-500 dark:text-neutral-400 hover:text-red-500 dark:hover:text-red-400"
-                  >
-                    <LogOut className="mr-1" size={14} />
-                    <span>Logout</span>
-                  </button>
-                </li>
               </ul>
             </nav>
           )}
@@ -185,17 +158,7 @@ const Layout: React.FC = () => {
                       onClick={() => setMenuOpen(false)}
                     >
                       <MessageCircle className="mr-2" size={18} />
-                      <span>Earnings</span>
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/dashboard/research"
-                      className={`flex items-center px-3 py-2 text-base rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/research')}`}
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      <TrendingUp className="mr-2" size={18} />
-                      <span>Research</span>
+                      <span>Real Time Feed</span>
                     </Link>
                   </li>
                   {isAdmin && (
@@ -220,18 +183,6 @@ const Layout: React.FC = () => {
                       <span>Watch List</span>
                     </Link>
                   </li>
-                  <li>
-                    <button
-                      onClick={() => {
-                        setMenuOpen(false);
-                        handleLogout();
-                      }}
-                      className="flex items-center px-3 py-2 text-base rounded-md transition-colors duration-150 ease-in-out text-neutral-500 dark:text-neutral-400 hover:text-red-500 dark:hover:text-red-400"
-                    >
-                      <LogOut className="mr-2" size={18} />
-                      <span>Logout</span>
-                    </button>
-                  </li>
                 </ul>
               </nav>
             </div>
@@ -246,10 +197,10 @@ const Layout: React.FC = () => {
         </div>
       </div>
 
-      {/* Audio Settings Modal */}
-      <AudioSettings 
-        isOpen={audioSettingsOpen}
-        onClose={() => setAudioSettingsOpen(false)}
+      {/* Settings Modal */}
+      <SettingsModal 
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
       />
     </div>
   );
