@@ -452,44 +452,45 @@ const RealTimeGrid: React.FC = () => {
     }
   }, [user?.email, loadUserViews]);
 
-  // Filter earnings data locally when date range changes (much faster than API calls)
+  // Start date filtering loading when date range changes
   useEffect(() => {
-    const filterLocalEarnings = () => {
-      if (dateRange.start || dateRange.end) {
-        setDateFilterLoading(true);
-        
-        // Filter earnings data that's already loaded in memory
-        const filteredEarnings = earningsItems.filter(earning => {
-          const earningDate = earning.date;
-          
-          // Check start date
-          if (dateRange.start && earningDate < dateRange.start) {
-            return false;
-          }
-          
-          // Check end date (or use start date as end if only start is provided)
-          const endDate = dateRange.end || dateRange.start;
-          if (endDate && earningDate > endDate) {
-            return false;
-          }
-          
-          return true;
-        });
-        
-        const tickers = filteredEarnings.map(earning => earning.ticker.toUpperCase());
-        setScheduledTickers(tickers);
-        setDateFilterLoading(false);
-      } else {
-        // Clear filter when no dates are selected
-        setScheduledTickers([]);
-        setDateFilterLoading(false);
-      }
-    };
+    if (dateRange.start || dateRange.end) {
+      // Date fetching starts - turn loading to true
+      setDateFilterLoading(true);
+    } else {
+      // No date range - turn loading to false immediately
+      setDateFilterLoading(false);
+      setScheduledTickers([]);
+    }
+  }, [dateRange.start, dateRange.end]);
 
-    // Small debounce to batch rapid changes, but much shorter since no API call
-    const debounceTimer = setTimeout(filterLocalEarnings, 100);
-    
-    return () => clearTimeout(debounceTimer);
+  // Perform actual filtering and stop loading when data is available
+  useEffect(() => {
+    if ((dateRange.start || dateRange.end) && earningsItems.length > 0) {
+      // Filter earnings data that's already loaded in memory
+      const filteredEarnings = earningsItems.filter(earning => {
+        const earningDate = earning.date;
+        
+        // Check start date
+        if (dateRange.start && earningDate < dateRange.start) {
+          return false;
+        }
+        
+        // Check end date (or use start date as end if only start is provided)
+        const endDate = dateRange.end || dateRange.start;
+        if (endDate && earningDate > endDate) {
+          return false;
+        }
+        
+        return true;
+      });
+      
+      const tickers = filteredEarnings.map(earning => earning.ticker.toUpperCase());
+      setScheduledTickers(tickers);
+      
+      // Filtering stops - turn loading to false
+      setDateFilterLoading(false);
+    }
   }, [dateRange.start, dateRange.end, earningsItems]);
 
   // No need for local API fetching - data comes from GlobalDataProvider
@@ -1187,26 +1188,13 @@ const RealTimeGrid: React.FC = () => {
             </div>
 
             {/* Grid Content */}
-            <div className="flex-1 overflow-auto relative">
-              {/* Date Filter Loading Overlay */}
-              {dateFilterLoading && (
-                <div className="absolute inset-0 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm z-10 flex items-center justify-center">
-                  <div className="flex flex-col items-center gap-3 p-6 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700">
-                    <RefreshCw size={24} className="animate-spin text-blue-500" />
-                    <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                      Filtering by date range...
-                    </span>
-                    <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                      {dateRange.start && dateRange.end && dateRange.start !== dateRange.end
-                        ? `${dateRange.start} to ${dateRange.end}`
-                        : dateRange.start || dateRange.end
-                        ? `${dateRange.start || dateRange.end}`
-                        : 'Loading...'}
-                    </span>
-                  </div>
+            <div className="flex-1 overflow-hidden">
+              {dateFilterLoading ? (
+                <div className="flex items-center justify-center h-full py-20">
+                  <RefreshCw size={40} className="animate-spin text-blue-500" />
                 </div>
-              )}
-              
+              ) : (
+                <>
         {error ? (
           <div className="flex items-center justify-center p-8">
             <div className="text-center">
@@ -1284,7 +1272,8 @@ const RealTimeGrid: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="min-w-full">
+          <div className="overflow-auto h-full">
+            <div className="min-w-full">
             <table className="w-full border-collapse">
               <thead className="bg-neutral-50 dark:bg-neutral-800 sticky top-0 z-10">
                 <tr>
@@ -1360,8 +1349,11 @@ const RealTimeGrid: React.FC = () => {
                 ))}
               </tbody>
             </table>
-              </div>
+            </div>
+          </div>
             )}
+                </>
+              )}
             </div>
           </div>
           
