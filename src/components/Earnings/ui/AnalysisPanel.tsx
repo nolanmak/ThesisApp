@@ -103,8 +103,8 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
       label: 'Transcript', 
       message: relatedMessages.transcript,
       colors: {
-        active: 'bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200',
-        inactive: 'text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 hover:bg-purple-50 dark:hover:bg-purple-900/30'
+        active: 'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200',
+        inactive: 'text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 hover:bg-amber-50 dark:hover:bg-amber-900/30'
       }
     });
     // Always show fundamentals tab if we have a ticker and metrics data
@@ -136,8 +136,8 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
       label: 'Report', 
       message: relatedMessages.report,
       colors: {
-        active: 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-200',
-        inactive: 'text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/30'
+        active: 'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200',
+        inactive: 'text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 hover:bg-amber-50 dark:hover:bg-amber-900/30'
       }
     });
     return tabs;
@@ -445,15 +445,20 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex-1 px-2 py-1.5 font-medium rounded-md transition-colors text-center ${
+                    className={`flex-1 rounded-md transition-colors text-center truncate whitespace-nowrap overflow-hidden ${
                       activeTab === tab.id
                         ? `${tab.colors.active} shadow-sm`
                         : tab.colors.inactive
                     }`}
                     style={{
-                      fontSize: availableTabs.length > 3 ? (isMobile ? '0.65rem' : '0.75rem') : 
-                               availableTabs.length > 2 ? (isMobile ? '0.7rem' : '0.8rem') :
-                               (isMobile ? '0.75rem' : '0.875rem')
+                      fontSize: availableTabs.length >= 5 ? (isMobile ? '0.6rem' : '0.65rem') :
+                               availableTabs.length >= 4 ? (isMobile ? '0.65rem' : '0.7rem') : 
+                               availableTabs.length >= 3 ? (isMobile ? '0.7rem' : '0.75rem') : 
+                               (isMobile ? '0.75rem' : '0.875rem'),
+                      fontWeight: availableTabs.length >= 4 ? '500' : '600',
+                      padding: availableTabs.length >= 5 ? (isMobile ? '4px 2px' : '6px 4px') :
+                               availableTabs.length >= 4 ? (isMobile ? '5px 3px' : '6px 6px') :
+                               (isMobile ? '6px 8px' : '6px 8px')
                     }}
                   >
                     {tab.label}
@@ -476,7 +481,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                   // Display transcript analysis with structured data
                   <div className="space-y-4">
                     {/* Show just the preview text */}
-                    <div className="text-purple-700 dark:text-purple-400 font-semibold mb-3">
+                    <div className="text-amber-700 dark:text-amber-400 font-semibold mb-3">
                       {currentMessage && ParseTranscriptMessage(currentMessage) || '📊 Earnings Call Transcript Analysis'}
                     </div>
                     
@@ -485,7 +490,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                       <div className="space-y-4">
                         {Object.entries(parsedTranscriptData).map(([section, items]) => (
                           <div key={section}>
-                            <div className="text-purple-700 dark:text-purple-400 font-semibold mb-2">{section}</div>
+                            <div className="text-amber-700 dark:text-amber-400 font-semibold mb-2">{section}</div>
                             <ul className="space-y-1 list-disc pl-5">
                               {items.map((item, idx) => (
                                 <li key={idx} className="text-neutral-600 dark:text-neutral-300">
@@ -673,7 +678,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                   <div className="space-y-4">
                     {/* Show message content for link messages */}
                     {(currentMessage?.title || currentMessage?.subject || currentMessage?.message) && (
-                      <div className="text-indigo-700 dark:text-indigo-400 font-semibold mb-3">
+                      <div className="text-amber-700 dark:text-amber-400 font-semibold mb-3">
                         {currentMessage.title || currentMessage.subject || currentMessage.message}
                       </div>
                     )}
@@ -684,7 +689,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                         href={currentMessage?.link || currentMessage?.report_data?.link || selectedMessage?.link || selectedMessage?.report_data?.link || '#'} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="inline-flex items-center px-6 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-medium transition-colors shadow-sm"
+                        className="inline-flex items-center px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium transition-colors shadow-sm"
                       >
                         <span>View Full Report</span>
                         <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
