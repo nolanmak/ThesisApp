@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter, Eye, EyeOff } from 'lucide-react';
 import { useMetricsData } from '../../hooks/useGlobalData';
-import { StockMetric } from '../../providers/GlobalDataProvider';
 import { useWatchlist } from '../../hooks/useWatchlist';
+import AnalysisPanel from '../Earnings/ui/AnalysisPanel';
+import useGlobalData from '../../hooks/useGlobalData';
+import { Message } from '../../types';
 
 interface ColumnConfig {
   key: string;
@@ -26,6 +28,12 @@ const RealTimeGrid: React.FC = () => {
   // Use watchlist data for filtering
   const { watchlist } = useWatchlist();
 
+  // Get messages and websocket data for the analysis panel
+  const {
+    messages,
+    convertToEasternTime
+  } = useGlobalData();
+
   const [sortColumn, setSortColumn] = useState<string>('ticker');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showWatchlistOnly, setShowWatchlistOnly] = useState(false);
@@ -34,6 +42,12 @@ const RealTimeGrid: React.FC = () => {
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set());
   const [showColumnToggle, setShowColumnToggle] = useState(false);
   const columnToggleRef = useRef<HTMLDivElement>(null);
+  
+  // Analysis panel state
+  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  const [initialMessageSet, setInitialMessageSet] = useState<boolean>(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showAnalysisPanel, setShowAnalysisPanel] = useState(false);
 
   // Define column configuration
   const defaultColumns: ColumnConfig[] = [
@@ -70,6 +84,41 @@ const RealTimeGrid: React.FC = () => {
       }
     }
   }, []);
+
+  // Mobile detection
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+    
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
+
+  // Set initial message for analysis panel
+  useEffect(() => {
+    if (!initialMessageSet && messages.length > 0) {
+      const analysisMessages = messages.filter(msg => !msg.link);
+      
+      if (analysisMessages.length > 0) {
+        const sortedAnalysisMessages = [...analysisMessages].sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+        
+        setSelectedMessage(sortedAnalysisMessages[0]);
+      } else if (messages.length > 0) {
+        const sortedMessages = [...messages].sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+        
+        setSelectedMessage(sortedMessages[0]);
+      }
+      
+      setInitialMessageSet(true);
+    }
+  }, [messages, initialMessageSet]);
 
   // Close column toggle when clicking outside
   useEffect(() => {
@@ -203,6 +252,16 @@ const RealTimeGrid: React.FC = () => {
       .filter(col => visibleColumns.has(col!.key)) as ColumnConfig[];
   }, [columnOrder, visibleColumns]);
 
+  // Analysis panel handlers
+  const handleCloseAnalysisPanel = () => {
+    setShowAnalysisPanel(false);
+  };
+
+  // Dummy handler for feedback modal (not implemented in this context)
+  const setFeedbackModalOpen = (open: boolean) => {
+    // Could be implemented later if needed
+  };
+
   if (isLoading && stockData.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
@@ -222,143 +281,163 @@ const RealTimeGrid: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-neutral-900">
-      {/* Header */}
-      <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-4 sm:px-6 py-3 sm:py-4">
-        <div className="flex items-center justify-between max-w-full mx-auto">
-          <div className="flex items-center gap-3">
-            <Activity className="text-blue-500" size={24} />
-            <h1 className="text-lg sm:text-xl font-medium text-neutral-900 dark:text-neutral-100">
-              Real Time Grid
-            </h1>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <div className="relative" ref={columnToggleRef}>
-              <button
-                onClick={() => setShowColumnToggle(!showColumnToggle)}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
-                title="Toggle columns"
-              >
-                <Settings size={16} />
-                Columns
-              </button>
-              
-              {showColumnToggle && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
-                  <div className="p-3 border-b border-neutral-200 dark:border-neutral-700">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                        Column Visibility
-                      </span>
-                      <button
-                        onClick={() => setShowColumnToggle(false)}
-                        className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
-                      >
-                        ×
-                      </button>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => toggleAllColumns(true)}
-                        className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded hover:bg-blue-200 dark:hover:bg-blue-800"
-                      >
-                        Show All
-                      </button>
-                      <button
-                        onClick={() => toggleAllColumns(false)}
-                        className="text-xs px-2 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200 rounded hover:bg-neutral-200 dark:hover:bg-neutral-600"
-                      >
-                        Hide All
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="p-2">
-                    {defaultColumns.map((column) => (
-                      <label
-                        key={column.key}
-                        className="flex items-center gap-3 px-2 py-2 hover:bg-neutral-50 dark:hover:bg-neutral-700 rounded cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={visibleColumns.has(column.key)}
-                          onChange={() => toggleColumnVisibility(column.key)}
-                          disabled={column.key === 'ticker'} // Always keep ticker visible
-                          className="rounded border-neutral-300 dark:border-neutral-600 text-blue-500 focus:ring-blue-500 disabled:opacity-50"
-                        />
-                        <div className="flex items-center gap-2 flex-1">
-                          {visibleColumns.has(column.key) ? (
-                            <Eye size={14} className="text-blue-500" />
-                          ) : (
-                            <EyeOff size={14} className="text-neutral-400" />
-                          )}
-                          <span className="text-sm text-neutral-900 dark:text-neutral-100">
-                            {column.label}
-                          </span>
+    <div className="flex flex-col h-full">
+      {/* Main content with two-column layout */}
+      <div className="flex-1 min-h-0">
+        <div 
+          className="flex h-full"
+          style={{
+            flexDirection: isMobile ? 'column' : 'row'
+          }}
+        >
+          {/* Grid panel */}
+          <div 
+            style={{
+              width: isMobile ? '100%' : '65%',
+              display: isMobile && showAnalysisPanel ? 'none' : 'flex',
+              flexDirection: 'column',
+              marginRight: isMobile ? 0 : '1rem',
+              height: '100%',
+              minHeight: 0
+            }}
+            className="bg-white dark:bg-neutral-900"
+          >
+            {/* Header */}
+            <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-4 sm:px-6 py-3 sm:py-4">
+              <div className="flex items-center justify-between max-w-full mx-auto">
+                <div className="flex items-center gap-3">
+                  <Activity className="text-blue-500" size={24} />
+                  <h1 className="text-lg sm:text-xl font-medium text-neutral-900 dark:text-neutral-100">
+                    Real Time Grid
+                  </h1>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <div className="relative" ref={columnToggleRef}>
+                    <button
+                      onClick={() => setShowColumnToggle(!showColumnToggle)}
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+                      title="Toggle columns"
+                    >
+                      <Settings size={16} />
+                      Columns
+                    </button>
+                    
+                    {showColumnToggle && (
+                      <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
+                        <div className="p-3 border-b border-neutral-200 dark:border-neutral-700">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                              Column Visibility
+                            </span>
+                            <button
+                              onClick={() => setShowColumnToggle(false)}
+                              className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => toggleAllColumns(true)}
+                              className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded hover:bg-blue-200 dark:hover:bg-blue-800"
+                            >
+                              Show All
+                            </button>
+                            <button
+                              onClick={() => toggleAllColumns(false)}
+                              className="text-xs px-2 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200 rounded hover:bg-neutral-200 dark:hover:bg-neutral-600"
+                            >
+                              Hide All
+                            </button>
+                          </div>
                         </div>
-                      </label>
-                    ))}
+                        
+                        <div className="p-2">
+                          {defaultColumns.map((column) => (
+                            <label
+                              key={column.key}
+                              className="flex items-center gap-3 px-2 py-2 hover:bg-neutral-50 dark:hover:bg-neutral-700 rounded cursor-pointer"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={visibleColumns.has(column.key)}
+                                onChange={() => toggleColumnVisibility(column.key)}
+                                disabled={column.key === 'ticker'} // Always keep ticker visible
+                                className="rounded border-neutral-300 dark:border-neutral-600 text-blue-500 focus:ring-blue-500 disabled:opacity-50"
+                              />
+                              <div className="flex items-center gap-2 flex-1">
+                                {visibleColumns.has(column.key) ? (
+                                  <Eye size={14} className="text-blue-500" />
+                                ) : (
+                                  <EyeOff size={14} className="text-neutral-400" />
+                                )}
+                                <span className="text-sm text-neutral-900 dark:text-neutral-100">
+                                  {column.label}
+                                </span>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                        
+                        <div className="p-2 border-t border-neutral-200 dark:border-neutral-700 text-xs text-neutral-500 dark:text-neutral-400">
+                          {visibleColumns.size} of {defaultColumns.length} columns visible
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
-                  <div className="p-2 border-t border-neutral-200 dark:border-neutral-700 text-xs text-neutral-500 dark:text-neutral-400">
-                    {visibleColumns.size} of {defaultColumns.length} columns visible
+                  <button
+                    onClick={handleRefresh}
+                    disabled={isLoading}
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors disabled:opacity-50"
+                    title="Refresh metrics"
+                  >
+                    <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+                    Refresh
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Filters */}
+            <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-4 sm:px-6 py-2">
+              <div className="flex items-center justify-between max-w-full mx-auto">
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
+                    <input
+                      type="checkbox"
+                      checked={showWatchlistOnly}
+                      onChange={(e) => setShowWatchlistOnly(e.target.checked)}
+                      className="rounded border-neutral-300 dark:border-neutral-600 text-blue-500 focus:ring-blue-500"
+                    />
+                    Watchlist Only
+                  </label>
+                  
+                  <div className="flex items-center gap-2">
+                    <Calendar size={16} className="text-neutral-500" />
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className="text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
+                    />
                   </div>
                 </div>
-              )}
+                
+                <div className="text-sm text-neutral-500 dark:text-neutral-400">
+                  {sortedData.length} stocks
+                  {showWatchlistOnly && (
+                    <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
+                      Watchlist ({watchlist.length})
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
-            
-            <button
-              onClick={handleRefresh}
-              disabled={isLoading}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors disabled:opacity-50"
-              title="Refresh metrics"
-            >
-              <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-              Refresh
-            </button>
-          </div>
-        </div>
-      </div>
 
-      {/* Filters */}
-      <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-4 sm:px-6 py-2">
-        <div className="flex items-center justify-between max-w-full mx-auto">
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-              <input
-                type="checkbox"
-                checked={showWatchlistOnly}
-                onChange={(e) => setShowWatchlistOnly(e.target.checked)}
-                className="rounded border-neutral-300 dark:border-neutral-600 text-blue-500 focus:ring-blue-500"
-              />
-              Watchlist Only
-            </label>
-            
-            <div className="flex items-center gap-2">
-              <Calendar size={16} className="text-neutral-500" />
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
-              />
-            </div>
-          </div>
-          
-          <div className="text-sm text-neutral-500 dark:text-neutral-400">
-            {sortedData.length} stocks
-            {showWatchlistOnly && (
-              <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
-                Watchlist ({watchlist.length})
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-auto">
+            {/* Grid Content */}
+            <div className="flex-1 overflow-auto">
         {error ? (
           <div className="flex items-center justify-center p-8">
             <div className="text-center">
@@ -468,8 +547,22 @@ const RealTimeGrid: React.FC = () => {
                 ))}
               </tbody>
             </table>
+              </div>
+            )}
+            </div>
           </div>
-        )}
+          
+          {/* Analysis panel */}
+          <AnalysisPanel
+            selectedMessage={selectedMessage}
+            isMobile={isMobile}
+            showAnalysisPanel={showAnalysisPanel}
+            convertToEasternTime={convertToEasternTime}
+            handleCloseAnalysisPanel={handleCloseAnalysisPanel}
+            setFeedbackModalOpen={setFeedbackModalOpen}
+            messages={messages}
+          />
+        </div>
       </div>
     </div>
   );
