@@ -20,6 +20,7 @@ import GlobalDataProvider from './providers/GlobalDataProvider';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AudioSettingsProvider } from './contexts/AudioSettingsContext';
+import { GlobalAudioProvider } from './contexts/GlobalAudioContext';
 
 function App() {
   return (
@@ -28,8 +29,9 @@ function App() {
         <AudioSettingsProvider>
           <AuthProvider>
             <GlobalDataProvider>
-          <Router>
-            <Routes>
+              <Router>
+                <GlobalAudioProvider>
+                  <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/reset-password" element={<PasswordReset />} />
               <Route path="/ScheduleTemplate" element={<ScheduleTemplate />} />
@@ -50,9 +52,10 @@ function App() {
               
               {/* Catch-all route for 404 pages */}
               <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Router>
-          <ToastContainer position="top-right" />
+                  </Routes>
+                </GlobalAudioProvider>
+              </Router>
+              <ToastContainer position="top-right" />
             </GlobalDataProvider>
           </AuthProvider>
         </AudioSettingsProvider>

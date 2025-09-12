@@ -4,6 +4,7 @@ import { Calendar, MessageCircle, Menu, List, Settings, TrendingUp, Activity } f
 import { useAuth } from '../contexts/AuthContext';
 import ThemeToggle from './ui/ThemeToggle';
 import SettingsModal from './ui/Settings';
+import GlobalAudioControls from './ui/GlobalAudioControls';
 
 const Layout: React.FC = () => {
   const { user } = useAuth();
@@ -55,6 +56,7 @@ const Layout: React.FC = () => {
               </h1>
               
               <div className="flex items-center gap-2">
+                <GlobalAudioControls size="sm" />
                 <button
                   onClick={() => setSettingsOpen(true)}
                   className="flex items-center justify-center p-2 rounded-md transition-colors duration-200 ease-in-out text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
@@ -95,6 +97,7 @@ const Layout: React.FC = () => {
               
               {/* Theme Toggle and Settings (desktop only) */}
               <div className="flex items-center gap-2">
+                <GlobalAudioControls size="sm" />
                 <button
                   onClick={() => setSettingsOpen(true)}
                   className="flex items-center justify-center p-2 rounded-md transition-colors duration-200 ease-in-out text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
