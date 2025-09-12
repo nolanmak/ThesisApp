@@ -25,6 +25,7 @@ interface GridView {
   settings: {
     columnOrder: string[];
     visibleColumns: string[];
+    columnWidths: Record<string, number>;
     sortColumn: string;
     sortDirection: 'asc' | 'desc';
     showWatchlistOnly: boolean;
@@ -91,6 +92,12 @@ const RealTimeGrid: React.FC = () => {
   const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   
+  // Column resizing state
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
+  const [isResizing, setIsResizing] = useState<string | null>(null);
+  const [resizeStartX, setResizeStartX] = useState<number>(0);
+  const [resizeStartWidth, setResizeStartWidth] = useState<number>(0);
+  
   // Views state
   const [savedViews, setSavedViews] = useState<GridView[]>([]);
   const [currentViewId, setCurrentViewId] = useState<string | null>(null);
@@ -135,14 +142,12 @@ const RealTimeGrid: React.FC = () => {
     setShowDatePicker(false);
   }, []);
 
-  // Calculate date restrictions (allow past dates, block future dates beyond 7 days)
+  // Calculate date restrictions (allow past earnings dates, block future dates)
   const getDateRestrictions = useCallback(() => {
     const today = new Date();
-    const sevenDaysFromNow = new Date();
-    sevenDaysFromNow.setDate(today.getDate() + 7);
     
     return {
-      maxDate: sevenDaysFromNow.toISOString().split('T')[0] // 7 days from today
+      maxDate: today.toISOString().split('T')[0] // Today's date
     };
   }, []);
 
@@ -193,7 +198,7 @@ const RealTimeGrid: React.FC = () => {
     return visibility;
   }, []);
 
-  // Initialize column order and visibility
+  // Initialize column order, visibility, and widths
   useEffect(() => {
     if (columnOrder.length === 0) {
       setColumnOrder(defaultColumns.map(col => col.key));
@@ -202,7 +207,15 @@ const RealTimeGrid: React.FC = () => {
       setVisibleColumns(new Set(defaultColumns.map(col => col.key)));
       setColumnVisibility(initialColumnVisibility);
     }
-  }, [initialColumnVisibility]);
+    // Initialize column widths with defaults
+    if (Object.keys(columnWidths).length === 0) {
+      const initialWidths: Record<string, number> = {};
+      defaultColumns.forEach(col => {
+        initialWidths[col.key] = col.width || 100;
+      });
+      setColumnWidths(initialWidths);
+    }
+  }, [initialColumnVisibility, columnWidths]);
 
   // Mobile detection
   useEffect(() => {
@@ -372,6 +385,11 @@ const RealTimeGrid: React.FC = () => {
       setColumnVisibility(visibility);
     }
     
+    // Apply column widths
+    if (settings.columnWidths) {
+      setColumnWidths(settings.columnWidths);
+    }
+    
     // Apply sorting
     if (settings.sortColumn && settings.sortDirection) {
       setSortColumn(settings.sortColumn);
@@ -404,6 +422,7 @@ const RealTimeGrid: React.FC = () => {
     return {
       columnOrder,
       visibleColumns: Array.from(visibleColumns),
+      columnWidths,
       sortColumn,
       sortDirection,
       showWatchlistOnly,
@@ -412,7 +431,7 @@ const RealTimeGrid: React.FC = () => {
       startDate: dateRange.start,
       endDate: dateRange.end
     };
-  }, [columnOrder, visibleColumns, sortColumn, sortDirection, showWatchlistOnly, searchValue, searchColumn, dateRange.start, dateRange.end]);
+  }, [columnOrder, visibleColumns, columnWidths, sortColumn, sortDirection, showWatchlistOnly, searchValue, searchColumn, dateRange.start, dateRange.end]);
 
   const createNewView = useCallback(async (name: string, description?: string, isDefault?: boolean) => {
     const newView: GridView = {
@@ -672,6 +691,15 @@ const RealTimeGrid: React.FC = () => {
     setColumnOrder(defaultOrder);
   }, []);
 
+  // Reset column widths to defaults
+  const resetColumnWidths = useCallback(() => {
+    const defaultWidths: Record<string, number> = {};
+    defaultColumns.forEach(col => {
+      defaultWidths[col.key] = col.width || 100;
+    });
+    setColumnWidths(defaultWidths);
+  }, []);
+
   const orderedColumns = useMemo(() => {
     return columnOrder
       .map(key => defaultColumns.find(col => col.key === key))
@@ -731,6 +759,54 @@ const RealTimeGrid: React.FC = () => {
   const handleDragEnd = () => {
     setDraggedColumn(null);
     setDragOverColumn(null);
+  };
+
+  // Column resizing handlers
+  const handleResizeStart = (e: React.MouseEvent, columnKey: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const currentWidth = getColumnWidth(columnKey, defaultColumns.find(col => col.key === columnKey)?.width);
+    setIsResizing(columnKey);
+    setResizeStartX(e.clientX);
+    setResizeStartWidth(currentWidth);
+  };
+
+  const handleResizeMove = useCallback((e: MouseEvent) => {
+    if (!isResizing) return;
+    
+    const deltaX = e.clientX - resizeStartX;
+    const newWidth = Math.max(40, resizeStartWidth + deltaX); // Minimum 40px width for readability
+    
+    setColumnWidths(prev => ({
+      ...prev,
+      [isResizing]: newWidth
+    }));
+  }, [isResizing, resizeStartX, resizeStartWidth]);
+
+  const handleResizeEnd = useCallback(() => {
+    setIsResizing(null);
+  }, []);
+
+  // Add global mouse event listeners for column resizing
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleResizeMove);
+      document.addEventListener('mouseup', handleResizeEnd);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none'; // Prevent text selection during resize
+      
+      return () => {
+        document.removeEventListener('mousemove', handleResizeMove);
+        document.removeEventListener('mouseup', handleResizeEnd);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      };
+    }
+  }, [isResizing, handleResizeMove, handleResizeEnd]);
+
+  // Helper function to get actual column width
+  const getColumnWidth = (columnKey: string, defaultWidth?: number): number => {
+    return columnWidths[columnKey] || defaultWidth || 100;
   };
 
   if (isLoading && stockData.length === 0) {
@@ -822,12 +898,20 @@ const RealTimeGrid: React.FC = () => {
                               Hide All
                             </button>
                           </div>
-                          <button
-                            onClick={resetColumnOrder}
-                            className="w-full text-xs px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded hover:bg-orange-200 dark:hover:bg-orange-800"
-                          >
-                            Reset Column Order
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={resetColumnOrder}
+                              className="flex-1 text-xs px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded hover:bg-orange-200 dark:hover:bg-orange-800"
+                            >
+                              Reset Order
+                            </button>
+                            <button
+                              onClick={resetColumnWidths}
+                              className="flex-1 text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded hover:bg-purple-200 dark:hover:bg-purple-800"
+                            >
+                              Reset Widths
+                            </button>
+                          </div>
                         </div>
                         
                         <div className="p-2">
@@ -862,8 +946,9 @@ const RealTimeGrid: React.FC = () => {
                             {visibleColumns.size} of {defaultColumns.length} columns visible
                           </div>
                           {!isMobile && (
-                            <div className="text-xs text-neutral-400 dark:text-neutral-500">
-                              💡 Drag column headers to reorder
+                            <div className="text-xs text-neutral-400 dark:text-neutral-500 space-y-0.5">
+                              <div>💡 Drag column headers to reorder</div>
+                              <div>🔄 Drag right edge of headers to resize</div>
                             </div>
                           )}
                         </div>
@@ -1047,7 +1132,7 @@ const RealTimeGrid: React.FC = () => {
                           ? `${dateRange.start} to ${dateRange.end}`
                           : dateRange.start
                           ? dateRange.start
-                          : 'Select date range'}
+                          : 'Select earnings date'}
                       </span>
                       <ChevronDown size={14} className={`transition-transform ${showDatePicker ? 'rotate-180' : ''}`} />
                     </button>
@@ -1060,7 +1145,7 @@ const RealTimeGrid: React.FC = () => {
                       <button
                         onClick={handleDatePickerClear}
                         className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 px-2 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
-                        title="Clear date range"
+                        title="Clear earnings date filter"
                       >
                         Clear
                       </button>
@@ -1071,7 +1156,7 @@ const RealTimeGrid: React.FC = () => {
                       <div className="absolute top-full left-0 mt-1 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-lg p-4 z-50 min-w-[320px]">
                         <div className="space-y-3">
                           <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
-                            Future dates blocked beyond 7 days from today
+                            Filter by earnings announcement date
                           </div>
                           <div className="flex items-center gap-2">
                             <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 w-16">From:</label>
@@ -1175,7 +1260,7 @@ const RealTimeGrid: React.FC = () => {
                   )}
                   {(dateRange.start || dateRange.end) && scheduledTickers.length > 0 && (
                     <span className="ml-2 text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded">
-                      Scheduled ({scheduledTickers.length})
+                      Earnings ({scheduledTickers.length})
                     </span>
                   )}
                   {searchValue.trim() && (
@@ -1230,17 +1315,21 @@ const RealTimeGrid: React.FC = () => {
               <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">
                 {searchValue.trim() 
                   ? "No Search Results Found"
-                  : showWatchlistOnly 
-                    ? "No Watchlist Stocks Found" 
-                    : "No Metrics Available"
+                  : (dateRange.start || dateRange.end) && scheduledTickers.length === 0
+                    ? "No Earnings Found"
+                    : showWatchlistOnly 
+                      ? "No Watchlist Stocks Found" 
+                      : "No Metrics Available"
                 }
               </h3>
               <p className="text-neutral-500 dark:text-neutral-400 mb-4">
                 {searchValue.trim()
                   ? `No stocks match "${searchValue}" in ${searchableColumns.find(col => col.key === searchColumn)?.label || 'Ticker'}.`
-                  : showWatchlistOnly 
-                    ? `No stocks from your watchlist (${watchlist.length} symbols) are currently available in the metrics data.`
-                    : "No real-time metrics data found. The API may be returning an empty dataset."
+                  : (dateRange.start || dateRange.end) && scheduledTickers.length === 0
+                    ? `No earnings announcements found for the selected date range.`
+                    : showWatchlistOnly 
+                      ? `No stocks from your watchlist (${watchlist.length} symbols) are currently available in the metrics data.`
+                      : "No real-time metrics data found. The API may be returning an empty dataset."
                 }
               </p>
               <div className="flex gap-2 justify-center">
@@ -1250,6 +1339,14 @@ const RealTimeGrid: React.FC = () => {
                     className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
                   >
                     Clear Search
+                  </button>
+                )}
+                {(dateRange.start || dateRange.end) && (
+                  <button
+                    onClick={handleDatePickerClear}
+                    className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+                  >
+                    Clear Earnings Filter
                   </button>
                 )}
                 {showWatchlistOnly && (
@@ -1274,19 +1371,13 @@ const RealTimeGrid: React.FC = () => {
         ) : (
           <div className="overflow-auto h-full">
             <div className="min-w-full">
-            <table className="w-full border-collapse">
+            <table className="border-collapse" style={{ width: 'auto', minWidth: '100%' }}>
               <thead className="bg-neutral-50 dark:bg-neutral-800 sticky top-0 z-10">
                 <tr>
                   {orderedColumns.map((column, index) => (
                     <th
                       key={column.key}
-                      draggable={!isMobile}
-                      onDragStart={(e) => handleDragStart(e, column.key)}
-                      onDragOver={(e) => handleDragOver(e, column.key)}
-                      onDragLeave={handleDragLeave}
-                      onDrop={(e) => handleDrop(e, column.key)}
-                      onDragEnd={handleDragEnd}
-                      className={`px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider border-r border-neutral-200 dark:border-neutral-700 select-none transition-colors ${
+                      className={`px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider border-r border-neutral-200 dark:border-neutral-700 select-none transition-colors group ${
                         index === 0 ? 'sticky left-0 bg-neutral-50 dark:bg-neutral-800 z-20' : ''
                       } ${
                         draggedColumn === column.key 
@@ -1294,12 +1385,22 @@ const RealTimeGrid: React.FC = () => {
                           : dragOverColumn === column.key 
                             ? 'bg-blue-100 dark:bg-blue-900/30' 
                             : ''
-                      } ${
-                        !isMobile ? 'cursor-move hover:bg-neutral-100 dark:hover:bg-neutral-700' : ''
-                      }`}
-                      style={{ width: column.width }}
+                      } relative`}
+                      style={{ 
+                        width: getColumnWidth(column.key, column.width),
+                        maxWidth: getColumnWidth(column.key, column.width),
+                        minWidth: getColumnWidth(column.key, column.width)
+                      }}
+                      onDragOver={(e) => handleDragOver(e, column.key)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, column.key)}
                     >
-                      <div className="flex items-center gap-2">
+                      <div 
+                        className={`flex items-center gap-2 ${!isMobile ? 'cursor-move hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded px-1 -mx-1' : ''}`}
+                        draggable={!isMobile}
+                        onDragStart={(e) => handleDragStart(e, column.key)}
+                        onDragEnd={handleDragEnd}
+                      >
                         {!isMobile && (
                           <GripVertical 
                             size={12} 
@@ -1322,6 +1423,27 @@ const RealTimeGrid: React.FC = () => {
                           )}
                         </div>
                       </div>
+                      
+                      {/* Resize handle */}
+                      {!isMobile && (
+                        <div
+                          className={`absolute right-0 top-0 bottom-0 w-3 cursor-col-resize transition-all duration-150 flex items-center justify-center ${
+                            isResizing === column.key 
+                              ? 'bg-blue-500 bg-opacity-80 opacity-100' 
+                              : 'hover:bg-blue-400 hover:bg-opacity-50 opacity-0 hover:opacity-100 group-hover:opacity-40'
+                          }`}
+                          onMouseDown={(e) => handleResizeStart(e, column.key)}
+                          style={{ 
+                            right: '-1px', // Slightly extend past border
+                            zIndex: 15
+                          }}
+                          title="Drag to resize column"
+                        >
+                          <div className={`w-0.5 h-6 bg-white transition-opacity ${
+                            isResizing === column.key ? 'opacity-90' : 'opacity-60'
+                          }`} />
+                        </div>
+                      )}
                     </th>
                   ))}
                 </tr>
@@ -1338,8 +1460,12 @@ const RealTimeGrid: React.FC = () => {
                           key={column.key}
                           className={`px-3 py-2 whitespace-nowrap text-sm border-r border-neutral-200 dark:border-neutral-700 ${cellColor} ${
                             colIndex === 0 ? 'sticky left-0 bg-white dark:bg-neutral-900 z-10 font-medium' : ''
-                          }`}
-                          style={{ width: column.width }}
+                          } overflow-hidden text-ellipsis`}
+                          style={{ 
+                            width: getColumnWidth(column.key, column.width),
+                            maxWidth: getColumnWidth(column.key, column.width),
+                            minWidth: getColumnWidth(column.key, column.width)
+                          }}
                         >
                           {formatValue(value, column.type)}
                         </td>
@@ -1523,7 +1649,7 @@ const RealTimeGrid: React.FC = () => {
                 <div className="text-xs text-neutral-500 dark:text-neutral-400 space-y-1">
                   <p>Current settings will be saved:</p>
                   <ul className="pl-4 space-y-0.5">
-                    <li>• Column order and visibility</li>
+                    <li>• Column order, visibility and widths</li>
                     <li>• Sort: {sortColumn} ({sortDirection})</li>
                     <li>• Search: {searchColumn}</li>
                     <li>• Watchlist: {showWatchlistOnly ? 'On' : 'Off'}</li>
