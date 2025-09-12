@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Message } from '../../../types';
 import { ThumbsDown, X } from 'lucide-react';
 import { ParseMessagePayload, ParseTranscriptMessage, ParseTranscriptData, ParseSentimentMessage, ParseSentimentData, ParseSwingAnalysisData } from '../utils/messageUtils';
+import useGlobalData from '../../../hooks/useGlobalData';
 
 interface AnalysisPanelProps {
   selectedMessage: Message | null;
@@ -23,14 +24,22 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   messages = []
 }) => {
   const [activeTab, setActiveTab] = useState<string>('earnings');
+  const { metricsData } = useGlobalData();
   
   // Get message type for tab identification
   const getMessageType = (message: Message): string => {
     if (message.link) return 'link';
     if (message.source === 'transcript_analysis') return 'transcript';
     if (message.source === 'sentiment_analysis' || message.sentiment_additional_metrics) return 'sentiment';
+    if (message.source === 'fundamentals_analysis') return 'fundamentals';
     return 'earnings';
   };
+
+  // Get metrics for the selected ticker
+  const tickerMetrics = useMemo(() => {
+    if (!selectedMessage?.ticker || !metricsData?.length) return null;
+    return metricsData.find(metric => metric.ticker === selectedMessage.ticker);
+  }, [selectedMessage?.ticker, metricsData]);
 
   // Find related messages for the same ticker, quarter, and year
   const relatedMessages = useMemo(() => {
@@ -87,8 +96,20 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
         inactive: 'text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 hover:bg-purple-50 dark:hover:bg-purple-900/30'
       }
     });
+    // Always show fundamentals tab if we have a ticker and metrics data
+    if (selectedMessage?.ticker && tickerMetrics) {
+      tabs.push({ 
+        id: 'fundamentals', 
+        label: 'Fundamentals', 
+        message: relatedMessages.fundamentals || selectedMessage, // Use selected message as fallback
+        colors: {
+          active: 'bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-200',
+          inactive: 'text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-200 hover:bg-orange-50 dark:hover:bg-orange-900/30'
+        }
+      });
+    }
     return tabs;
-  }, [relatedMessages]);
+  }, [relatedMessages, selectedMessage, tickerMetrics]);
 
   // Current message to display based on active tab
   const currentMessage = useMemo(() => {
@@ -116,6 +137,127 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   // Try new Bull/Bear format first, then fall back to legacy sentiment format
   const parsedSwingData = currentMessage ? ParseSwingAnalysisData(currentMessage) : null;
   const parsedSentimentData = parsedSwingData || (currentMessage ? ParseSentimentData(currentMessage) : null);
+
+  // Simple Bar Chart Component
+  const SimpleBarChart: React.FC<{
+    data: number[];
+    labels?: string[];
+    title: string;
+    color?: string;
+    height?: number;
+  }> = ({ data, labels, title, color = '#3b82f6', height = 120 }) => {
+    const maxValue = Math.max(...data.filter(d => d !== null && !isNaN(d)));
+    const minValue = Math.min(...data.filter(d => d !== null && !isNaN(d)));
+    const range = maxValue - minValue || 1;
+
+    return (
+      <div className="bg-white dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg p-3 sm:p-4 mb-4 overflow-hidden">
+        <h3 className="text-xs sm:text-sm font-semibold mb-2 sm:mb-3 text-neutral-800 dark:text-neutral-200 truncate">{title}</h3>
+        <div className="flex items-end justify-between gap-1" style={{ height: `${height}px` }}>
+          {data.map((value, index) => {
+            const isValid = value !== null && !isNaN(value);
+            const barHeight = isValid ? Math.max(((value - minValue) / range) * height * 0.8, 2) : 0;
+            
+            return (
+              <div key={index} className="flex-1 flex flex-col items-center min-w-0 max-w-[40px]">
+                <div 
+                  className="transition-all duration-200"
+                  style={{ 
+                    height: `${barHeight}px`,
+                    backgroundColor: isValid ? color : '#e5e7eb',
+                    width: '100%',
+                    maxWidth: isMobile ? '16px' : '24px',
+                    minWidth: '8px'
+                  }}
+                />
+                {labels && labels[index] && (
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 truncate w-full text-center">
+                    {labels[index]}
+                  </span>
+                )}
+                {isValid && (
+                  <span className="text-xs text-neutral-600 dark:text-neutral-300 mt-1 font-medium truncate w-full text-center">
+                    {typeof value === 'string' ? value : (isMobile ? value.toFixed(0) : value.toFixed(2))}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // Dual Series Bar Chart for Q/Q comparison
+  const DualSeriesChart: React.FC<{
+    series1: number[];
+    series2: number[];
+    labels: string[];
+    title: string;
+    series1Color?: string;
+    series2Color?: string;
+    height?: number;
+  }> = ({ 
+    series1, 
+    series2, 
+    labels, 
+    title, 
+    series1Color = '#ef4444', 
+    series2Color = '#3b82f6', 
+    height = 120 
+  }) => {
+    const allData = [...series1.filter(d => d !== null && !isNaN(d)), ...series2.filter(d => d !== null && !isNaN(d))];
+    const maxValue = Math.max(...allData);
+    const minValue = Math.min(...allData);
+    const range = maxValue - minValue || 1;
+
+    return (
+      <div className="bg-white dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg p-3 sm:p-4 mb-4 overflow-hidden">
+        <h3 className="text-xs sm:text-sm font-semibold mb-2 sm:mb-3 text-neutral-800 dark:text-neutral-200 truncate">{title}</h3>
+        <div className="flex items-end justify-between gap-1" style={{ height: `${height}px` }}>
+          {series1.map((_, index) => {
+            const value1 = series1[index];
+            const value2 = series2[index];
+            const isValid1 = value1 !== null && !isNaN(value1);
+            const isValid2 = value2 !== null && !isNaN(value2);
+            
+            const barHeight1 = isValid1 ? Math.max(((value1 - minValue) / range) * height * 0.8, 2) : 0;
+            const barHeight2 = isValid2 ? Math.max(((value2 - minValue) / range) * height * 0.8, 2) : 0;
+            
+            return (
+              <div key={index} className="flex-1 flex flex-col items-center min-w-0">
+                <div className="flex w-full justify-center gap-0.5" style={{ height: `${height}px`, alignItems: 'flex-end' }}>
+                  <div 
+                    className="transition-all duration-200"
+                    style={{ 
+                      height: `${barHeight1}px`,
+                      backgroundColor: isValid1 ? series1Color : '#e5e7eb',
+                      minWidth: '4px',
+                      width: isMobile ? '6px' : '8px',
+                      maxWidth: isMobile ? '8px' : '12px'
+                    }}
+                  />
+                  <div 
+                    className="transition-all duration-200"
+                    style={{ 
+                      height: `${barHeight2}px`,
+                      backgroundColor: isValid2 ? series2Color : '#e5e7eb',
+                      minWidth: '4px',
+                      width: isMobile ? '6px' : '8px',
+                      maxWidth: isMobile ? '8px' : '12px'
+                    }}
+                  />
+                </div>
+                <span className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 truncate w-full text-center">
+                  {labels[index]}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div 
@@ -204,16 +346,20 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
 
             {/* Tabs row - only show if multiple tabs available */}
             {availableTabs.length > 1 && (
-              <div className="flex space-x-1 bg-neutral-100 dark:bg-neutral-700 rounded-lg p-1">
+              <div className="flex flex-wrap gap-1 bg-neutral-100 dark:bg-neutral-700 rounded-lg p-1">
                 {availableTabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    className={`flex-1 min-w-0 px-2 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors truncate ${
                       activeTab === tab.id
                         ? `${tab.colors.active} shadow-sm`
                         : tab.colors.inactive
                     }`}
+                    style={{ 
+                      minWidth: isMobile ? '70px' : '80px',
+                      maxWidth: isMobile ? '90px' : '120px'
+                    }}
                   >
                     {tab.label}
                   </button>
@@ -259,6 +405,112 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                     ) : (
                       <div className="text-neutral-500 dark:text-neutral-400 text-center p-4">
                         No transcript analysis data available
+                      </div>
+                    )}
+                  </div>
+                ) : (activeTab === 'fundamentals') ? (
+                  // Display fundamentals charts using metrics data
+                  <div className="space-y-4">
+                    {/* Header */}
+                    <div className="text-orange-700 dark:text-orange-400 font-semibold mb-3">
+                      📊 Fundamentals Analysis - {selectedMessage?.ticker}
+                    </div>
+                    
+                    {tickerMetrics ? (
+                      <div className="space-y-4">
+                        {/* Quarterly Sales Chart (S0-S8) */}
+                        <SimpleBarChart
+                          data={[
+                            parseFloat(String(tickerMetrics['$s8'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s7'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s6'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s5'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s4'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s3'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s2'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s1'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s0'] || 0).replace(/,/g, ''))
+                          ]}
+                          labels={['S8', 'S7', 'S6', 'S5', 'S4', 'S3', 'S2', 'S1', 'S0']}
+                          title="Quarterly Sales"
+                          color="#3b82f6"
+                          height={140}
+                        />
+
+                        {/* Q/Q Sales Comparison Chart */}
+                        <DualSeriesChart
+                          series1={[
+                            parseFloat(String(tickerMetrics['$s3'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s2'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s1'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s0'] || 0).replace(/,/g, ''))
+                          ]}
+                          series2={[
+                            parseFloat(String(tickerMetrics['$s7'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s6'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s5'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s4'] || 0).replace(/,/g, ''))
+                          ]}
+                          labels={['Q-3', 'Q-2', 'Q-1', 'Q0']}
+                          title="Q/Q Sales"
+                          series1Color="#ef4444" // red for recent quarters
+                          series2Color="#3b82f6" // blue for older quarters
+                          height={140}
+                        />
+
+                        {/* Annual EPS Chart */}
+                        <SimpleBarChart
+                          data={[
+                            parseFloat(String(tickerMetrics['$eps4'] || 0)),
+                            parseFloat(String(tickerMetrics['$eps3'] || 0)),
+                            parseFloat(String(tickerMetrics['$eps2'] || 0)),
+                            parseFloat(String(tickerMetrics['$eps1'] || 0)),
+                            parseFloat(String(tickerMetrics['$eps0'] || 0))
+                          ]}
+                          labels={['EPS4', 'EPS3', 'EPS2', 'EPS1', 'EPS0']}
+                          title="Annual EPS"
+                          color="#10b981"
+                          height={120}
+                        />
+
+                        {/* Annual Sales Chart */}
+                        <SimpleBarChart
+                          data={[
+                            parseFloat(String(tickerMetrics['$salesa5'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$salesa4'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$salesa3'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$salesa2'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$salesa1'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['salesa'] || 0).replace(/,/g, ''))
+                          ]}
+                          labels={['A5', 'A4', 'A3', 'A2', 'A1', 'A0']}
+                          title="Annual Sales"
+                          color="#f59e0b"
+                          height={120}
+                        />
+
+                        {/* Key Ratios */}
+                        <div className="bg-white dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg p-3 sm:p-4 overflow-hidden">
+                          <h3 className="text-xs sm:text-sm font-semibold mb-2 sm:mb-3 text-neutral-800 dark:text-neutral-200">Key Ratios</h3>
+                          <div className={`grid gap-2 sm:gap-4 text-xs sm:text-sm ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                            <div className="flex justify-between items-center">
+                              <span className="text-neutral-600 dark:text-neutral-300 truncate">P/E:</span>
+                              <span className="font-medium text-neutral-800 dark:text-neutral-200 ml-2 truncate">
+                                {tickerMetrics.peexclxorttm || 'N/A'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-neutral-600 dark:text-neutral-300 truncate">P/S:</span>
+                              <span className="font-medium text-neutral-800 dark:text-neutral-200 ml-2 truncate">
+                                {tickerMetrics.pr2salesq || 'N/A'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-neutral-500 dark:text-neutral-400 text-center p-4">
+                        No metrics data available for {selectedMessage?.ticker}
                       </div>
                     )}
                   </div>
