@@ -567,15 +567,26 @@ const RealTimeGrid: React.FC = () => {
             <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-4 sm:px-6 py-2">
               <div className="flex items-center justify-between max-w-full mx-auto">
                 <div className="flex items-center gap-4 flex-wrap">
-                  <label className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-                    <input
-                      type="checkbox"
-                      checked={showWatchlistOnly}
-                      onChange={(e) => setShowWatchlistOnly(e.target.checked)}
-                      className="rounded border-neutral-300 dark:border-neutral-600 text-blue-500 focus:ring-blue-500"
-                    />
-                    Watchlist Only
-                  </label>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-neutral-600 dark:text-neutral-400">Watchlist Only</span>
+                    <button
+                      onClick={() => setShowWatchlistOnly(!showWatchlistOnly)}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                        showWatchlistOnly 
+                          ? 'bg-blue-500 dark:bg-blue-600' 
+                          : 'bg-neutral-300 dark:bg-neutral-600'
+                      }`}
+                      role="switch"
+                      aria-checked={showWatchlistOnly}
+                      aria-label="Toggle watchlist only filter"
+                    >
+                      <span
+                        className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-sm transition-transform ${
+                          showWatchlistOnly ? 'translate-x-5' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
                   
                   <div className="flex items-center gap-2">
                     <Calendar size={16} className="text-neutral-500" />
