@@ -283,6 +283,16 @@ export const getUserProfile = async (
   email: string
 ): Promise<UserProfile | null> => {
   try {
+    // Check if required environment variables are available
+    if (!VITE_USER_PROFILE_API_URL || !VITE_USER_PROFILE_API_KEY) {
+      console.error("MISSING CONFIGURATION: VITE_USER_PROFILE_API_URL and/or VITE_USER_PROFILE_API_KEY not set");
+      console.error("Available env vars:", {
+        VITE_USER_PROFILE_API_URL: VITE_USER_PROFILE_API_URL ? "[SET]" : "[MISSING]",
+        VITE_USER_PROFILE_API_KEY: VITE_USER_PROFILE_API_KEY ? "[SET]" : "[MISSING]"
+      });
+      throw new Error("User profile API configuration missing");
+    }
+
     const headers = new Headers();
     headers.set("x-api-key", VITE_USER_PROFILE_API_KEY);
 
@@ -290,6 +300,8 @@ export const getUserProfile = async (
       `${VITE_USER_PROFILE_API_URL}?email=${encodeURIComponent(email)}`,
       {
         headers,
+        // Add timeout to prevent hanging
+        signal: AbortSignal.timeout(10000) // 10 second timeout
       }
     );
 
@@ -311,6 +323,7 @@ export const getUserProfile = async (
     return JSON.parse(text) as UserProfile;
   } catch (error) {
     console.error("Error fetching user profile:", error);
+    console.error("API URL being used:", VITE_USER_PROFILE_API_URL);
     throw error;
   }
 };
@@ -319,6 +332,12 @@ export const updateUserProfile = async (
   profileData: UserProfile
 ): Promise<UserProfile> => {
   try {
+    // Check if required environment variables are available
+    if (!VITE_USER_PROFILE_API_URL || !VITE_USER_PROFILE_API_KEY) {
+      console.error("MISSING CONFIGURATION: VITE_USER_PROFILE_API_URL and/or VITE_USER_PROFILE_API_KEY not set");
+      throw new Error("User profile API configuration missing");
+    }
+
     const headers = new Headers();
     headers.set("x-api-key", VITE_USER_PROFILE_API_KEY);
     headers.set("Content-Type", "application/json");
@@ -327,6 +346,8 @@ export const updateUserProfile = async (
       method: "POST",
       headers,
       body: JSON.stringify(profileData),
+      // Add timeout to prevent hanging
+      signal: AbortSignal.timeout(10000) // 10 second timeout
     });
 
     if (!response.ok) {
@@ -344,6 +365,7 @@ export const updateUserProfile = async (
     return JSON.parse(text) as UserProfile;
   } catch (error) {
     console.error("Error updating user profile:", error);
+    console.error("API URL being used:", VITE_USER_PROFILE_API_URL);
     throw error;
   }
 };

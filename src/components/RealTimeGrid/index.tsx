@@ -391,6 +391,8 @@ const RealTimeGrid: React.FC = () => {
         start: settings.startDate || '',
         end: settings.endDate || ''
       };
+      // Show loading immediately when applying view with date range
+      setDateFilterLoading(true);
       setDateRange(newRange);
       setTempDateRange(newRange);
     }
@@ -1185,7 +1187,26 @@ const RealTimeGrid: React.FC = () => {
             </div>
 
             {/* Grid Content */}
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 overflow-auto relative">
+              {/* Date Filter Loading Overlay */}
+              {dateFilterLoading && (
+                <div className="absolute inset-0 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm z-10 flex items-center justify-center">
+                  <div className="flex flex-col items-center gap-3 p-6 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700">
+                    <RefreshCw size={24} className="animate-spin text-blue-500" />
+                    <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                      Filtering by date range...
+                    </span>
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                      {dateRange.start && dateRange.end && dateRange.start !== dateRange.end
+                        ? `${dateRange.start} to ${dateRange.end}`
+                        : dateRange.start || dateRange.end
+                        ? `${dateRange.start || dateRange.end}`
+                        : 'Loading...'}
+                    </span>
+                  </div>
+                </div>
+              )}
+              
         {error ? (
           <div className="flex items-center justify-center p-8">
             <div className="text-center">
