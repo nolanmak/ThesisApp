@@ -117,9 +117,10 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     return tabMessage || selectedMessage;
   }, [activeTab, availableTabs, selectedMessage]);
 
-  // Reset active tab when selected message changes
+  // Reset active tab only when selected message ID actually changes
+  const [lastMessageId, setLastMessageId] = useState<string | null>(null);
   useEffect(() => {
-    if (selectedMessage) {
+    if (selectedMessage && selectedMessage.message_id !== lastMessageId) {
       const messageType = getMessageType(selectedMessage);
       const availableTabIds = availableTabs.map(tab => tab.id);
       
@@ -129,8 +130,10 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
       } else if (availableTabIds.length > 0) {
         setActiveTab(availableTabIds[0]);
       }
+      
+      setLastMessageId(selectedMessage.message_id);
     }
-  }, [selectedMessage, availableTabs]);
+  }, [selectedMessage, availableTabs, lastMessageId]);
 
   const parsedMessage = currentMessage ? ParseMessagePayload(currentMessage) : null;
   const parsedTranscriptData = currentMessage ? ParseTranscriptData(currentMessage) : null;
@@ -146,12 +149,13 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     color?: string;
     height?: number;
   }> = ({ data, labels, title, color = '#3b82f6', height = 120 }) => {
+    const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
     const maxValue = Math.max(...data.filter(d => d !== null && !isNaN(d)));
     const minValue = Math.min(...data.filter(d => d !== null && !isNaN(d)));
     const range = maxValue - minValue || 1;
 
     return (
-      <div className="bg-white dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg p-3 sm:p-4 mb-4 overflow-hidden">
+      <div className="bg-white dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg p-3 sm:p-4 mb-4 overflow-hidden relative">
         <h3 className="text-xs sm:text-sm font-semibold mb-2 sm:mb-3 text-neutral-800 dark:text-neutral-200 truncate">{title}</h3>
         <div className="flex items-end justify-between gap-1" style={{ height: `${height}px` }}>
           {data.map((value, index) => {
@@ -159,9 +163,14 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
             const barHeight = isValid ? Math.max(((value - minValue) / range) * height * 0.8, 2) : 0;
             
             return (
-              <div key={index} className="flex-1 flex flex-col items-center min-w-0 max-w-[40px]">
+              <div 
+                key={index} 
+                className="flex-1 flex flex-col items-center min-w-0 max-w-[40px] relative"
+                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+              >
                 <div 
-                  className="transition-all duration-200"
+                  className="transition-all duration-200 cursor-pointer hover:opacity-80"
                   style={{ 
                     height: `${barHeight}px`,
                     backgroundColor: isValid ? color : '#e5e7eb',
@@ -175,10 +184,14 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                     {labels[index]}
                   </span>
                 )}
-                {isValid && (
-                  <span className="text-xs text-neutral-600 dark:text-neutral-300 mt-1 font-medium truncate w-full text-center">
-                    {typeof value === 'string' ? value : (isMobile ? value.toFixed(0) : value.toFixed(2))}
-                  </span>
+                {/* Removed value display since we now have hover tooltips */}
+                
+                {/* Hover Tooltip */}
+                {hoveredIndex === index && isValid && (
+                  <div className="absolute bottom-full mb-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 px-2 py-1 rounded text-xs whitespace-nowrap z-10 shadow-lg">
+                    {labels && labels[index] && `${labels[index]}: `}
+                    {typeof value === 'string' ? value : value.toLocaleString()}
+                  </div>
                 )}
               </div>
             );
@@ -206,13 +219,14 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     series2Color = '#3b82f6', 
     height = 120 
   }) => {
+    const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
     const allData = [...series1.filter(d => d !== null && !isNaN(d)), ...series2.filter(d => d !== null && !isNaN(d))];
     const maxValue = Math.max(...allData);
     const minValue = Math.min(...allData);
     const range = maxValue - minValue || 1;
 
     return (
-      <div className="bg-white dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg p-3 sm:p-4 mb-4 overflow-hidden">
+      <div className="bg-white dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg p-3 sm:p-4 mb-4 overflow-hidden relative">
         <h3 className="text-xs sm:text-sm font-semibold mb-2 sm:mb-3 text-neutral-800 dark:text-neutral-200 truncate">{title}</h3>
         <div className="flex items-end justify-between gap-1" style={{ height: `${height}px` }}>
           {series1.map((_, index) => {
@@ -225,10 +239,15 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
             const barHeight2 = isValid2 ? Math.max(((value2 - minValue) / range) * height * 0.8, 2) : 0;
             
             return (
-              <div key={index} className="flex-1 flex flex-col items-center min-w-0">
+              <div 
+                key={index} 
+                className="flex-1 flex flex-col items-center min-w-0 relative"
+                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+              >
                 <div className="flex w-full justify-center gap-0.5" style={{ height: `${height}px`, alignItems: 'flex-end' }}>
                   <div 
-                    className="transition-all duration-200"
+                    className="transition-all duration-200 cursor-pointer hover:opacity-80"
                     style={{ 
                       height: `${barHeight1}px`,
                       backgroundColor: isValid1 ? series1Color : '#e5e7eb',
@@ -238,7 +257,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                     }}
                   />
                   <div 
-                    className="transition-all duration-200"
+                    className="transition-all duration-200 cursor-pointer hover:opacity-80"
                     style={{ 
                       height: `${barHeight2}px`,
                       backgroundColor: isValid2 ? series2Color : '#e5e7eb',
@@ -251,6 +270,27 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                 <span className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 truncate w-full text-center">
                   {labels[index]}
                 </span>
+                
+                {/* Hover Tooltip */}
+                {hoveredIndex === index && (value1 !== null || value2 !== null) && (
+                  <div className="absolute bottom-full mb-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 px-2 py-1 rounded text-xs whitespace-nowrap z-10 shadow-lg">
+                    <div className="text-center">
+                      <div className="font-medium mb-1">{labels[index]}</div>
+                      {value1 !== null && !isNaN(value1) && (
+                        <div>
+                          <span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: series1Color }}></span>
+                          Recent: {value1.toLocaleString()}
+                        </div>
+                      )}
+                      {value2 !== null && !isNaN(value2) && (
+                        <div>
+                          <span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: series2Color }}></span>
+                          Prior: {value2.toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -519,7 +559,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                   // Display sentiment analysis with structured data
                   <div className="space-y-4">
                     {/* Show the preview text */}
-                    <div className="text-green-700 dark:text-green-400 font-semibold mb-3">
+                    <div className="text-green-700 dark:text-green-400 font-medium mb-3" style={{ fontSize: isMobile ? '0.875rem' : '0.75rem' }}>
                       {currentMessage && ParseSentimentMessage(currentMessage) || '📈 Sentiment Analysis'}
                     </div>
                     
@@ -528,7 +568,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                       <div className="space-y-4">
                         {Object.entries(parsedSentimentData).map(([section, items]) => (
                           <div key={section}>
-                            <div className="text-green-700 dark:text-green-400 font-semibold mb-2">{section}</div>
+                            <div className="text-green-700 dark:text-green-400 font-medium mb-2" style={{ fontSize: isMobile ? '0.875rem' : '0.75rem' }}>{section}</div>
                             {['Key Quotes', 'Key Sentiment Drivers'].includes(section) ? (
                               <ul className="space-y-2 list-disc pl-5">
                                 {items.map((item, idx) => (
