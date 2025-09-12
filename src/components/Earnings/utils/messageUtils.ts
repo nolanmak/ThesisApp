@@ -277,6 +277,96 @@ export const ParseSwingAnalysisData = (message: Message): { [key: string]: Metri
 };
 
 /**
+ * Extract preview text from fundamentals analysis messages
+ */
+export const ParseFundamentalsMessage = (message: Message): string | null => {
+  if (!message.discord_message || message.source !== 'fundamentals_analysis') {
+    return null;
+  }
+
+  // Extract the first line as preview (usually contains the header with emoji and ticker)
+  const lines = message.discord_message.split('\n');
+  const firstLine = lines[0]?.trim();
+  
+  if (firstLine && firstLine.length > 0) {
+    return firstLine;
+  }
+  
+  return null;
+};
+
+/**
+ * Parse fundamentals data into human-readable format
+ */
+export const ParseFundamentalsData = (message: Message): { [key: string]: MetricItem[] } | null => {
+  if (!message.fundamentals_data || message.source !== 'fundamentals_analysis') {
+    return null;
+  }
+
+  const sections: { [key: string]: MetricItem[] } = {};
+
+  try {
+    // Parse fundamentals_data if it's a string, otherwise use as object
+    const data = typeof message.fundamentals_data === 'string' 
+      ? JSON.parse(message.fundamentals_data)
+      : message.fundamentals_data;
+
+    // Valuation Metrics
+    if (data.valuation_metrics && Array.isArray(data.valuation_metrics)) {
+      const items = data.valuation_metrics.filter((item: any) => item && (item.text || item.label));
+      if (items.length > 0) {
+        sections["Valuation Metrics"] = items;
+      }
+    }
+
+    // Financial Ratios
+    if (data.financial_ratios && Array.isArray(data.financial_ratios)) {
+      const items = data.financial_ratios.filter((item: any) => item && (item.text || item.label));
+      if (items.length > 0) {
+        sections["Financial Ratios"] = items;
+      }
+    }
+
+    // Growth Metrics
+    if (data.growth_metrics && Array.isArray(data.growth_metrics)) {
+      const items = data.growth_metrics.filter((item: any) => item && (item.text || item.label));
+      if (items.length > 0) {
+        sections["Growth Metrics"] = items;
+      }
+    }
+
+    // Profitability Metrics
+    if (data.profitability_metrics && Array.isArray(data.profitability_metrics)) {
+      const items = data.profitability_metrics.filter((item: any) => item && (item.text || item.label));
+      if (items.length > 0) {
+        sections["Profitability Metrics"] = items;
+      }
+    }
+
+    // Balance Sheet Analysis
+    if (data.balance_sheet_analysis && Array.isArray(data.balance_sheet_analysis)) {
+      const items = data.balance_sheet_analysis.filter((item: any) => item && (item.text || item.label));
+      if (items.length > 0) {
+        sections["Balance Sheet Analysis"] = items;
+      }
+    }
+
+    // Cash Flow Analysis
+    if (data.cash_flow_analysis && Array.isArray(data.cash_flow_analysis)) {
+      const items = data.cash_flow_analysis.filter((item: any) => item && (item.text || item.label));
+      if (items.length > 0) {
+        sections["Cash Flow Analysis"] = items;
+      }
+    }
+
+  } catch (error) {
+    return null;
+  }
+
+  return Object.keys(sections).length > 0 ? sections : null;
+};
+
+/**
  * Parse sentiment additional metrics into human-readable format (Legacy)
  */
 export const ParseSentimentData = (message: Message): { [key: string]: MetricItem[] } | null => {
