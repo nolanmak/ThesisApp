@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter, Eye, EyeOff } from 'lucide-react';
 import { useMetricsData } from '../../hooks/useGlobalData';
 import { StockMetric } from '../../providers/GlobalDataProvider';
+import { useWatchlist } from '../../hooks/useWatchlist';
 
 interface ColumnConfig {
   key: string;
@@ -21,6 +22,9 @@ const RealTimeGrid: React.FC = () => {
     metricsLastUpdated: lastUpdated,
     refreshMetrics: handleRefresh
   } = useMetricsData();
+
+  // Use watchlist data for filtering
+  const { watchlist } = useWatchlist();
 
   const [sortColumn, setSortColumn] = useState<string>('ticker');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -139,7 +143,16 @@ const RealTimeGrid: React.FC = () => {
   const sortedData = useMemo(() => {
     if (!stockData.length) return [];
     
-    return [...stockData].sort((a, b) => {
+    let filteredData = stockData;
+    
+    // Filter by watchlist if enabled
+    if (showWatchlistOnly && watchlist.length > 0) {
+      filteredData = stockData.filter(stock => 
+        watchlist.includes(stock.ticker.toUpperCase())
+      );
+    }
+    
+    return [...filteredData].sort((a, b) => {
       const aValue = a[sortColumn];
       const bValue = b[sortColumn];
       
@@ -159,7 +172,7 @@ const RealTimeGrid: React.FC = () => {
       
       return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [stockData, sortColumn, sortDirection]);
+  }, [stockData, sortColumn, sortDirection, showWatchlistOnly, watchlist]);
 
   // Toggle column visibility
   const toggleColumnVisibility = useCallback((columnKey: string) => {
@@ -335,6 +348,11 @@ const RealTimeGrid: React.FC = () => {
           
           <div className="text-sm text-neutral-500 dark:text-neutral-400">
             {sortedData.length} stocks
+            {showWatchlistOnly && (
+              <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
+                Watchlist ({watchlist.length})
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -365,20 +383,36 @@ const RealTimeGrid: React.FC = () => {
           <div className="flex items-center justify-center p-8">
             <div className="text-center">
               <div className="flex items-center justify-center w-16 h-16 bg-neutral-100 dark:bg-neutral-800 rounded-full mx-auto mb-4">
-                <Activity className="text-neutral-500" size={32} />
+                {showWatchlistOnly ? (
+                  <Filter className="text-neutral-500" size={32} />
+                ) : (
+                  <Activity className="text-neutral-500" size={32} />
+                )}
               </div>
               <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">
-                No Metrics Available
+                {showWatchlistOnly ? "No Watchlist Stocks Found" : "No Metrics Available"}
               </h3>
               <p className="text-neutral-500 dark:text-neutral-400 mb-4">
-                No real-time metrics data found. The API may be returning an empty dataset.
+                {showWatchlistOnly 
+                  ? `No stocks from your watchlist (${watchlist.length} symbols) are currently available in the metrics data.`
+                  : "No real-time metrics data found. The API may be returning an empty dataset."
+                }
               </p>
-              <button
-                onClick={handleRefresh}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-              >
-                Refresh Data
-              </button>
+              {showWatchlistOnly ? (
+                <button
+                  onClick={() => setShowWatchlistOnly(false)}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  Show All Stocks
+                </button>
+              ) : (
+                <button
+                  onClick={handleRefresh}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  Refresh Data
+                </button>
+              )}
             </div>
           </div>
         ) : (
