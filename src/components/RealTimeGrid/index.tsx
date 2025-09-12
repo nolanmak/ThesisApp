@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter, Eye, EyeOff } from 'lucide-react';
 import { useMetricsData } from '../../hooks/useGlobalData';
 import { StockMetric } from '../../providers/GlobalDataProvider';
 
@@ -27,6 +27,9 @@ const RealTimeGrid: React.FC = () => {
   const [showWatchlistOnly, setShowWatchlistOnly] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [columnOrder, setColumnOrder] = useState<string[]>([]);
+  const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set());
+  const [showColumnToggle, setShowColumnToggle] = useState(false);
+  const columnToggleRef = useRef<HTMLDivElement>(null);
 
   // Define column configuration
   const defaultColumns: ColumnConfig[] = [
@@ -48,12 +51,35 @@ const RealTimeGrid: React.FC = () => {
     { key: 'projpenextfy', label: 'Proj P/E Next FY', width: 140, sortable: true, type: 'number' },
   ];
 
-  // Initialize column order
+  // Initialize column order and visibility
   useEffect(() => {
     if (columnOrder.length === 0) {
       setColumnOrder(defaultColumns.map(col => col.key));
     }
+    if (visibleColumns.size === 0) {
+      // Load saved preferences or show all columns by default
+      const savedVisibility = localStorage.getItem('realTimeGrid-visibleColumns');
+      if (savedVisibility) {
+        setVisibleColumns(new Set(JSON.parse(savedVisibility)));
+      } else {
+        setVisibleColumns(new Set(defaultColumns.map(col => col.key)));
+      }
+    }
   }, []);
+
+  // Close column toggle when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (columnToggleRef.current && !columnToggleRef.current.contains(event.target as Node)) {
+        setShowColumnToggle(false);
+      }
+    };
+
+    if (showColumnToggle) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showColumnToggle]);
 
   // No need for local API fetching - data comes from GlobalDataProvider
 
@@ -135,9 +161,34 @@ const RealTimeGrid: React.FC = () => {
     });
   }, [stockData, sortColumn, sortDirection]);
 
+  // Toggle column visibility
+  const toggleColumnVisibility = useCallback((columnKey: string) => {
+    setVisibleColumns(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(columnKey)) {
+        newSet.delete(columnKey);
+      } else {
+        newSet.add(columnKey);
+      }
+      // Save to localStorage
+      localStorage.setItem('realTimeGrid-visibleColumns', JSON.stringify([...newSet]));
+      return newSet;
+    });
+  }, []);
+
+  // Show/hide all columns
+  const toggleAllColumns = useCallback((show: boolean) => {
+    const newSet = show ? new Set(defaultColumns.map(col => col.key)) : new Set(['ticker']); // Always keep ticker visible
+    setVisibleColumns(newSet);
+    localStorage.setItem('realTimeGrid-visibleColumns', JSON.stringify([...newSet]));
+  }, []);
+
   const orderedColumns = useMemo(() => {
-    return columnOrder.map(key => defaultColumns.find(col => col.key === key)).filter(Boolean) as ColumnConfig[];
-  }, [columnOrder]);
+    return columnOrder
+      .map(key => defaultColumns.find(col => col.key === key))
+      .filter(Boolean)
+      .filter(col => visibleColumns.has(col!.key)) as ColumnConfig[];
+  }, [columnOrder, visibleColumns]);
 
   if (isLoading && stockData.length === 0) {
     return (
@@ -170,6 +221,80 @@ const RealTimeGrid: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-2">
+            <div className="relative" ref={columnToggleRef}>
+              <button
+                onClick={() => setShowColumnToggle(!showColumnToggle)}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+                title="Toggle columns"
+              >
+                <Settings size={16} />
+                Columns
+              </button>
+              
+              {showColumnToggle && (
+                <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
+                  <div className="p-3 border-b border-neutral-200 dark:border-neutral-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                        Column Visibility
+                      </span>
+                      <button
+                        onClick={() => setShowColumnToggle(false)}
+                        className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => toggleAllColumns(true)}
+                        className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded hover:bg-blue-200 dark:hover:bg-blue-800"
+                      >
+                        Show All
+                      </button>
+                      <button
+                        onClick={() => toggleAllColumns(false)}
+                        className="text-xs px-2 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200 rounded hover:bg-neutral-200 dark:hover:bg-neutral-600"
+                      >
+                        Hide All
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="p-2">
+                    {defaultColumns.map((column) => (
+                      <label
+                        key={column.key}
+                        className="flex items-center gap-3 px-2 py-2 hover:bg-neutral-50 dark:hover:bg-neutral-700 rounded cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={visibleColumns.has(column.key)}
+                          onChange={() => toggleColumnVisibility(column.key)}
+                          disabled={column.key === 'ticker'} // Always keep ticker visible
+                          className="rounded border-neutral-300 dark:border-neutral-600 text-blue-500 focus:ring-blue-500 disabled:opacity-50"
+                        />
+                        <div className="flex items-center gap-2 flex-1">
+                          {visibleColumns.has(column.key) ? (
+                            <Eye size={14} className="text-blue-500" />
+                          ) : (
+                            <EyeOff size={14} className="text-neutral-400" />
+                          )}
+                          <span className="text-sm text-neutral-900 dark:text-neutral-100">
+                            {column.label}
+                          </span>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  
+                  <div className="p-2 border-t border-neutral-200 dark:border-neutral-700 text-xs text-neutral-500 dark:text-neutral-400">
+                    {visibleColumns.size} of {defaultColumns.length} columns visible
+                  </div>
+                </div>
+              )}
+            </div>
+            
             <button
               onClick={handleRefresh}
               disabled={isLoading}
