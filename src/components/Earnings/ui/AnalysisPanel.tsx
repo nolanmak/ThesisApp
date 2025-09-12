@@ -30,7 +30,9 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   
   // Get message type for tab identification
   const getMessageType = (message: Message): string => {
-    if (message.link) return 'link';
+    if (message.link || message.report_data?.link || 
+        message.source?.toLowerCase() === 'link' || 
+        message.type?.toLowerCase() === 'link') return 'report';
     if (message.source === 'transcript_analysis') return 'transcript';
     if (message.source === 'sentiment_analysis' || message.sentiment_additional_metrics) return 'sentiment';
     if (message.source === 'fundamentals_analysis') return 'fundamentals';
@@ -50,8 +52,15 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     
     const related = messages.filter(msg => {
       if (msg.ticker !== selectedMessage.ticker) return false;
-      if (msg.quarter !== selectedMessage.quarter) return false;
-      if (msg.year !== selectedMessage.year) return false;
+      
+      // Convert to strings for comparison to handle type mismatches
+      const msgQuarter = String(msg.quarter);
+      const selectedQuarter = String(selectedMessage.quarter);
+      const msgYear = String(msg.year);
+      const selectedYear = String(selectedMessage.year);
+      
+      if (msgQuarter !== selectedQuarter) return false;
+      if (msgYear !== selectedYear) return false;
       
       return true;
     });
@@ -60,8 +69,8 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     const grouped: Record<string, Message> = {};
     related.forEach(msg => {
       const type = getMessageType(msg);
-      if (!grouped[type] || new Date(msg.timestamp) < new Date(grouped[type].timestamp)) {
-        grouped[type] = msg; // Keep the earliest message of each type
+      if (!grouped[type] || new Date(msg.timestamp) > new Date(grouped[type].timestamp)) {
+        grouped[type] = msg; // Keep the most recent message of each type
       }
     });
     
@@ -98,15 +107,6 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
         inactive: 'text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 hover:bg-purple-50 dark:hover:bg-purple-900/30'
       }
     });
-    if (relatedMessages.link) tabs.push({ 
-      id: 'report', 
-      label: 'Report', 
-      message: relatedMessages.link,
-      colors: {
-        active: 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-200',
-        inactive: 'text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/30'
-      }
-    });
     // Always show fundamentals tab if we have a ticker and metrics data
     if (currentTicker && tickerMetrics) {
       tabs.push({ 
@@ -130,6 +130,16 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
         }
       });
     }
+    // Add Report tab last (far right position)
+    if (relatedMessages.report) tabs.push({ 
+      id: 'report', 
+      label: 'Report', 
+      message: relatedMessages.report,
+      colors: {
+        active: 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-200',
+        inactive: 'text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/30'
+      }
+    });
     return tabs;
   }, [relatedMessages, selectedMessage, tickerMetrics, currentTicker]);
 
@@ -455,14 +465,13 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
           
           {/* Content */}
           <div className="flex-1 overflow-auto">
-            {!currentMessage?.link && (
-              <div
-                className="text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap markdown-content break-words overflow-wrap-anywhere"
-                style={{
-                  fontSize: isMobile ? '0.875rem' : '0.75rem',
-                  lineHeight: isMobile ? '1.5' : undefined,
-                }}
-              >
+            <div
+              className="text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap markdown-content break-words overflow-wrap-anywhere"
+              style={{
+                fontSize: isMobile ? '0.875rem' : '0.75rem',
+                lineHeight: isMobile ? '1.5' : undefined,
+              }}
+            >
                 {activeTab === 'transcript' ? (
                   // Display transcript analysis with structured data
                   <div className="space-y-4">
@@ -662,44 +671,27 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                 ) : activeTab === 'report' ? (
                   // Display report/link content
                   <div className="space-y-4">
-                    <div className="text-indigo-700 dark:text-indigo-400 font-semibold mb-3">
-                      📄 Research Report - {currentTicker}
+                    {/* Show message content for link messages */}
+                    {(currentMessage?.title || currentMessage?.subject || currentMessage?.message) && (
+                      <div className="text-indigo-700 dark:text-indigo-400 font-semibold mb-3">
+                        {currentMessage.title || currentMessage.subject || currentMessage.message}
+                      </div>
+                    )}
+                    
+                    {/* Always show the link button */}
+                    <div className="text-center">
+                      <a 
+                        href={currentMessage?.link || currentMessage?.report_data?.link || selectedMessage?.link || selectedMessage?.report_data?.link || '#'} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-6 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-medium transition-colors shadow-sm"
+                      >
+                        <span>View Full Report</span>
+                        <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
                     </div>
-                    
-                    {currentMessage?.title && (
-                      <div className="bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4 mb-4">
-                        <h3 className="text-indigo-800 dark:text-indigo-300 font-semibold mb-2">
-                          {currentMessage.title}
-                        </h3>
-                        {currentMessage.content && (
-                          <div className="text-indigo-700 dark:text-indigo-400 text-sm whitespace-pre-wrap">
-                            {currentMessage.content}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    
-                    {currentMessage?.link && (
-                      <div className="text-center">
-                        <a 
-                          href={currentMessage.link} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center px-6 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-medium transition-colors shadow-sm"
-                        >
-                          <span>View Full Report</span>
-                          <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                        </a>
-                      </div>
-                    )}
-                    
-                    {(!currentMessage?.link) && (
-                      <div className="text-neutral-500 dark:text-neutral-400 text-center p-4">
-                        No report link available
-                      </div>
-                    )}
                   </div>
                 ) : parsedMessage && Object.keys(parsedMessage).length > 0 ? (
                   <div className="space-y-4">
@@ -735,7 +727,6 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                   </div>
                 )}
               </div>
-            )}
           </div>
         </div>
       ) : (

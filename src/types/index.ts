@@ -19,6 +19,7 @@ export interface Message {
   message_id?: string;
   id?: string; // Alternative ID field used in fallback messages
   discord_message?: string;
+  message?: string; // Used for link message descriptions
   timestamp: string;
   ticker: string;
   year?: string;
