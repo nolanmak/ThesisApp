@@ -12,6 +12,8 @@ interface AnalysisPanelProps {
   handleCloseAnalysisPanel: () => void;
   setFeedbackModalOpen: (open: boolean) => void;
   messages?: Message[]; // Add messages prop to access all messages for tab filtering
+  selectedTicker?: string | null; // Add selected ticker from RealTimeGrid
+  tickerMessagesLoading?: boolean; // Add loading state from RealTimeGrid
 }
 
 const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
@@ -21,7 +23,9 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   convertToEasternTime,
   handleCloseAnalysisPanel,
   setFeedbackModalOpen,
-  messages = []
+  messages = [],
+  selectedTicker = null,
+  tickerMessagesLoading = false
 }) => {
   const [activeTab, setActiveTab] = useState<string>('earnings');
   const { metricsData } = useGlobalData();
@@ -35,11 +39,12 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     return 'earnings';
   };
 
-  // Get metrics for the selected ticker
+  // Get metrics for the selected ticker (prioritize selectedTicker from RealTimeGrid)
+  const currentTicker = selectedTicker || selectedMessage?.ticker;
   const tickerMetrics = useMemo(() => {
-    if (!selectedMessage?.ticker || !metricsData?.length) return null;
-    return metricsData.find(metric => metric.ticker === selectedMessage.ticker);
-  }, [selectedMessage?.ticker, metricsData]);
+    if (!currentTicker || !metricsData?.length) return null;
+    return metricsData.find(metric => metric.ticker === currentTicker);
+  }, [currentTicker, metricsData]);
 
   // Find related messages for the same ticker, quarter, and year
   const relatedMessages = useMemo(() => {
@@ -47,7 +52,6 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     
     const related = messages.filter(msg => {
       if (msg.ticker !== selectedMessage.ticker) return false;
-      if (msg.link) return false; // Exclude link messages from tabs
       if (msg.quarter !== selectedMessage.quarter) return false;
       if (msg.year !== selectedMessage.year) return false;
       
@@ -96,12 +100,30 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
         inactive: 'text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 hover:bg-purple-50 dark:hover:bg-purple-900/30'
       }
     });
+    if (relatedMessages.link) tabs.push({ 
+      id: 'report', 
+      label: 'Report', 
+      message: relatedMessages.link,
+      colors: {
+        active: 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-200',
+        inactive: 'text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/30'
+      }
+    });
     // Always show fundamentals tab if we have a ticker and metrics data
-    if (selectedMessage?.ticker && tickerMetrics) {
+    if (currentTicker && tickerMetrics) {
       tabs.push({ 
         id: 'fundamentals', 
         label: 'Fundamentals', 
-        message: relatedMessages.fundamentals || selectedMessage, // Use selected message as fallback
+        message: relatedMessages.fundamentals || selectedMessage || {
+          // Create a minimal message for fundamentals display when no selectedMessage
+          id: `fundamentals-${currentTicker}`,
+          ticker: currentTicker,
+          timestamp: new Date().toISOString(),
+          type: 'fundamentals',
+          title: `Fundamentals for ${currentTicker}`,
+          content: '',
+          link: null
+        }, 
         colors: {
           active: 'bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-200',
           inactive: 'text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-200 hover:bg-orange-50 dark:hover:bg-orange-900/30'
@@ -109,7 +131,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
       });
     }
     return tabs;
-  }, [relatedMessages, selectedMessage, tickerMetrics]);
+  }, [relatedMessages, selectedMessage, tickerMetrics, currentTicker]);
 
   // Current message to display based on active tab
   const currentMessage = useMemo(() => {
@@ -117,23 +139,36 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     return tabMessage || selectedMessage;
   }, [activeTab, availableTabs, selectedMessage]);
 
-  // Reset active tab only when selected message ID actually changes
+  // Reset active tab when selected message or ticker changes
   const [lastMessageId, setLastMessageId] = useState<string | null>(null);
+  const [lastTicker, setLastTicker] = useState<string | null>(null);
   useEffect(() => {
-    if (selectedMessage && selectedMessage.message_id !== lastMessageId) {
-      const messageType = getMessageType(selectedMessage);
+    const messageIdChanged = selectedMessage?.message_id !== lastMessageId;
+    const tickerChanged = currentTicker !== lastTicker;
+    
+    if (messageIdChanged || tickerChanged) {
       const availableTabIds = availableTabs.map(tab => tab.id);
       
-      // Set to the selected message's type if available, otherwise first available tab
-      if (availableTabIds.includes(messageType)) {
-        setActiveTab(messageType);
+      if (selectedMessage && messageIdChanged) {
+        // If we have a message, use its type
+        const messageType = getMessageType(selectedMessage);
+        if (availableTabIds.includes(messageType)) {
+          setActiveTab(messageType);
+        } else if (availableTabIds.length > 0) {
+          setActiveTab(availableTabIds[0]);
+        }
+      } else if (!selectedMessage && tickerChanged && availableTabIds.includes('fundamentals')) {
+        // If no message but have ticker with fundamentals, default to fundamentals
+        setActiveTab('fundamentals');
       } else if (availableTabIds.length > 0) {
+        // Default to first available tab
         setActiveTab(availableTabIds[0]);
       }
       
-      setLastMessageId(selectedMessage.message_id);
+      setLastMessageId(selectedMessage?.message_id || null);
+      setLastTicker(currentTicker);
     }
-  }, [selectedMessage, availableTabs, lastMessageId]);
+  }, [selectedMessage, availableTabs, lastMessageId, currentTicker, lastTicker]);
 
   const parsedMessage = currentMessage ? ParseMessagePayload(currentMessage) : null;
   const parsedTranscriptData = currentMessage ? ParseTranscriptData(currentMessage) : null;
@@ -310,7 +345,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
       flex-col bg-white dark:bg-neutral-800 p-6 rounded-md shadow border border-[#f1f1f1] dark:border-neutral-700
     `}
     >
-      {selectedMessage ? (
+      {selectedMessage || currentTicker ? (
         <div className="h-full flex flex-col">
           {/* Header */}
           <div className="pb-4 border-b border-neutral-200 dark:border-neutral-700 mb-4">
@@ -340,11 +375,15 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                   }}
                 >
                   <div className="flex items-center">
-                    <span className="font-medium text-primary-700 dark:text-primary-300">{selectedMessage.ticker}</span>
-                    <span className="mx-1 text-neutral-400 dark:text-neutral-500">|</span>
-                    <span className="text-neutral-600 dark:text-neutral-300">Q{selectedMessage.quarter}</span>
+                    <span className="font-medium text-primary-700 dark:text-primary-300">{currentTicker}</span>
+                    {selectedMessage?.quarter && (
+                      <>
+                        <span className="mx-1 text-neutral-400 dark:text-neutral-500">|</span>
+                        <span className="text-neutral-600 dark:text-neutral-300">Q{selectedMessage.quarter}</span>
+                      </>
+                    )}
                   </div>
-                  {selectedMessage.company_name && isMobile && (
+                  {selectedMessage?.company_name && isMobile && (
                     <span 
                       className="text-xs text-neutral-500 dark:text-neutral-400"
                       style={{
@@ -359,9 +398,11 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                     </span>
                   )}
                 </div>
-                <span className="text-sm text-neutral-500 dark:text-neutral-400">
-                  {convertToEasternTime(currentMessage?.timestamp || selectedMessage.timestamp)}
-                </span>
+                {(currentMessage?.timestamp || selectedMessage?.timestamp) && (
+                  <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                    {convertToEasternTime(currentMessage?.timestamp || selectedMessage?.timestamp || new Date().toISOString())}
+                  </span>
+                )}
                 
                 {/* Feedback icon */}
                 <div 
@@ -454,7 +495,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                   <div className="space-y-4">
                     {/* Header */}
                     <div className="text-orange-700 dark:text-orange-400 font-semibold mb-3">
-                      📊 Fundamentals Analysis - {selectedMessage?.ticker}
+                      📊 Fundamentals Analysis - {currentTicker}
                     </div>
                     
                     {tickerMetrics ? (
@@ -551,7 +592,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                       </div>
                     ) : (
                       <div className="text-neutral-500 dark:text-neutral-400 text-center p-4">
-                        No metrics data available for {selectedMessage?.ticker}
+                        No metrics data available for {currentTicker}
                       </div>
                     )}
                   </div>
@@ -615,6 +656,48 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                       </div>
                     )}
                   </div>
+                ) : activeTab === 'report' ? (
+                  // Display report/link content
+                  <div className="space-y-4">
+                    <div className="text-indigo-700 dark:text-indigo-400 font-semibold mb-3">
+                      📄 Research Report - {currentTicker}
+                    </div>
+                    
+                    {currentMessage?.title && (
+                      <div className="bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4 mb-4">
+                        <h3 className="text-indigo-800 dark:text-indigo-300 font-semibold mb-2">
+                          {currentMessage.title}
+                        </h3>
+                        {currentMessage.content && (
+                          <div className="text-indigo-700 dark:text-indigo-400 text-sm whitespace-pre-wrap">
+                            {currentMessage.content}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {currentMessage?.link && (
+                      <div className="text-center">
+                        <a 
+                          href={currentMessage.link} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center px-6 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-medium transition-colors shadow-sm"
+                        >
+                          <span>View Full Report</span>
+                          <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      </div>
+                    )}
+                    
+                    {(!currentMessage?.link) && (
+                      <div className="text-neutral-500 dark:text-neutral-400 text-center p-4">
+                        No report link available
+                      </div>
+                    )}
+                  </div>
                 ) : parsedMessage && Object.keys(parsedMessage).length > 0 ? (
                   <div className="space-y-4">
                     {Object.entries(parsedMessage).map(([section, items]) => (
@@ -648,24 +731,6 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                     No structured metrics available
                   </div>
                 )}
-              </div>
-            )}
-
-            {currentMessage?.link && (
-              <div className="pt-4 border-neutral-200 dark:border-neutral-700">
-                <a 
-                  href={currentMessage.link} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center px-4 py-2 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-md hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
-                  style={{
-                    display: 'inline-flex',
-                    padding: isMobile ? '10px 16px' : undefined,
-                    fontSize: isMobile ? '0.9rem' : undefined
-                  }}
-                >
-                  <span>View {currentMessage.ticker} Report</span>
-                </a>
               </div>
             )}
           </div>
