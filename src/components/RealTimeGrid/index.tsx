@@ -1,44 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-
-interface StockMetric {
-  ticker: string;
-  industry: string;
-  pr2bookq: number | string;
-  $salesqestnextq: number | string;
-  sharesq: number | string;
-  projpenextfy: number | string;
-  $eps4: number | string;
-  $eps3: number | string;
-  $eps2: number | string;
-  $eps1: number | string;
-  $eps0: number | string;
-  peexclxorttm: number | string;
-  '#institution': number | string;
-  nextfyepsmean: number | string;
-  nextqepsmean: number | string;
-  nextfyeps13wkago: number | string;
-  curfyeps13wkago: number | string;
-  projpecurfy: number | string;
-  salesa: number | string;
-  nextfysalesmean: number | string;
-  pr2salesq: number | string;
-  $salesqest: number | string;
-  curfysalesmean: number | string;
-  id: string;
-  'gmgn%q': number | string;
-  curfyepsmean: number | string;
-  nextfysales13wkago: number | string;
-  curqepsmean: number | string;
-  [key: string]: any;
-}
-
-interface APIResponse {
-  metrics: StockMetric[];
-  timestamp?: string;
-  status?: string;
-}
+import { useMetricsData } from '../../hooks/useGlobalData';
+import { StockMetric } from '../../providers/GlobalDataProvider';
 
 interface ColumnConfig {
   key: string;
@@ -50,21 +13,20 @@ interface ColumnConfig {
 }
 
 const RealTimeGrid: React.FC = () => {
-  const { user } = useAuth();
-  const [stockData, setStockData] = useState<StockMetric[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  // Use global metrics data instead of local fetching
+  const {
+    metricsData: stockData,
+    metricsLoading: isLoading,
+    metricsError: error,
+    metricsLastUpdated: lastUpdated,
+    refreshMetrics: handleRefresh
+  } = useMetricsData();
+
   const [sortColumn, setSortColumn] = useState<string>('ticker');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showWatchlistOnly, setShowWatchlistOnly] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [columnOrder, setColumnOrder] = useState<string[]>([]);
-
-  // API configuration using environment variables
-  const API_BASE = import.meta.env.VITE_RESEARCH_API_BASE_URL;
-  const API_KEY = import.meta.env.VITE_USER_PROFILE_API_KEY;
-  const METRICS_ENDPOINT = `${API_BASE}/metrics`;
 
   // Define column configuration
   const defaultColumns: ColumnConfig[] = [
@@ -93,62 +55,7 @@ const RealTimeGrid: React.FC = () => {
     }
   }, []);
 
-  const fetchMetrics = async () => {
-    if (!user?.email) {
-      setError('User authentication required');
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      setError(null);
-      
-      const response = await fetch(METRICS_ENDPOINT, {
-        method: 'GET',
-        headers: {
-          'X-API-Key': API_KEY,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-      }
-
-      const data: APIResponse = await response.json();
-      console.log('Metrics API response:', data);
-
-      if (data.metrics && Array.isArray(data.metrics)) {
-        setStockData(data.metrics);
-      } else {
-        console.log('Unexpected API response format, using fallback data');
-        setStockData([]);
-      }
-
-      setLastUpdated(new Date());
-    } catch (err) {
-      console.error('Error fetching metrics:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch metrics');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Initial load
-  useEffect(() => {
-    fetchMetrics();
-  }, [user?.email]);
-
-  // Auto-refresh every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(fetchMetrics, 30000);
-    return () => clearInterval(interval);
-  }, [user?.email]);
-
-  const handleRefresh = () => {
-    setIsLoading(true);
-    fetchMetrics();
-  };
+  // No need for local API fetching - data comes from GlobalDataProvider
 
   const formatValue = (value: any, type: string = 'text'): string => {
     if (value === null || value === undefined || value === 'N/A' || value === '') {
@@ -257,16 +164,9 @@ const RealTimeGrid: React.FC = () => {
         <div className="flex items-center justify-between max-w-full mx-auto">
           <div className="flex items-center gap-3">
             <Activity className="text-blue-500" size={24} />
-            <div>
-              <h1 className="text-lg sm:text-xl font-medium text-neutral-900 dark:text-neutral-100">
-                Real Time Grid
-              </h1>
-              {lastUpdated && (
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                  Last updated: {lastUpdated.toLocaleTimeString()}
-                </p>
-              )}
-            </div>
+            <h1 className="text-lg sm:text-xl font-medium text-neutral-900 dark:text-neutral-100">
+              Real Time Grid
+            </h1>
           </div>
           
           <div className="flex items-center gap-2">

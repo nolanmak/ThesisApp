@@ -1,8 +1,42 @@
-import React, { createContext, useMemo, useState, useCallback } from 'react';
+import React, { createContext, useMemo, useState, useCallback, useEffect } from 'react';
 import useMessagesData from '../components/Earnings/hooks/useMessagesData';
 import useEarningsData from '../components/Calendar/hooks/useEarningsData';
 import { Message, EarningsItem } from '../types';
 import { CompanyNameData } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+
+// Stock metrics interface
+export interface StockMetric {
+  ticker: string;
+  industry: string;
+  pr2bookq: number | string;
+  $salesqestnextq: number | string;
+  sharesq: number | string;
+  projpenextfy: number | string;
+  $eps4: number | string;
+  $eps3: number | string;
+  $eps2: number | string;
+  $eps1: number | string;
+  $eps0: number | string;
+  peexclxorttm: number | string;
+  '#institution': number | string;
+  nextfyepsmean: number | string;
+  nextqepsmean: number | string;
+  nextfyeps13wkago: number | string;
+  curfyeps13wkago: number | string;
+  projpecurfy: number | string;
+  salesa: number | string;
+  nextfysalesmean: number | string;
+  pr2salesq: number | string;
+  $salesqest: number | string;
+  curfysalesmean: number | string;
+  id: string;
+  'gmgn%q': number | string;
+  curfyepsmean: number | string;
+  nextfysales13wkago: number | string;
+  curqepsmean: number | string;
+  [key: string]: any;
+}
 
 // Define the context shape
 interface GlobalDataContextType {
@@ -37,6 +71,13 @@ interface GlobalDataContextType {
     releaseTime?: string | null
   ) => void;
   
+  // Metrics data
+  metricsData: StockMetric[];
+  metricsLoading: boolean;
+  metricsError: string | null;
+  metricsLastUpdated: Date | null;
+  refreshMetrics: () => Promise<void>;
+  
   // Company names data
   companyNames: Record<string, CompanyNameData>;
   fetchCompanyNamesForDate: (date: string) => Promise<void>;
@@ -48,6 +89,8 @@ export const GlobalDataContext = createContext<GlobalDataContextType | undefined
 
 // Provider component
 export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  
   // State for search terms - these will be updated via the exposed methods
   const [searchMessageTicker, setSearchMessageTicker] = useState('');
   const searchTicker = '';
@@ -57,6 +100,17 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   // Company names state
   const [companyNames] = useState<Record<string, CompanyNameData>>({});
   const [companyNamesLoading, setCompanyNamesLoading] = useState(false);
+  
+  // Metrics data state
+  const [metricsData, setMetricsData] = useState<StockMetric[]>([]);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+  const [metricsError, setMetricsError] = useState<string | null>(null);
+  const [metricsLastUpdated, setMetricsLastUpdated] = useState<Date | null>(null);
+
+  // API configuration for metrics
+  const API_BASE = import.meta.env.VITE_RESEARCH_API_BASE_URL;
+  const API_KEY = import.meta.env.VITE_USER_PROFILE_API_KEY;
+  const METRICS_ENDPOINT = `${API_BASE}/metrics`;
   
   // Initialize data hooks with persistent connection
   const {
@@ -97,6 +151,51 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
     return map;
   }, [earningsItems]);
+
+  // Function to fetch metrics data
+  const fetchMetrics = useCallback(async () => {
+    if (!user?.email) {
+      console.log('User not authenticated, skipping metrics fetch');
+      return;
+    }
+
+    try {
+      setMetricsError(null);
+      
+      const response = await fetch(METRICS_ENDPOINT, {
+        method: 'GET',
+        headers: {
+          'X-API-Key': API_KEY,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('📊 Global metrics API response:', data);
+
+      if (data.metrics && Array.isArray(data.metrics)) {
+        setMetricsData(data.metrics);
+        setMetricsLastUpdated(new Date());
+        console.log(`✅ Loaded ${data.metrics.length} stock metrics globally`);
+      } else {
+        console.log('⚠️ Unexpected metrics API response format');
+        setMetricsData([]);
+      }
+    } catch (err) {
+      console.error('❌ Error fetching metrics globally:', err);
+      setMetricsError(err instanceof Error ? err.message : 'Failed to fetch metrics');
+    }
+  }, [user?.email, METRICS_ENDPOINT, API_KEY]);
+
+  const refreshMetrics = useCallback(async () => {
+    setMetricsLoading(true);
+    await fetchMetrics();
+    setMetricsLoading(false);
+  }, [fetchMetrics]);
 
   // Function to fetch company names for all tickers on a specific date
   const fetchCompanyNamesForDate = useCallback(async () => {
@@ -142,6 +241,26 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     // Just set loading to false since we're not making the call
     setCompanyNamesLoading(false);
   }, []);
+
+  // Initial metrics load when user is authenticated
+  useEffect(() => {
+    if (user?.email) {
+      console.log('🚀 Loading metrics data globally on app startup');
+      refreshMetrics();
+    }
+  }, [user?.email, refreshMetrics]);
+
+  // Auto-refresh metrics every 2 minutes
+  useEffect(() => {
+    if (!user?.email) return;
+    
+    const interval = setInterval(() => {
+      console.log('🔄 Auto-refreshing metrics data globally');
+      fetchMetrics();
+    }, 120000); // 2 minutes
+
+    return () => clearInterval(interval);
+  }, [user?.email, fetchMetrics]);
 
   // Enrich messages with company names
   const messages = useMemo(() => {
@@ -195,6 +314,13 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     updateEarningsFilters: (searchTicker?: string, filterActive?: boolean | null, selectedDate?: string, releaseTime?: string | null) => {
       updateEarningsFilters(searchTicker, filterActive, selectedDate, releaseTime);
     },
+    
+    // Metrics data
+    metricsData,
+    metricsLoading,
+    metricsError,
+    metricsLastUpdated,
+    refreshMetrics,
     
     // Company names data
     companyNames,

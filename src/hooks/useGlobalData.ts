@@ -13,4 +13,26 @@ export const useGlobalData = () => {
   return context;
 };
 
+/**
+ * Convenience hook for just metrics data
+ * Returns only the metrics-related data and functions from the global context
+ */
+export const useMetricsData = () => {
+  const {
+    metricsData,
+    metricsLoading,
+    metricsError,
+    metricsLastUpdated,
+    refreshMetrics
+  } = useGlobalData();
+
+  return {
+    metricsData,
+    metricsLoading,
+    metricsError,
+    metricsLastUpdated,
+    refreshMetrics
+  };
+};
+
 export default useGlobalData;
