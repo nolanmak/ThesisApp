@@ -7,6 +7,7 @@ import Calendar from './components/Calendar';
 import Earnings from './components/Earnings';
 import WatchList from './components/WatchList';
 import FinancialResearch from './components/FinancialResearch';
+import RealTimeGrid from './components/RealTimeGrid';
 import LandingPage from './components/Landing/LandingPage';
 import PasswordReset from './components/Landing/PasswordReset';
 import ScheduleTemplate from './components/ScheduleTemplate';
@@ -43,6 +44,7 @@ function App() {
                   <Route path="earnings" element={<Earnings />} />
                   <Route path="watchlist" element={<WatchList />} />
                   <Route path="research" element={<FinancialResearch />} />
+                  <Route path="realtime-grid" element={<RealTimeGrid />} />
                 </Route>
               </Route>
               

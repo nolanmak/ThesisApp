@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Calendar, MessageCircle, Menu, List, Settings, TrendingUp } from 'lucide-react';
+import { Calendar, MessageCircle, Menu, List, Settings, TrendingUp, Activity } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import ThemeToggle from './ui/ThemeToggle';
 import SettingsModal from './ui/Settings';
@@ -120,6 +120,15 @@ const Layout: React.FC = () => {
                     <span>Real Time Feed</span>
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    to="/dashboard/realtime-grid"
+                    className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/realtime-grid')}`}
+                  >
+                    <Activity className="mr-1" size={14} />
+                    <span>Real Time Grid</span>
+                  </Link>
+                </li>
                 {isAdmin && (
                   <li>
                     <Link
@@ -159,6 +168,16 @@ const Layout: React.FC = () => {
                     >
                       <MessageCircle className="mr-2" size={18} />
                       <span>Real Time Feed</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/dashboard/realtime-grid"
+                      className={`flex items-center px-3 py-2 text-base rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/realtime-grid')}`}
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <Activity className="mr-2" size={18} />
+                      <span>Real Time Grid</span>
                     </Link>
                   </li>
                   {isAdmin && (
