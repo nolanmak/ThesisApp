@@ -485,14 +485,14 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                             parseFloat(String(tickerMetrics['$s2'] || 0).replace(/,/g, '')),
                             parseFloat(String(tickerMetrics['$s1'] || 0).replace(/,/g, '')),
                             parseFloat(String(tickerMetrics['$s0'] || 0).replace(/,/g, ''))
-                          ]}
+                          ].reverse()}
                           series2={[
                             parseFloat(String(tickerMetrics['$s7'] || 0).replace(/,/g, '')),
                             parseFloat(String(tickerMetrics['$s6'] || 0).replace(/,/g, '')),
                             parseFloat(String(tickerMetrics['$s5'] || 0).replace(/,/g, '')),
                             parseFloat(String(tickerMetrics['$s4'] || 0).replace(/,/g, ''))
-                          ]}
-                          labels={['S3', 'S2', 'S1', 'S0']}
+                          ].reverse()}
+                          labels={['S3', 'S2', 'S1', 'S0'].reverse()}
                           title="Q/Q Sales"
                           series1Color="#10b981" // green for recent quarters (S0-S3)
                           series2Color="#3b82f6" // blue for older quarters (S4-S7)

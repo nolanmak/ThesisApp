@@ -142,14 +142,12 @@ const RealTimeGrid: React.FC = () => {
     setShowDatePicker(false);
   }, []);
 
-  // Calculate date restrictions (allow past dates, block future dates beyond 7 days)
+  // Calculate date restrictions (allow past earnings dates, block future dates)
   const getDateRestrictions = useCallback(() => {
     const today = new Date();
-    const sevenDaysFromNow = new Date();
-    sevenDaysFromNow.setDate(today.getDate() + 7);
     
     return {
-      maxDate: sevenDaysFromNow.toISOString().split('T')[0] // 7 days from today
+      maxDate: today.toISOString().split('T')[0] // Today's date
     };
   }, []);
 
@@ -1134,7 +1132,7 @@ const RealTimeGrid: React.FC = () => {
                           ? `${dateRange.start} to ${dateRange.end}`
                           : dateRange.start
                           ? dateRange.start
-                          : 'Select date range'}
+                          : 'Select earnings date'}
                       </span>
                       <ChevronDown size={14} className={`transition-transform ${showDatePicker ? 'rotate-180' : ''}`} />
                     </button>
@@ -1147,7 +1145,7 @@ const RealTimeGrid: React.FC = () => {
                       <button
                         onClick={handleDatePickerClear}
                         className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 px-2 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
-                        title="Clear date range"
+                        title="Clear earnings date filter"
                       >
                         Clear
                       </button>
@@ -1158,7 +1156,7 @@ const RealTimeGrid: React.FC = () => {
                       <div className="absolute top-full left-0 mt-1 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-lg p-4 z-50 min-w-[320px]">
                         <div className="space-y-3">
                           <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
-                            Future dates blocked beyond 7 days from today
+                            Filter by earnings announcement date
                           </div>
                           <div className="flex items-center gap-2">
                             <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 w-16">From:</label>
@@ -1262,7 +1260,7 @@ const RealTimeGrid: React.FC = () => {
                   )}
                   {(dateRange.start || dateRange.end) && scheduledTickers.length > 0 && (
                     <span className="ml-2 text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded">
-                      Scheduled ({scheduledTickers.length})
+                      Earnings ({scheduledTickers.length})
                     </span>
                   )}
                   {searchValue.trim() && (
@@ -1317,17 +1315,21 @@ const RealTimeGrid: React.FC = () => {
               <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">
                 {searchValue.trim() 
                   ? "No Search Results Found"
-                  : showWatchlistOnly 
-                    ? "No Watchlist Stocks Found" 
-                    : "No Metrics Available"
+                  : (dateRange.start || dateRange.end) && scheduledTickers.length === 0
+                    ? "No Earnings Found"
+                    : showWatchlistOnly 
+                      ? "No Watchlist Stocks Found" 
+                      : "No Metrics Available"
                 }
               </h3>
               <p className="text-neutral-500 dark:text-neutral-400 mb-4">
                 {searchValue.trim()
                   ? `No stocks match "${searchValue}" in ${searchableColumns.find(col => col.key === searchColumn)?.label || 'Ticker'}.`
-                  : showWatchlistOnly 
-                    ? `No stocks from your watchlist (${watchlist.length} symbols) are currently available in the metrics data.`
-                    : "No real-time metrics data found. The API may be returning an empty dataset."
+                  : (dateRange.start || dateRange.end) && scheduledTickers.length === 0
+                    ? `No earnings announcements found for the selected date range.`
+                    : showWatchlistOnly 
+                      ? `No stocks from your watchlist (${watchlist.length} symbols) are currently available in the metrics data.`
+                      : "No real-time metrics data found. The API may be returning an empty dataset."
                 }
               </p>
               <div className="flex gap-2 justify-center">
@@ -1337,6 +1339,14 @@ const RealTimeGrid: React.FC = () => {
                     className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
                   >
                     Clear Search
+                  </button>
+                )}
+                {(dateRange.start || dateRange.end) && (
+                  <button
+                    onClick={handleDatePickerClear}
+                    className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+                  >
+                    Clear Earnings Filter
                   </button>
                 )}
                 {showWatchlistOnly && (
