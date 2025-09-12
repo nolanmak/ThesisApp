@@ -491,15 +491,42 @@ export const getScheduledEarnings = async (
   endDate?: string
 ): Promise<ScheduledEarning[]> => {
   try {
-    const params = new URLSearchParams();
-    if (startDate) params.append('start_date', startDate);
-    if (endDate) params.append('end_date', endDate);
+    // Use the same endpoint as the Calendar component
+    const allEarnings = await getEarningsItems();
     
-    const queryString = params.toString();
-    const url = queryString ? `/schedule?${queryString}` : '/schedule';
+    // Filter by date range if provided
+    let filteredEarnings = allEarnings;
     
-    const response = await fetchWithAuth<ScheduledEarning[]>(url);
-    return response || [];
+    if (startDate || endDate) {
+      filteredEarnings = allEarnings.filter(earning => {
+        const earningDate = earning.date;
+        
+        // Check start date
+        if (startDate && earningDate < startDate) {
+          return false;
+        }
+        
+        // Check end date
+        if (endDate && earningDate > endDate) {
+          return false;
+        }
+        
+        return true;
+      });
+    }
+    
+    // Convert EarningsItem to ScheduledEarning format
+    const scheduledEarnings: ScheduledEarning[] = filteredEarnings.map(earning => ({
+      ticker: earning.ticker,
+      date: earning.date,
+      quarter: earning.quarter,
+      year: earning.year?.toString(),
+      time: earning.release_time || undefined,
+      company_name: earning.company_name || undefined
+    }));
+    
+    return scheduledEarnings;
+    
   } catch (error) {
     console.error('Error fetching scheduled earnings:', error);
     return [];

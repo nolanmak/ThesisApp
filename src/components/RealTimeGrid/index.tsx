@@ -62,9 +62,12 @@ const RealTimeGrid: React.FC = () => {
   const [sortColumn, setSortColumn] = useState<string>('ticker');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showWatchlistOnly, setShowWatchlistOnly] = useState(false);
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
+  const [dateRange, setDateRange] = useState<{start: string; end: string}>({start: '', end: ''});
+  const [tempDateRange, setTempDateRange] = useState<{start: string; end: string}>({start: '', end: ''});
   const [scheduledTickers, setScheduledTickers] = useState<string[]>([]);
+  const [dateFilterLoading, setDateFilterLoading] = useState<boolean>(false);
+  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+  const datePickerRef = useRef<HTMLDivElement>(null);
   const [columnOrder, setColumnOrder] = useState<string[]>([]);
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set());
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
@@ -96,6 +99,43 @@ const RealTimeGrid: React.FC = () => {
   const [editingView, setEditingView] = useState<GridView | null>(null);
   const [viewsLoading, setViewsLoading] = useState(false);
   const viewsDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Date picker handlers (defined early to avoid initialization order issues)
+  const handleDatePickerOpen = useCallback(() => {
+    setTempDateRange(dateRange);
+    setShowDatePicker(true);
+  }, [dateRange]);
+
+  const handleDatePickerApply = useCallback(() => {
+    setDateRange(tempDateRange);
+    setShowDatePicker(false);
+  }, [tempDateRange]);
+
+  const handleDatePickerCancel = useCallback(() => {
+    setTempDateRange(dateRange);
+    setShowDatePicker(false);
+  }, [dateRange]);
+
+  const handleDatePickerClear = useCallback(() => {
+    const emptyRange = {start: '', end: ''};
+    setTempDateRange(emptyRange);
+    setDateRange(emptyRange);
+    setShowDatePicker(false);
+  }, []);
+
+  // Calculate date restrictions (today and 7 days ago)
+  const getDateRestrictions = useCallback(() => {
+    const today = new Date();
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(today.getDate() - 7);
+    
+    return {
+      maxDate: today.toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
+      minDate: sevenDaysAgo.toISOString().split('T')[0] // 7 days ago in YYYY-MM-DD format
+    };
+  }, []);
+
+  const { maxDate, minDate } = getDateRestrictions();
 
   // Define column configuration
   const defaultColumns: ColumnConfig[] = [
@@ -200,13 +240,16 @@ const RealTimeGrid: React.FC = () => {
       if (viewsDropdownRef.current && !viewsDropdownRef.current.contains(event.target as Node)) {
         setShowViewsDropdown(false);
       }
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+        handleDatePickerCancel();
+      }
     };
 
-    if (showColumnToggle || showSearchDropdown || showViewsDropdown) {
+    if (showColumnToggle || showSearchDropdown || showViewsDropdown || showDatePicker) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showColumnToggle, showSearchDropdown, showViewsDropdown]);
+  }, [showColumnToggle, showSearchDropdown, showViewsDropdown, showDatePicker, handleDatePickerCancel]);
 
   // View management functions (defined before useEffects that use them)
   const loadUserViews = useCallback(async () => {
@@ -332,11 +375,13 @@ const RealTimeGrid: React.FC = () => {
     setSearchColumn(settings.searchColumn || 'ticker');
     
     // Apply date range if available
-    if (settings.startDate) {
-      setStartDate(settings.startDate);
-    }
-    if (settings.endDate) {
-      setEndDate(settings.endDate);
+    if (settings.startDate || settings.endDate) {
+      const newRange = {
+        start: settings.startDate || '',
+        end: settings.endDate || ''
+      };
+      setDateRange(newRange);
+      setTempDateRange(newRange);
     }
     
     setCurrentViewId(view.id);
@@ -351,10 +396,10 @@ const RealTimeGrid: React.FC = () => {
       showWatchlistOnly,
       searchValue,
       searchColumn,
-      startDate,
-      endDate
+      startDate: dateRange.start,
+      endDate: dateRange.end
     };
-  }, [columnOrder, visibleColumns, sortColumn, sortDirection, showWatchlistOnly, searchValue, searchColumn, startDate, endDate]);
+  }, [columnOrder, visibleColumns, sortColumn, sortDirection, showWatchlistOnly, searchValue, searchColumn, dateRange.start, dateRange.end]);
 
   const createNewView = useCallback(async (name: string, description?: string, isDefault?: boolean) => {
     const newView: GridView = {
@@ -397,23 +442,30 @@ const RealTimeGrid: React.FC = () => {
   // Fetch scheduled earnings when date range changes
   useEffect(() => {
     const fetchScheduledEarnings = async () => {
-      if (startDate || endDate) {
+      if (dateRange.start || dateRange.end) {
+        setDateFilterLoading(true);
         try {
-          const scheduled = await getScheduledEarnings(startDate || undefined, endDate || undefined);
+          const scheduled = await getScheduledEarnings(
+            dateRange.start || undefined, 
+            dateRange.end || dateRange.start || undefined // If only start date, use it as end date too
+          );
           const tickers = scheduled.map(earning => earning.ticker.toUpperCase());
           setScheduledTickers(tickers);
         } catch (error) {
           console.error('Error fetching scheduled earnings:', error);
           setScheduledTickers([]);
+        } finally {
+          setDateFilterLoading(false);
         }
       } else {
         // Clear filter when no dates are selected
         setScheduledTickers([]);
+        setDateFilterLoading(false);
       }
     };
 
     fetchScheduledEarnings();
-  }, [startDate, endDate]);
+  }, [dateRange.start, dateRange.end]);
 
   // No need for local API fetching - data comes from GlobalDataProvider
 
@@ -527,7 +579,7 @@ const RealTimeGrid: React.FC = () => {
     let filteredData = stockData;
     
     // Filter by date range (scheduled earnings) if dates are selected
-    if ((startDate || endDate) && scheduledTickers.length > 0) {
+    if ((dateRange.start || dateRange.end) && scheduledTickers.length > 0) {
       filteredData = filteredData.filter(stock => 
         scheduledTickers.includes(stock.ticker.toUpperCase())
       );
@@ -567,7 +619,7 @@ const RealTimeGrid: React.FC = () => {
       
       return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [stockData, sortColumn, sortDirection, showWatchlistOnly, watchlist, searchValue, searchColumn, matchesSearch, startDate, endDate, scheduledTickers]);
+  }, [stockData, sortColumn, sortDirection, showWatchlistOnly, watchlist, searchValue, searchColumn, matchesSearch, dateRange.start, dateRange.end, scheduledTickers]);
 
   // Toggle column visibility
   const toggleColumnVisibility = useCallback((columnKey: string) => {
@@ -957,37 +1009,88 @@ const RealTimeGrid: React.FC = () => {
                     </button>
                   </div>
                   
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 relative" ref={datePickerRef}>
                     <Calendar size={16} className="text-neutral-500" />
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        placeholder="Start date"
-                        className="text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 w-36"
-                      />
-                      <span className="text-neutral-400 dark:text-neutral-500">to</span>
-                      <input
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        placeholder="End date"
-                        className="text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 w-36"
-                      />
-                      {(startDate || endDate) && (
-                        <button
-                          onClick={() => {
-                            setStartDate('');
-                            setEndDate('');
-                          }}
-                          className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 px-2 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
-                          title="Clear date range"
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
+                    <button
+                      onClick={handleDatePickerOpen}
+                      className="text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-3 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 hover:border-neutral-400 dark:hover:border-neutral-500 flex items-center gap-2 min-w-[200px] justify-between"
+                      disabled={dateFilterLoading}
+                    >
+                      <span className="text-left">
+                        {dateRange.start && dateRange.end && dateRange.start !== dateRange.end
+                          ? `${dateRange.start} to ${dateRange.end}`
+                          : dateRange.start
+                          ? dateRange.start
+                          : 'Select date range'}
+                      </span>
+                      <ChevronDown size={14} className={`transition-transform ${showDatePicker ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {dateFilterLoading && (
+                      <RefreshCw size={14} className="animate-spin text-neutral-500" />
+                    )}
+                    
+                    {(dateRange.start || dateRange.end) && !dateFilterLoading && (
+                      <button
+                        onClick={handleDatePickerClear}
+                        className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 px-2 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
+                        title="Clear date range"
+                      >
+                        Clear
+                      </button>
+                    )}
+
+                    {/* Date Range Picker Dropdown */}
+                    {showDatePicker && (
+                      <div className="absolute top-full left-0 mt-1 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-lg p-4 z-50 min-w-[320px]">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 w-16">From:</label>
+                            <input
+                              type="date"
+                              value={tempDateRange.start}
+                              onChange={(e) => setTempDateRange(prev => ({...prev, start: e.target.value}))}
+                              min={minDate}
+                              max={maxDate}
+                              className="text-sm border border-neutral-300 dark:border-neutral-600 rounded px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 flex-1"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 w-16">To:</label>
+                            <input
+                              type="date"
+                              value={tempDateRange.end}
+                              onChange={(e) => setTempDateRange(prev => ({...prev, end: e.target.value}))}
+                              min={minDate}
+                              max={maxDate}
+                              className="text-sm border border-neutral-300 dark:border-neutral-600 rounded px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 flex-1"
+                            />
+                          </div>
+                          <div className="flex justify-between pt-2 border-t border-neutral-200 dark:border-neutral-700">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={handleDatePickerClear}
+                                className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 px-3 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
+                              >
+                                Clear All
+                              </button>
+                              <button
+                                onClick={handleDatePickerCancel}
+                                className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 px-3 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                            <button
+                              onClick={handleDatePickerApply}
+                              className="text-xs bg-primary-500 hover:bg-primary-600 text-white px-3 py-1 rounded"
+                            >
+                              Apply
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   {/* Search */}
@@ -1043,7 +1146,7 @@ const RealTimeGrid: React.FC = () => {
                       Watchlist ({watchlist.length})
                     </span>
                   )}
-                  {(startDate || endDate) && scheduledTickers.length > 0 && (
+                  {(dateRange.start || dateRange.end) && scheduledTickers.length > 0 && (
                     <span className="ml-2 text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded">
                       Scheduled ({scheduledTickers.length})
                     </span>
@@ -1330,7 +1433,8 @@ const RealTimeGrid: React.FC = () => {
                   updateExistingView(editingView.id, {
                     name: name.trim(),
                     description: description || undefined,
-                    isDefault
+                    isDefault,
+                    settings: getCurrentViewSettings()
                   });
                   setShowEditViewModal(false);
                   setEditingView(null);
@@ -1380,14 +1484,14 @@ const RealTimeGrid: React.FC = () => {
               
               <div className="mb-6">
                 <div className="text-xs text-neutral-500 dark:text-neutral-400 space-y-1">
-                  <p>Current settings will be preserved:</p>
+                  <p>Current settings will be saved:</p>
                   <ul className="pl-4 space-y-0.5">
                     <li>• Column order and visibility</li>
-                    <li>• Sort: {editingView.settings.sortColumn} ({editingView.settings.sortDirection})</li>
-                    <li>• Search: {editingView.settings.searchColumn}</li>
-                    <li>• Watchlist: {editingView.settings.showWatchlistOnly ? 'On' : 'Off'}</li>
-                    <li>• Date range: {editingView.settings.startDate || editingView.settings.endDate ? 
-                      `${editingView.settings.startDate || 'Any'} to ${editingView.settings.endDate || 'Any'}` : 'None'}</li>
+                    <li>• Sort: {sortColumn} ({sortDirection})</li>
+                    <li>• Search: {searchColumn}</li>
+                    <li>• Watchlist: {showWatchlistOnly ? 'On' : 'Off'}</li>
+                    <li>• Date range: {dateRange.start || dateRange.end ? 
+                      `${dateRange.start || 'Any'} to ${dateRange.end || 'Any'}` : 'None'}</li>
                   </ul>
                 </div>
               </div>
