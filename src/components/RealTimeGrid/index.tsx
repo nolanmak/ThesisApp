@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter, Eye, EyeOff, Search, GripVertical, Save, Bookmark, Edit3, Plus, AlertTriangle } from 'lucide-react';
+import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter, Eye, EyeOff, Search, GripVertical, Bookmark, Edit3, Plus } from 'lucide-react';
 import { useMetricsData } from '../../hooks/useGlobalData';
 import { useWatchlist } from '../../hooks/useWatchlist';
 import AnalysisPanel from '../Earnings/ui/AnalysisPanel';
@@ -159,37 +159,41 @@ const RealTimeGrid: React.FC = () => {
   // Define column configuration
   const defaultColumns: ColumnConfig[] = [
     { key: 'ticker', label: 'Ticker', width: 80, sortable: true, type: 'text' },
-    { key: 'industry', label: 'Industry', width: 200, sortable: true, type: 'text' },
-    { key: '$eps0', label: 'Current EPS', width: 100, sortable: true, type: 'number', colorCode: 'beats' },
-    { key: '$eps1', label: 'EPS -1Q', width: 100, sortable: true, type: 'number', colorCode: 'beats' },
-    { key: '$eps2', label: 'EPS -2Q', width: 100, sortable: true, type: 'number', colorCode: 'beats' },
-    { key: '$eps3', label: 'EPS -3Q', width: 100, sortable: true, type: 'number', colorCode: 'beats' },
-    { key: '$eps4', label: 'EPS -4Q', width: 100, sortable: true, type: 'number', colorCode: 'beats' },
-    { key: 'nextfyepsmean', label: 'Next FY EPS', width: 120, sortable: true, type: 'number' },
-    { key: 'peexclxorttm', label: 'P/E Ratio', width: 100, sortable: true, type: 'number' },
-    { key: 'pr2bookq', label: 'P/B Ratio', width: 100, sortable: true, type: 'number' },
-    { key: 'salesa', label: 'Sales (Annual)', width: 140, sortable: true, type: 'currency' },
-    { key: '$salesqest', label: 'Sales Est Q', width: 120, sortable: true, type: 'currency' },
-    { key: 'sharesq', label: 'Shares Q', width: 120, sortable: true, type: 'number' },
-    { key: '#institution', label: 'Institutions', width: 120, sortable: true, type: 'number' },
-    { key: 'gmgn%q', label: 'Gross Margin %', width: 140, sortable: true, type: 'percentage', colorCode: 'performance' },
-    { key: 'projpenextfy', label: 'Proj P/E Next FY', width: 140, sortable: true, type: 'number' },
+    // Current Quarter Earnings
+    { key: '$eps0', label: 'EPS Estimate', width: 110, sortable: true, type: 'number' },
+    { key: '$qeps0', label: 'EPS Actual', width: 110, sortable: true, type: 'number', colorCode: 'beats' },
+    { key: 'eps_surprise_pct', label: 'Surprise %', width: 110, sortable: true, type: 'percentage', colorCode: 'beats' },
+    { key: '$salesqest', label: 'Rev Est', width: 110, sortable: true, type: 'currency' },
+    { key: '$salesa1', label: 'Rev Act', width: 110, sortable: true, type: 'currency' },
+    { key: 'rev_surprise_pct', label: 'Surprise %', width: 110, sortable: true, type: 'percentage', colorCode: 'beats' },
+    { key: 'qq_growth_pct', label: 'Q/Q Growth %', width: 110, sortable: true, type: 'percentage', colorCode: 'performance' },
+    // Next Quarter
+    { key: 'nextqepsmean', label: 'NQ EPS Est', width: 110, sortable: true, type: 'number' },
+    { key: 'nq_eps_guide', label: 'NQ EPS Guide', width: 110, sortable: true, type: 'number' },
+    { key: 'nq_eps_change_pct', label: 'NQ EPS % change', width: 130, sortable: true, type: 'percentage' },
+    { key: '$salesqestnextq', label: 'NQ Rev Est', width: 110, sortable: true, type: 'currency' },
+    { key: 'nq_rev_guide', label: 'NQ Rev Guide', width: 110, sortable: true, type: 'currency' },
+    { key: 'nq_rev_change_pct', label: 'NQ Rev % change', width: 130, sortable: true, type: 'percentage' },
+    // Current Year
+    { key: 'curfyepsmean', label: 'CY EPS Est', width: 110, sortable: true, type: 'number' },
+    { key: 'cy_eps_guide', label: 'CY EPS Guide', width: 110, sortable: true, type: 'number' },
+    { key: 'cy_eps_change_pct', label: 'CY EPS % change', width: 130, sortable: true, type: 'percentage' },
+    { key: 'curfysalesmean', label: 'CY Rev Est', width: 110, sortable: true, type: 'currency' },
+    { key: 'cy_rev_guide', label: 'CY Rev Guide', width: 110, sortable: true, type: 'currency' },
+    { key: 'cy_rev_change_pct', label: 'CY Rev % change', width: 130, sortable: true, type: 'percentage' },
   ];
 
   // Searchable columns (subset of default columns that make sense to search)
   const searchableColumns = useMemo(() => [
     { key: 'ticker', label: 'Ticker' },
-    { key: 'industry', label: 'Industry' },
-    { key: '$eps0', label: 'Current EPS' },
-    { key: '$eps1', label: 'EPS -1Q' },
-    { key: '$eps2', label: 'EPS -2Q' },
-    { key: '$eps3', label: 'EPS -3Q' },
-    { key: '$eps4', label: 'EPS -4Q' },
-    { key: 'nextfyepsmean', label: 'Next FY EPS' },
-    { key: 'peexclxorttm', label: 'P/E Ratio' },
-    { key: 'pr2bookq', label: 'P/B Ratio' },
-    { key: 'salesa', label: 'Sales (Annual)' },
-    { key: 'gmgn%q', label: 'Gross Margin %' },
+    { key: '$eps0', label: 'EPS Estimate' },
+    { key: '$qeps0', label: 'EPS Actual' },
+    { key: '$salesqest', label: 'Rev Est' },
+    { key: '$salesa1', label: 'Rev Act' },
+    { key: 'nextqepsmean', label: 'NQ EPS Est' },
+    { key: '$salesqestnextq', label: 'NQ Rev Est' },
+    { key: 'curfyepsmean', label: 'CY EPS Est' },
+    { key: 'curfysalesmean', label: 'CY Rev Est' },
   ], []);
 
   // Initialize column visibility state
@@ -203,22 +207,26 @@ const RealTimeGrid: React.FC = () => {
 
   // Initialize column order, visibility, and widths
   useEffect(() => {
-    if (columnOrder.length === 0) {
-      setColumnOrder(defaultColumns.map(col => col.key));
-    }
-    if (visibleColumns.size === 0) {
-      setVisibleColumns(new Set(defaultColumns.map(col => col.key)));
-      setColumnVisibility(initialColumnVisibility);
-    }
+    // Force initialize all columns
+    console.log('🔧 Initializing columns:', defaultColumns.map(col => col.key));
+    
+    setColumnOrder(defaultColumns.map(col => col.key));
+    setVisibleColumns(new Set(defaultColumns.map(col => col.key)));
+    setColumnVisibility(initialColumnVisibility);
+    
     // Initialize column widths with defaults
-    if (Object.keys(columnWidths).length === 0) {
-      const initialWidths: Record<string, number> = {};
-      defaultColumns.forEach(col => {
-        initialWidths[col.key] = col.width || 100;
-      });
-      setColumnWidths(initialWidths);
-    }
-  }, [initialColumnVisibility, columnWidths]);
+    const initialWidths: Record<string, number> = {};
+    defaultColumns.forEach(col => {
+      initialWidths[col.key] = col.width || 100;
+    });
+    setColumnWidths(initialWidths);
+    
+    console.log('✅ Columns initialized:', {
+      order: defaultColumns.map(col => col.key),
+      visible: defaultColumns.map(col => col.key),
+      count: defaultColumns.length
+    });
+  }, []); // Run once on mount
 
   // Mobile detection
   useEffect(() => {
@@ -288,11 +296,17 @@ const RealTimeGrid: React.FC = () => {
       if (profile?.settings?.gridViews) {
         setSavedViews(profile.settings.gridViews as GridView[]);
         
-        // Set current view if there's a default one
+        console.log('📚 Loaded saved views, but NOT applying default to preserve new column structure');
+        
+        // DON'T auto-apply default view on load to preserve new column structure
+        // The user can manually select a saved view if they want
+        
+        // Just set the current view ID if there's a default one, but don't apply it
         const defaultView = (profile.settings.gridViews as GridView[]).find(view => view.isDefault);
         if (defaultView) {
-          setCurrentViewId(defaultView.id);
-          applyView(defaultView);
+          console.log('ℹ️ Found default view but not applying:', defaultView.name);
+          // setCurrentViewId(defaultView.id);
+          // applyView(defaultView); // REMOVED - don't auto-apply
         }
       }
     } catch (error) {
@@ -370,41 +384,32 @@ const RealTimeGrid: React.FC = () => {
   const applyView = useCallback((view: GridView) => {
     const { settings } = view;
     
-    // Apply column order
-    if (settings.columnOrder) {
-      setColumnOrder(settings.columnOrder);
-    }
+    console.log('🔄 Applying saved view:', view.name, 'with settings:', settings);
     
-    // Apply visible columns
-    if (settings.visibleColumns) {
-      const visibleSet = new Set(settings.visibleColumns);
-      setVisibleColumns(visibleSet);
-      
-      // Also update columnVisibility state
-      const visibility = { ...initialColumnVisibility };
-      Object.keys(visibility).forEach(key => {
-        visibility[key] = visibleSet.has(key);
-      });
-      setColumnVisibility(visibility);
-    }
-    
-    // Apply column widths
-    if (settings.columnWidths) {
-      setColumnWidths(settings.columnWidths);
-    }
+    // DON'T apply old column configurations - they're outdated
+    // Only apply non-column related settings to preserve the new column structure
     
     // Apply sorting
     if (settings.sortColumn && settings.sortDirection) {
-      setSortColumn(settings.sortColumn);
-      setSortDirection(settings.sortDirection);
+      // Only apply if the sort column exists in our new columns
+      const columnExists = defaultColumns.some(col => col.key === settings.sortColumn);
+      if (columnExists) {
+        setSortColumn(settings.sortColumn);
+        setSortDirection(settings.sortDirection);
+      } else {
+        console.warn('⚠️ Saved sort column no longer exists:', settings.sortColumn);
+      }
     }
     
     // Apply watchlist toggle
     setShowWatchlistOnly(settings.showWatchlistOnly || false);
     
-    // Apply search
+    // Apply search column only if it exists
+    const searchColumnExists = defaultColumns.some(col => col.key === (settings.searchColumn || 'ticker'));
+    if (searchColumnExists) {
+      setSearchColumn(settings.searchColumn || 'ticker');
+    }
     setSearchValue(settings.searchValue || '');
-    setSearchColumn(settings.searchColumn || 'ticker');
     
     // Apply date range if available
     if (settings.startDate || settings.endDate) {
@@ -419,7 +424,9 @@ const RealTimeGrid: React.FC = () => {
     }
     
     setCurrentViewId(view.id);
-  }, [initialColumnVisibility]);
+    
+    console.log('✅ View applied with new column structure preserved');
+  }, []);
 
   const getCurrentViewSettings = useCallback(() => {
     return {
@@ -517,6 +524,70 @@ const RealTimeGrid: React.FC = () => {
 
   // No need for local API fetching - data comes from GlobalDataProvider
 
+  // Calculation functions for computed fields
+  const calculateEpsSurprise = (actual: any, estimate: any): number | null => {
+    const actualNum = parseFloat(String(actual));
+    const estimateNum = parseFloat(String(estimate));
+    
+    if (isNaN(actualNum) || isNaN(estimateNum) || estimateNum === 0) return null;
+    return ((actualNum - estimateNum) / Math.abs(estimateNum)) * 100;
+  };
+
+  const calculateRevenueSurprise = (actual: any, estimate: any): number | null => {
+    const actualNum = parseFloat(String(actual));
+    const estimateNum = parseFloat(String(estimate));
+    
+    if (isNaN(actualNum) || isNaN(estimateNum) || estimateNum === 0) return null;
+    return ((actualNum - estimateNum) / estimateNum) * 100;
+  };
+
+  const calculateQQGrowth = (current: any, previous: any): number | null => {
+    const currentNum = parseFloat(String(current));
+    const previousNum = parseFloat(String(previous));
+    
+    if (isNaN(currentNum) || isNaN(previousNum) || previousNum === 0) return null;
+    return ((currentNum - previousNum) / Math.abs(previousNum)) * 100;
+  };
+
+  const calculatePercentageChange = (current: any, previous: any): number | null => {
+    const currentNum = parseFloat(String(current));
+    const previousNum = parseFloat(String(previous));
+    
+    if (isNaN(currentNum) || isNaN(previousNum) || previousNum === 0) return null;
+    return ((currentNum - previousNum) / Math.abs(previousNum)) * 100;
+  };
+
+  // Enhanced getValue function to handle computed fields
+  const getValue = (stock: any, columnKey: string): any => {
+    switch (columnKey) {
+      case 'eps_surprise_pct':
+        return calculateEpsSurprise(stock.$qeps0, stock.$eps0);
+      case 'rev_surprise_pct':
+        return calculateRevenueSurprise(stock.$salesa1, stock.$salesqest);
+      case 'qq_growth_pct':
+        return calculateQQGrowth(stock.$salesa1, stock.$salesa2);
+      case 'nq_eps_change_pct':
+        return calculatePercentageChange(stock.nextqepsmean, stock.$eps0);
+      case 'nq_rev_change_pct':
+        return calculatePercentageChange(stock.$salesqestnextq, stock.$salesqest);
+      case 'cy_eps_change_pct':
+        return calculatePercentageChange(stock.curfyepsmean, stock.nextfyeps13wkago);
+      case 'cy_rev_change_pct':
+        return calculatePercentageChange(stock.curfysalesmean, stock.nextfysales13wkago);
+      // Map guidance fields to available data
+      case 'nq_eps_guide':
+        return stock.nextfyeps13wkago; // Use 13-week-ago next FY EPS as guidance baseline
+      case 'nq_rev_guide':
+        return stock.nextfysales13wkago; // Use 13-week-ago next FY sales as guidance baseline
+      case 'cy_eps_guide':
+        return stock.curfyeps13wkago; // Use 13-week-ago current FY EPS as guidance baseline
+      case 'cy_rev_guide':
+        return stock.curfysales13wkago; // Use 13-week-ago current FY sales as guidance baseline
+      default:
+        return stock[columnKey];
+    }
+  };
+
   const formatValue = (value: any, type: string = 'text'): string => {
     if (value === null || value === undefined || value === 'N/A' || value === '') {
       return 'N/A';
@@ -574,7 +645,7 @@ const RealTimeGrid: React.FC = () => {
   const matchesSearch = useCallback((stock: any, searchTerm: string, columnKey: string) => {
     if (!searchTerm.trim()) return true;
     
-    const value = stock[columnKey];
+    const value = getValue(stock, columnKey);
     if (value === null || value === undefined || value === 'N/A' || value === '') return false;
     
     const searchLower = searchTerm.toLowerCase().trim();
@@ -648,8 +719,8 @@ const RealTimeGrid: React.FC = () => {
     }
     
     return [...filteredData].sort((a, b) => {
-      const aValue = a[sortColumn];
-      const bValue = b[sortColumn];
+      const aValue = getValue(a, sortColumn);
+      const bValue = getValue(b, sortColumn);
       
       // Handle null/undefined/N/A values
       if (aValue === 'N/A' || aValue === null || aValue === undefined) return 1;
@@ -704,10 +775,19 @@ const RealTimeGrid: React.FC = () => {
   }, []);
 
   const orderedColumns = useMemo(() => {
-    return columnOrder
+    const result = columnOrder
       .map(key => defaultColumns.find(col => col.key === key))
       .filter(Boolean)
       .filter(col => visibleColumns.has(col!.key)) as ColumnConfig[];
+    
+    console.log('🔍 Ordered columns calculation:', {
+      columnOrder: columnOrder,
+      visibleColumns: Array.from(visibleColumns),
+      result: result.map(col => col.key),
+      resultCount: result.length
+    });
+    
+    return result;
   }, [columnOrder, visibleColumns]);
 
   // Analysis panel handlers
@@ -1481,7 +1561,7 @@ const RealTimeGrid: React.FC = () => {
                   {orderedColumns.map((column, index) => (
                     <th
                       key={column.key}
-                      className={`px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider border-r border-neutral-200 dark:border-neutral-700 select-none transition-colors group ${
+                      className={`px-2 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 border-r border-neutral-200 dark:border-neutral-700 select-none transition-colors group ${
                         index === 0 ? 'sticky left-0 bg-neutral-50 dark:bg-neutral-800 z-20' : ''
                       } ${
                         draggedColumn === column.key 
@@ -1493,37 +1573,62 @@ const RealTimeGrid: React.FC = () => {
                       style={{ 
                         width: getColumnWidth(column.key, column.width),
                         maxWidth: getColumnWidth(column.key, column.width),
-                        minWidth: getColumnWidth(column.key, column.width)
+                        minWidth: getColumnWidth(column.key, column.width),
+                        overflow: 'hidden'
                       }}
                       onDragOver={(e) => handleDragOver(e, column.key)}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, column.key)}
                     >
                       <div 
-                        className={`flex items-center gap-2 ${!isMobile ? 'cursor-move hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded px-1 -mx-1' : ''}`}
+                        className={`flex items-center gap-1 ${!isMobile ? 'cursor-move hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded px-1 -mx-1' : ''}`}
                         draggable={!isMobile}
                         onDragStart={(e) => handleDragStart(e, column.key)}
                         onDragEnd={handleDragEnd}
+                        style={{ width: '100%', minWidth: 0 }}
                       >
                         {!isMobile && (
                           <GripVertical 
-                            size={12} 
+                            size={10} 
                             className="text-neutral-400 dark:text-neutral-500 flex-shrink-0" 
                           />
                         )}
-                        <div className="flex items-center gap-1 flex-1">
+                        <div className="flex items-center gap-1 flex-1 min-w-0 overflow-hidden">
                           {column.sortable ? (
                             <button
                               onClick={() => handleSort(column.key)}
-                              className="flex items-center gap-1 hover:text-neutral-700 dark:hover:text-neutral-200"
+                              className="flex items-center gap-1 hover:text-neutral-700 dark:hover:text-neutral-200 min-w-0 flex-1 overflow-hidden"
+                              style={{ justifyContent: 'flex-start' }}
                             >
-                              <span className="truncate">{column.label}</span>
+                              <span 
+                                className="text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis"
+                                style={{ 
+                                  fontSize: 'clamp(9px, 0.8vw, 12px)',
+                                  maxWidth: '100%',
+                                  display: 'block'
+                                }}
+                                title={column.label}
+                              >
+                                {column.label}
+                              </span>
                               {sortColumn === column.key && (
-                                sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />
+                                <div className="flex-shrink-0 ml-1">
+                                  {sortDirection === 'asc' ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                                </div>
                               )}
                             </button>
                           ) : (
-                            <span className="truncate">{column.label}</span>
+                            <span 
+                              className="text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis"
+                              style={{ 
+                                fontSize: 'clamp(9px, 0.8vw, 12px)',
+                                maxWidth: '100%',
+                                display: 'block'
+                              }}
+                              title={column.label}
+                            >
+                              {column.label}
+                            </span>
                           )}
                         </div>
                       </div>
@@ -1565,7 +1670,7 @@ const RealTimeGrid: React.FC = () => {
                     title={`Click to view analysis for ${stock.ticker}`}
                   >
                     {orderedColumns.map((column, colIndex) => {
-                      const value = stock[column.key];
+                      const value = getValue(stock, column.key);
                       const cellColor = getCellColor(value, column.colorCode);
                       
                       return (
@@ -1606,7 +1711,6 @@ const RealTimeGrid: React.FC = () => {
             setFeedbackModalOpen={setFeedbackModalOpen}
             messages={selectedTicker ? tickerMessages : messages}
             selectedTicker={selectedTicker}
-            tickerMessagesLoading={tickerMessagesLoading}
           />
         </div>
       </div>

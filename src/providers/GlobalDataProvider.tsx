@@ -35,6 +35,17 @@ export interface StockMetric {
   curfyepsmean: number | string;
   nextfysales13wkago: number | string;
   curqepsmean: number | string;
+  // Additional fields for new column structure
+  $qeps0?: number | string; // Current quarter EPS actual
+  $qeps1?: number | string; // Previous quarter EPS actual
+  $qeps2?: number | string; // 2 quarters ago EPS actual
+  $qeps3?: number | string; // 3 quarters ago EPS actual
+  $qeps4?: number | string; // 4 quarters ago EPS actual
+  $salesa1?: number | string; // Previous quarter revenue actual
+  $salesa2?: number | string; // 2 quarters ago revenue actual
+  $salesa3?: number | string; // 3 quarters ago revenue actual
+  $salesa4?: number | string; // 4 quarters ago revenue actual
+  $salesa5?: number | string; // 5 quarters ago revenue actual
   [key: string]: any;
 }
 
