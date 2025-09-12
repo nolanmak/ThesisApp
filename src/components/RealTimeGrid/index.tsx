@@ -6,7 +6,7 @@ import AnalysisPanel from '../Earnings/ui/AnalysisPanel';
 import useGlobalData from '../../hooks/useGlobalData';
 import { Message } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
-import { getUserProfile, updateUserProfile, UserProfile } from '../../services/api';
+import { getUserProfile, updateUserProfile, UserProfile, getScheduledEarnings, ScheduledEarning } from '../../services/api';
 
 interface ColumnConfig {
   key: string;
@@ -30,7 +30,8 @@ interface GridView {
     showWatchlistOnly: boolean;
     searchValue: string;
     searchColumn: string;
-    selectedDate?: string; // For future date range functionality
+    startDate?: string;
+    endDate?: string;
   };
   createdAt: string;
   updatedAt: string;
@@ -61,7 +62,9 @@ const RealTimeGrid: React.FC = () => {
   const [sortColumn, setSortColumn] = useState<string>('ticker');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showWatchlistOnly, setShowWatchlistOnly] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [scheduledTickers, setScheduledTickers] = useState<string[]>([]);
   const [columnOrder, setColumnOrder] = useState<string[]>([]);
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set());
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
@@ -142,34 +145,11 @@ const RealTimeGrid: React.FC = () => {
   // Initialize column order and visibility
   useEffect(() => {
     if (columnOrder.length === 0) {
-      // Load saved column order or use default
-      const savedOrder = localStorage.getItem('realTimeGrid-columnOrder');
-      if (savedOrder) {
-        const parsedOrder = JSON.parse(savedOrder);
-        // Ensure all default columns are present and remove any that no longer exist
-        const validOrder = parsedOrder.filter((key: string) => defaultColumns.some(col => col.key === key));
-        const missingColumns = defaultColumns.filter(col => !validOrder.includes(col.key)).map(col => col.key);
-        setColumnOrder([...validOrder, ...missingColumns]);
-      } else {
-        setColumnOrder(defaultColumns.map(col => col.key));
-      }
+      setColumnOrder(defaultColumns.map(col => col.key));
     }
     if (visibleColumns.size === 0) {
-      // Load saved preferences or show all columns by default
-      const savedVisibility = localStorage.getItem('realTimeGrid-visibleColumns');
-      if (savedVisibility) {
-        const parsedSet = new Set(JSON.parse(savedVisibility));
-        setVisibleColumns(parsedSet);
-        // Also update columnVisibility state
-        const visibility = { ...initialColumnVisibility };
-        Object.keys(visibility).forEach(key => {
-          visibility[key] = parsedSet.has(key);
-        });
-        setColumnVisibility(visibility);
-      } else {
-        setVisibleColumns(new Set(defaultColumns.map(col => col.key)));
-        setColumnVisibility(initialColumnVisibility);
-      }
+      setVisibleColumns(new Set(defaultColumns.map(col => col.key)));
+      setColumnVisibility(initialColumnVisibility);
     }
   }, [initialColumnVisibility]);
 
@@ -323,14 +303,12 @@ const RealTimeGrid: React.FC = () => {
     // Apply column order
     if (settings.columnOrder) {
       setColumnOrder(settings.columnOrder);
-      localStorage.setItem('realTimeGrid-columnOrder', JSON.stringify(settings.columnOrder));
     }
     
     // Apply visible columns
     if (settings.visibleColumns) {
       const visibleSet = new Set(settings.visibleColumns);
       setVisibleColumns(visibleSet);
-      localStorage.setItem('realTimeGrid-visibleColumns', JSON.stringify(settings.visibleColumns));
       
       // Also update columnVisibility state
       const visibility = { ...initialColumnVisibility };
@@ -353,9 +331,12 @@ const RealTimeGrid: React.FC = () => {
     setSearchValue(settings.searchValue || '');
     setSearchColumn(settings.searchColumn || 'ticker');
     
-    // Apply selected date if available
-    if (settings.selectedDate) {
-      setSelectedDate(settings.selectedDate);
+    // Apply date range if available
+    if (settings.startDate) {
+      setStartDate(settings.startDate);
+    }
+    if (settings.endDate) {
+      setEndDate(settings.endDate);
     }
     
     setCurrentViewId(view.id);
@@ -370,9 +351,10 @@ const RealTimeGrid: React.FC = () => {
       showWatchlistOnly,
       searchValue,
       searchColumn,
-      selectedDate
+      startDate,
+      endDate
     };
-  }, [columnOrder, visibleColumns, sortColumn, sortDirection, showWatchlistOnly, searchValue, searchColumn, selectedDate]);
+  }, [columnOrder, visibleColumns, sortColumn, sortDirection, showWatchlistOnly, searchValue, searchColumn, startDate, endDate]);
 
   const createNewView = useCallback(async (name: string, description?: string, isDefault?: boolean) => {
     const newView: GridView = {
@@ -411,6 +393,27 @@ const RealTimeGrid: React.FC = () => {
       loadUserViews();
     }
   }, [user?.email, loadUserViews]);
+
+  // Fetch scheduled earnings when date range changes
+  useEffect(() => {
+    const fetchScheduledEarnings = async () => {
+      if (startDate || endDate) {
+        try {
+          const scheduled = await getScheduledEarnings(startDate || undefined, endDate || undefined);
+          const tickers = scheduled.map(earning => earning.ticker.toUpperCase());
+          setScheduledTickers(tickers);
+        } catch (error) {
+          console.error('Error fetching scheduled earnings:', error);
+          setScheduledTickers([]);
+        }
+      } else {
+        // Clear filter when no dates are selected
+        setScheduledTickers([]);
+      }
+    };
+
+    fetchScheduledEarnings();
+  }, [startDate, endDate]);
 
   // No need for local API fetching - data comes from GlobalDataProvider
 
@@ -523,9 +526,16 @@ const RealTimeGrid: React.FC = () => {
     
     let filteredData = stockData;
     
+    // Filter by date range (scheduled earnings) if dates are selected
+    if ((startDate || endDate) && scheduledTickers.length > 0) {
+      filteredData = filteredData.filter(stock => 
+        scheduledTickers.includes(stock.ticker.toUpperCase())
+      );
+    }
+    
     // Filter by watchlist if enabled
     if (showWatchlistOnly && watchlist.length > 0) {
-      filteredData = stockData.filter(stock => 
+      filteredData = filteredData.filter(stock => 
         watchlist.includes(stock.ticker.toUpperCase())
       );
     }
@@ -557,7 +567,7 @@ const RealTimeGrid: React.FC = () => {
       
       return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [stockData, sortColumn, sortDirection, showWatchlistOnly, watchlist, searchValue, searchColumn, matchesSearch]);
+  }, [stockData, sortColumn, sortDirection, showWatchlistOnly, watchlist, searchValue, searchColumn, matchesSearch, startDate, endDate, scheduledTickers]);
 
   // Toggle column visibility
   const toggleColumnVisibility = useCallback((columnKey: string) => {
@@ -568,8 +578,6 @@ const RealTimeGrid: React.FC = () => {
       } else {
         newSet.add(columnKey);
       }
-      // Save to localStorage
-      localStorage.setItem('realTimeGrid-visibleColumns', JSON.stringify([...newSet]));
       return newSet;
     });
   }, []);
@@ -578,14 +586,12 @@ const RealTimeGrid: React.FC = () => {
   const toggleAllColumns = useCallback((show: boolean) => {
     const newSet = show ? new Set(defaultColumns.map(col => col.key)) : new Set(['ticker']); // Always keep ticker visible
     setVisibleColumns(newSet);
-    localStorage.setItem('realTimeGrid-visibleColumns', JSON.stringify([...newSet]));
   }, []);
 
   // Reset column order to default
   const resetColumnOrder = useCallback(() => {
     const defaultOrder = defaultColumns.map(col => col.key);
     setColumnOrder(defaultOrder);
-    localStorage.setItem('realTimeGrid-columnOrder', JSON.stringify(defaultOrder));
   }, []);
 
   const orderedColumns = useMemo(() => {
@@ -637,8 +643,6 @@ const RealTimeGrid: React.FC = () => {
         newOrder.splice(targetIndex, 0, sourceColumnKey);
         
         setColumnOrder(newOrder);
-        // Save to localStorage
-        localStorage.setItem('realTimeGrid-columnOrder', JSON.stringify(newOrder));
       }
     }
     
@@ -955,12 +959,35 @@ const RealTimeGrid: React.FC = () => {
                   
                   <div className="flex items-center gap-2">
                     <Calendar size={16} className="text-neutral-500" />
-                    <input
-                      type="date"
-                      value={selectedDate}
-                      onChange={(e) => setSelectedDate(e.target.value)}
-                      className="text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        placeholder="Start date"
+                        className="text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 w-36"
+                      />
+                      <span className="text-neutral-400 dark:text-neutral-500">to</span>
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        placeholder="End date"
+                        className="text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 w-36"
+                      />
+                      {(startDate || endDate) && (
+                        <button
+                          onClick={() => {
+                            setStartDate('');
+                            setEndDate('');
+                          }}
+                          className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 px-2 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
+                          title="Clear date range"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
                   </div>
                   
                   {/* Search */}
@@ -1014,6 +1041,11 @@ const RealTimeGrid: React.FC = () => {
                   {showWatchlistOnly && (
                     <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
                       Watchlist ({watchlist.length})
+                    </span>
+                  )}
+                  {(startDate || endDate) && scheduledTickers.length > 0 && (
+                    <span className="ml-2 text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded">
+                      Scheduled ({scheduledTickers.length})
                     </span>
                   )}
                   {searchValue.trim() && (
@@ -1354,6 +1386,8 @@ const RealTimeGrid: React.FC = () => {
                     <li>• Sort: {editingView.settings.sortColumn} ({editingView.settings.sortDirection})</li>
                     <li>• Search: {editingView.settings.searchColumn}</li>
                     <li>• Watchlist: {editingView.settings.showWatchlistOnly ? 'On' : 'Off'}</li>
+                    <li>• Date range: {editingView.settings.startDate || editingView.settings.endDate ? 
+                      `${editingView.settings.startDate || 'Any'} to ${editingView.settings.endDate || 'Any'}` : 'None'}</li>
                   </ul>
                 </div>
               </div>

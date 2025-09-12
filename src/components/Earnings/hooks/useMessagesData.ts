@@ -95,18 +95,17 @@ const useMessagesData = (initialSearchTicker: string = '') => {
   }, [enabled, enableWebSocket, disableWebSocket]);
 
   // Fetch messages with optional search parameters
-  const fetchMessages = useCallback(async (bypassCache: boolean = false, resetMessages: boolean = true, searchTerm?: string) => {
+  const fetchMessages = useCallback(async (resetMessages: boolean = true, searchTerm?: string) => {
     try {
       // Set appropriate loading state
       setState(prev => ({
         ...prev,
         loading: resetMessages && !prev.messages.length, // Only show full page loading on initial load
-        refreshing: bypassCache && prev.messages.length > 0 && resetMessages // Show refreshing indicator for subsequent loads
+        refreshing: prev.messages.length > 0 && resetMessages // Show refreshing indicator for subsequent loads
       }));
       
       // Use backend search if searchTerm is provided, otherwise get all messages
       const response: PaginatedMessageResponse = await getMessages(
-        bypassCache, 
         50, // limit
         undefined, // lastKey
         searchTerm // hybrid search parameter (searches both ticker and company name)
@@ -149,7 +148,6 @@ const useMessagesData = (initialSearchTicker: string = '') => {
       
       // Pass current search term to maintain search context during pagination
       const response: PaginatedMessageResponse = await getMessages(
-        true, // bypassCache
         50, // limit
         state.nextKey, // lastKey
         state.searchTicker || undefined // searchTerm (hybrid search)
@@ -180,8 +178,8 @@ const useMessagesData = (initialSearchTicker: string = '') => {
   // Note: No longer need to store original messages since backend handles search
 
   // Handle manual refresh with toast notification
-  const handleRefreshWithToast = useCallback((bypassCache: boolean = true) => {
-    fetchMessages(bypassCache); // Bypass cache to get fresh data
+  const handleRefreshWithToast = useCallback(() => {
+    fetchMessages(); // Get fresh data from API
     toast.info('Feed refreshed');
   }, [fetchMessages]);
 
@@ -198,13 +196,13 @@ const useMessagesData = (initialSearchTicker: string = '') => {
       hasMoreMessages: false
     }));
 
-    // If search is being cleared, restore from cache if possible, otherwise fetch fresh
+    // If search is being cleared, fetch all messages; otherwise fetch with search term
     if (!searchTerm || searchTerm.trim() === '') {
-      // Clearing search - try to restore original cached state
-      fetchMessages(false, true, undefined); // Don't bypass cache on clear
+      // Clearing search - get all messages
+      fetchMessages(true, undefined);
     } else {
-      // Performing new search - bypass cache
-      fetchMessages(true, true, searchTerm);
+      // Performing new search - fetch with search term
+      fetchMessages(true, searchTerm);
     }
   }, [fetchMessages]);
 
@@ -226,7 +224,6 @@ const useMessagesData = (initialSearchTicker: string = '') => {
             // Fetch new messages silently (no toast notification)
             // Respect current search context during polling
             const response: PaginatedMessageResponse = await getMessages(
-              true, // bypass cache
               50, // limit
               undefined, // lastKey
               state.searchTicker || undefined // maintain hybrid search context

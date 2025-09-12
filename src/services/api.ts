@@ -1,5 +1,4 @@
 import { EarningsItem, CompanyConfig, Message } from "../types";
-import { cache, CACHE_KEYS } from "./cache";
 import { toast } from "react-toastify";
 
 // Base URLs - Use local proxy in development mode
@@ -18,12 +17,6 @@ export const AUDIO_WS_ENDPOINT =
   VITE_AUDIO_WS_ENDPOINT ||
   "wss://1me24ngqv0.execute-api.us-east-1.amazonaws.com/prod";
 
-// Cache expiry times (in milliseconds)
-const CACHE_EXPIRY = {
-  SHORT: 2 * 60 * 1000, // 2 minutes
-  MEDIUM: 5 * 60 * 1000, // 5 minutes
-  LONG: 15 * 60 * 1000, // 15 minutes
-};
 
 /**
  * Helper function to fetch data with authentication
@@ -128,22 +121,10 @@ export interface PaginatedMessageResponse {
 }
 
 export const getMessages = async (
-  bypassCache: boolean = true,
   limit: number = 50,
   lastKey?: string,
   searchTerm?: string
 ): Promise<PaginatedMessageResponse> => {
-  const cacheKey = CACHE_KEYS.MESSAGES;
-  const hasSearchParams = searchTerm;
-  
-  // Don't use cache when searching or paginating
-  const cachedMessages = !bypassCache && !lastKey && !hasSearchParams ? 
-    cache.get<PaginatedMessageResponse>(cacheKey) : null;
-
-  if (cachedMessages) {
-    return cachedMessages;
-  }
-
   try {
     // Build query parameters
     const queryParams = new URLSearchParams();
@@ -163,11 +144,6 @@ export const getMessages = async (
     const finalUrl = `/messages?${queryParams.toString()}`;
     console.log(`🔍 API: Making request to: ${finalUrl}`);
     const response = await fetchWithAuth<PaginatedMessageResponse>(finalUrl);
-
-    // Only cache the first page when no search/pagination params are used
-    if (!lastKey && !hasSearchParams) {
-      cache.set(cacheKey, response, CACHE_EXPIRY.SHORT);
-    }
     
     return response;
   } catch (error) {
@@ -183,10 +159,8 @@ export const getMessages = async (
 };
 
 // Keep the old function for backward compatibility, but mark as deprecated
-export const getMessagesLegacy = async (
-  bypassCache: boolean = true
-): Promise<Message[]> => {
-  const response = await getMessages(bypassCache);
+export const getMessagesLegacy = async (): Promise<Message[]> => {
+  const response = await getMessages();
   return response.messages;
 };
 
@@ -204,22 +178,9 @@ export const getMessageById = async (
 };
 
 // Earnings Items API
-export const getEarningsItems = async (
-  bypassCache: boolean = false
-): Promise<EarningsItem[]> => {
-  const cacheKey = CACHE_KEYS.EARNINGS_ITEMS;
-  const cachedItems = !bypassCache ? cache.get<EarningsItem[]>(cacheKey) : null;
-
-  if (cachedItems) {
-    return cachedItems;
-  }
-
+export const getEarningsItems = async (): Promise<EarningsItem[]> => {
   try {
     const items = await fetchWithAuth<EarningsItem[]>(`/earnings`);
-
-    // Cache the items
-    cache.set(cacheKey, items, CACHE_EXPIRY.SHORT);
-
     return items;
   } catch (error) {
     console.error("Error fetching earnings items:", error);
@@ -240,9 +201,6 @@ export const updateEarningsItem = async (
     if (!updatedItem) {
       throw new Error(`API request failed`);
     }
-
-    // Invalidate cache
-    cache.remove(CACHE_KEYS.EARNINGS_ITEMS);
 
     return updatedItem;
   } catch (error) {
@@ -265,9 +223,6 @@ export const createEarningsItem = async (
       throw new Error(`API request failed`);
     }
 
-    // Invalidate cache
-    cache.remove(CACHE_KEYS.EARNINGS_ITEMS);
-
     return newItem;
   } catch (error) {
     console.error("Error creating earnings item:", error);
@@ -278,18 +233,7 @@ export const createEarningsItem = async (
 // Company Config API
 export const getCompanyConfigs = async (): Promise<CompanyConfig[]> => {
   try {
-    // Check cache first
-    const cachedData = cache.get<CompanyConfig[]>(CACHE_KEYS.COMPANY_CONFIGS);
-    if (cachedData) {
-      return cachedData;
-    }
-
-    // If not in cache, fetch from API
     const data = await fetchWithAuth<CompanyConfig[]>(`/configs`);
-
-    // Store in cache
-    cache.set(CACHE_KEYS.COMPANY_CONFIGS, data, CACHE_EXPIRY.MEDIUM);
-
     return data;
   } catch (error) {
     console.error("Error fetching company configs:", error);
@@ -301,24 +245,9 @@ export const getCompanyConfigByTicker = async (
   ticker: string
 ): Promise<CompanyConfig | null> => {
   try {
-    const cacheKey = CACHE_KEYS.COMPANY_CONFIG(ticker);
-
-    // Check cache first
-    const cachedData = cache.get<CompanyConfig>(cacheKey);
-    if (cachedData) {
-      return cachedData;
-    }
-
-    // If not in cache, fetch from API
     const data = await fetchWithAuth<CompanyConfig | null>(
       `/configs/${ticker}`
     );
-
-    // Store in cache
-    if (data) {
-      cache.set(cacheKey, data, CACHE_EXPIRY.LONG);
-    }
-
     return data;
   } catch (error) {
     console.error("Error fetching company config by ticker:", error);
@@ -334,10 +263,6 @@ export const createOrUpdateCompanyConfig = async (
       method: "POST",
       body: JSON.stringify(config),
     });
-
-    // Invalidate caches
-    cache.remove(CACHE_KEYS.COMPANY_CONFIGS);
-    cache.remove(CACHE_KEYS.COMPANY_CONFIG(config.ticker));
 
     return data;
   } catch (error) {
@@ -433,12 +358,6 @@ export const getCompanyNames = async (
   ticker: string
 ): Promise<CompanyNameData | null> => {
   try {
-    const cacheKey = `company_names_${ticker}`;
-    const cachedData = cache.get<CompanyNameData>(cacheKey);
-    if (cachedData) {
-      return cachedData;
-    }
-
     // Use direct API call to the specific endpoint
     const response = await fetch(
       `https://47mvxdbu6f.execute-api.us-east-1.amazonaws.com/stock-names/${ticker}`,
@@ -495,9 +414,6 @@ export const getCompanyNames = async (
       company_names,
     };
 
-
-    // Cache the result for 30 minutes
-    cache.set(cacheKey, data, 30 * 60 * 1000);
     return data;
   } catch (error) {
     console.error(`Error fetching company names for ${ticker}:`, error);
@@ -557,5 +473,35 @@ export const getStockLogo = async (ticker: string): Promise<string | null> => {
   } catch (error) {
     console.error(`Error fetching logo for ${ticker}:`, error);
     return null;
+  }
+};
+
+// Scheduled Earnings API
+export interface ScheduledEarning {
+  ticker: string;
+  date: string;
+  quarter?: string;
+  year?: string;
+  time?: string;
+  company_name?: string;
+}
+
+export const getScheduledEarnings = async (
+  startDate?: string,
+  endDate?: string
+): Promise<ScheduledEarning[]> => {
+  try {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    
+    const queryString = params.toString();
+    const url = queryString ? `/schedule?${queryString}` : '/schedule';
+    
+    const response = await fetchWithAuth<ScheduledEarning[]>(url);
+    return response || [];
+  } catch (error) {
+    console.error('Error fetching scheduled earnings:', error);
+    return [];
   }
 };
