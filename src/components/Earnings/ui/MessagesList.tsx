@@ -1,11 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Message, MetricItem } from '../../../types';
-import { ExternalLink, BarChart2, Mic, TrendingUp } from 'lucide-react';
-import { ParseMessagePayload, ParseTranscriptMessage, ParseSentimentMessage } from '../utils/messageUtils';
+import { ExternalLink } from 'lucide-react';
+import { ParseMessagePayload } from '../utils/messageUtils';
 import { useAlpacaMarketData } from '../../../hooks/useAlpacaMarketData';
 import { useWatchlist } from '../../../hooks/useWatchlist';
 import { useAuth } from '../../../contexts/AuthContext';
-import StockLogo from '../../ui/StockLogo';
 
 interface MessagesListProps {
   messages: Message[];
@@ -127,7 +126,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
     return Array.from(tickerSet).sort();
   }, [deduplicatedMessages, twentyFourHoursAgo]);
 
-  const { marketData, isConnected, resetAllCumulativeVolume } = useAlpacaMarketData(uniqueTickers);
+  const { marketData, isConnected } = useAlpacaMarketData(uniqueTickers);
   
   // Format volume for inline display
   const formatVolume = (volume: number) => {
@@ -195,7 +194,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
       // Only filter out new messages that aren't in watchlist
       const filteredMessages = validMessages.filter(message => {
         // If this is an existing message (already seen), keep it regardless of watchlist
-        if (allSeenMessageIdsRef.current.has(message.message_id)) {
+        if (message.message_id && allSeenMessageIdsRef.current.has(message.message_id)) {
           return true;
         }
         // For new messages, apply watchlist filtering
@@ -297,7 +296,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
       prevMessagesRef.current = [...messages];
       
       // Add all initial message IDs to the seen set
-      const initialMessageIds = new Set(messages.map(msg => msg.message_id));
+      const initialMessageIds = new Set(messages.map(msg => msg.message_id).filter((id): id is string => id !== undefined));
       allSeenMessageIdsRef.current = initialMessageIds;
       
       initialLoadCompletedRef.current = true;
@@ -334,11 +333,13 @@ const MessagesList: React.FC<MessagesListProps> = ({
     
     // Update our record of all seen message IDs (for all messages, not just recent ones)
     messages.forEach(msg => {
-      allSeenMessageIdsRef.current.add(msg.message_id);
+      if (msg.message_id) {
+        allSeenMessageIdsRef.current.add(msg.message_id);
+      }
     });
     
     // Get IDs of genuinely new recent messages
-    const genuinelyNewMessageIds = genuinelyNewMessages.map(msg => msg.message_id);
+    const genuinelyNewMessageIds = genuinelyNewMessages.map(msg => msg.message_id).filter((id): id is string => id !== undefined);
     
     // If we have new recent messages, add them to the set and set a timer to remove them
     if (genuinelyNewMessageIds.length > 0) {
@@ -415,9 +416,9 @@ const MessagesList: React.FC<MessagesListProps> = ({
       >
       {deduplicatedMessages.map((message, index) => (
         <div 
-          key={message.message_id}
+          key={message.message_id || `message-${index}`}
           className={`bg-white dark:bg-neutral-800 py-2 px-2 border-b border-neutral-200 dark:border-neutral-700 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-700 ${
-            newMessageIds.has(message.message_id) 
+            message.message_id && newMessageIds.has(message.message_id) 
               ? 'border-l-4 border-l-green-500' 
               : ''
             } ${!message.link ? 'cursor-pointer' : ''}`}

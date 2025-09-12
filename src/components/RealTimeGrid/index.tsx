@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter, Eye, EyeOff, Search, GripVertical, Save, Bookmark, Edit3, Plus } from 'lucide-react';
+import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter, Eye, EyeOff, Search, GripVertical, Save, Bookmark, Edit3, Plus, AlertTriangle } from 'lucide-react';
 import { useMetricsData } from '../../hooks/useGlobalData';
 import { useWatchlist } from '../../hooks/useWatchlist';
 import AnalysisPanel from '../Earnings/ui/AnalysisPanel';
@@ -81,6 +81,9 @@ const RealTimeGrid: React.FC = () => {
   const [initialMessageSet, setInitialMessageSet] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showAnalysisPanel, setShowAnalysisPanel] = useState(false);
+  const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
+  const [tickerMessages, setTickerMessages] = useState<Message[]>([]);
+  const [tickerMessagesLoading, setTickerMessagesLoading] = useState<boolean>(false);
   
   // Search state
   const [searchValue, setSearchValue] = useState<string>('');
@@ -710,6 +713,24 @@ const RealTimeGrid: React.FC = () => {
   // Analysis panel handlers
   const handleCloseAnalysisPanel = () => {
     setShowAnalysisPanel(false);
+    setSelectedTicker(null);
+    setTickerMessages([]);
+    // Restore the original message selection if closing ticker-specific view
+    if (!initialMessageSet && messages.length > 0) {
+      const analysisMessages = messages.filter(msg => !msg.link);
+      
+      if (analysisMessages.length > 0) {
+        const sortedAnalysisMessages = [...analysisMessages].sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+        setSelectedMessage(sortedAnalysisMessages[0]);
+      } else if (messages.length > 0) {
+        const sortedMessages = [...messages].sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+        setSelectedMessage(sortedMessages[0]);
+      }
+    }
   };
 
   // Dummy handler for feedback modal (not implemented in this context)
@@ -760,6 +781,65 @@ const RealTimeGrid: React.FC = () => {
     setDraggedColumn(null);
     setDragOverColumn(null);
   };
+
+  // Fetch ticker-specific messages
+  const fetchTickerMessages = useCallback(async (ticker: string) => {
+    setTickerMessagesLoading(true);
+    try {
+      // Import the API function from your existing services
+      const { getMessages } = await import('../../services/api');
+      
+      // Use the existing getMessages function with ticker search
+      const data = await getMessages(50, undefined, ticker.toUpperCase());
+      
+      // Group by message type and get the newest for each type
+      const messagesByType: Record<string, Message> = {};
+      
+      if (data.messages && Array.isArray(data.messages)) {
+        data.messages.forEach((message: Message) => {
+          const messageType = message.type || 'default';
+          
+          // If we don't have a message of this type yet, or this message is newer
+          if (!messagesByType[messageType] || 
+              new Date(message.timestamp) > new Date(messagesByType[messageType].timestamp)) {
+            messagesByType[messageType] = message;
+          }
+        });
+      }
+      
+      // Convert to array and sort by timestamp (newest first)
+      const newestMessages = Object.values(messagesByType).sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+      
+      setTickerMessages(newestMessages);
+      
+      // Set the first (newest) message as selected for the analysis panel
+      if (newestMessages.length > 0) {
+        setSelectedMessage(newestMessages[0]);
+      } else {
+        // No messages found - set to null so fundamentals tab will show by default
+        setSelectedMessage(null);
+      }
+      
+      console.log(`✅ Found ${newestMessages.length} unique message types for ${ticker}:`, 
+        newestMessages.map(m => `${m.type} (${m.timestamp})`));
+      
+    } catch (error) {
+      console.error('Error fetching ticker messages:', error);
+      setTickerMessages([]);
+      setSelectedMessage(null);
+    } finally {
+      setTickerMessagesLoading(false);
+    }
+  }, []);
+
+  // Handle row click to select ticker and fetch messages
+  const handleTickerRowClick = useCallback(async (ticker: string) => {
+    setSelectedTicker(ticker);
+    setShowAnalysisPanel(true);
+    await fetchTickerMessages(ticker);
+  }, [fetchTickerMessages]);
 
   // Column resizing handlers
   const handleResizeStart = (e: React.MouseEvent, columnKey: string) => {
@@ -1268,6 +1348,19 @@ const RealTimeGrid: React.FC = () => {
                       Filtered
                     </span>
                   )}
+                  {selectedTicker && (
+                    <span className={`ml-2 text-xs px-2 py-1 rounded flex items-center gap-1 ${
+                      tickerMessages.length === 0 && !tickerMessagesLoading
+                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
+                        : 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200'
+                    }`}>
+                      {tickerMessagesLoading && <RefreshCw size={12} className="animate-spin" />}
+                      Selected: {selectedTicker}
+                      {tickerMessages.length === 0 && !tickerMessagesLoading && (
+                        <span className="text-xs opacity-75">(Fundamentals)</span>
+                      )}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -1450,7 +1543,16 @@ const RealTimeGrid: React.FC = () => {
               </thead>
               <tbody className="bg-white dark:bg-neutral-900 divide-y divide-neutral-200 dark:divide-neutral-700">
                 {sortedData.map((stock) => (
-                  <tr key={stock.ticker} className="hover:bg-neutral-50 dark:hover:bg-neutral-800">
+                  <tr 
+                    key={stock.ticker} 
+                    className={`hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer transition-colors ${
+                      selectedTicker === stock.ticker 
+                        ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500' 
+                        : ''
+                    }`}
+                    onClick={() => handleTickerRowClick(stock.ticker)}
+                    title={`Click to view analysis for ${stock.ticker}`}
+                  >
                     {orderedColumns.map((column, colIndex) => {
                       const value = stock[column.key];
                       const cellColor = getCellColor(value, column.colorCode);
@@ -1491,7 +1593,9 @@ const RealTimeGrid: React.FC = () => {
             convertToEasternTime={convertToEasternTime}
             handleCloseAnalysisPanel={handleCloseAnalysisPanel}
             setFeedbackModalOpen={setFeedbackModalOpen}
-            messages={messages}
+            messages={selectedTicker ? tickerMessages : messages}
+            selectedTicker={selectedTicker}
+            tickerMessagesLoading={tickerMessagesLoading}
           />
         </div>
       </div>
