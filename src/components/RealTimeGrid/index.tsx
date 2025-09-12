@@ -54,6 +54,10 @@ const RealTimeGrid: React.FC = () => {
   const [searchColumn, setSearchColumn] = useState<string>('ticker');
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const searchDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Drag and drop state
+  const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
 
   // Define column configuration
   const defaultColumns: ColumnConfig[] = [
@@ -94,7 +98,17 @@ const RealTimeGrid: React.FC = () => {
   // Initialize column order and visibility
   useEffect(() => {
     if (columnOrder.length === 0) {
-      setColumnOrder(defaultColumns.map(col => col.key));
+      // Load saved column order or use default
+      const savedOrder = localStorage.getItem('realTimeGrid-columnOrder');
+      if (savedOrder) {
+        const parsedOrder = JSON.parse(savedOrder);
+        // Ensure all default columns are present and remove any that no longer exist
+        const validOrder = parsedOrder.filter((key: string) => defaultColumns.some(col => col.key === key));
+        const missingColumns = defaultColumns.filter(col => !validOrder.includes(col.key)).map(col => col.key);
+        setColumnOrder([...validOrder, ...missingColumns]);
+      } else {
+        setColumnOrder(defaultColumns.map(col => col.key));
+      }
     }
     if (visibleColumns.size === 0) {
       // Load saved preferences or show all columns by default
@@ -328,6 +342,13 @@ const RealTimeGrid: React.FC = () => {
     localStorage.setItem('realTimeGrid-visibleColumns', JSON.stringify([...newSet]));
   }, []);
 
+  // Reset column order to default
+  const resetColumnOrder = useCallback(() => {
+    const defaultOrder = defaultColumns.map(col => col.key);
+    setColumnOrder(defaultOrder);
+    localStorage.setItem('realTimeGrid-columnOrder', JSON.stringify(defaultOrder));
+  }, []);
+
   const orderedColumns = useMemo(() => {
     return columnOrder
       .map(key => defaultColumns.find(col => col.key === key))
@@ -343,6 +364,52 @@ const RealTimeGrid: React.FC = () => {
   // Dummy handler for feedback modal (not implemented in this context)
   const setFeedbackModalOpen = (open: boolean) => {
     // Could be implemented later if needed
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, columnKey: string) => {
+    setDraggedColumn(columnKey);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', columnKey);
+  };
+
+  const handleDragOver = (e: React.DragEvent, columnKey: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverColumn(columnKey);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverColumn(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetColumnKey: string) => {
+    e.preventDefault();
+    const sourceColumnKey = e.dataTransfer.getData('text/plain');
+    
+    if (sourceColumnKey && sourceColumnKey !== targetColumnKey) {
+      const newOrder = [...columnOrder];
+      const sourceIndex = newOrder.indexOf(sourceColumnKey);
+      const targetIndex = newOrder.indexOf(targetColumnKey);
+      
+      if (sourceIndex !== -1 && targetIndex !== -1) {
+        // Remove source column and insert at target position
+        newOrder.splice(sourceIndex, 1);
+        newOrder.splice(targetIndex, 0, sourceColumnKey);
+        
+        setColumnOrder(newOrder);
+        // Save to localStorage
+        localStorage.setItem('realTimeGrid-columnOrder', JSON.stringify(newOrder));
+      }
+    }
+    
+    setDraggedColumn(null);
+    setDragOverColumn(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedColumn(null);
+    setDragOverColumn(null);
   };
 
   if (isLoading && stockData.length === 0) {
@@ -411,7 +478,7 @@ const RealTimeGrid: React.FC = () => {
                         <div className="p-3 border-b border-neutral-200 dark:border-neutral-700">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                              Column Visibility
+                              Column Settings
                             </span>
                             <button
                               onClick={() => setShowColumnToggle(false)}
@@ -420,7 +487,7 @@ const RealTimeGrid: React.FC = () => {
                               ×
                             </button>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 mb-3">
                             <button
                               onClick={() => toggleAllColumns(true)}
                               className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded hover:bg-blue-200 dark:hover:bg-blue-800"
@@ -434,6 +501,12 @@ const RealTimeGrid: React.FC = () => {
                               Hide All
                             </button>
                           </div>
+                          <button
+                            onClick={resetColumnOrder}
+                            className="w-full text-xs px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded hover:bg-orange-200 dark:hover:bg-orange-800"
+                          >
+                            Reset Column Order
+                          </button>
                         </div>
                         
                         <div className="p-2">
@@ -464,7 +537,14 @@ const RealTimeGrid: React.FC = () => {
                         </div>
                         
                         <div className="p-2 border-t border-neutral-200 dark:border-neutral-700 text-xs text-neutral-500 dark:text-neutral-400">
-                          {visibleColumns.size} of {defaultColumns.length} columns visible
+                          <div className="mb-1">
+                            {visibleColumns.size} of {defaultColumns.length} columns visible
+                          </div>
+                          {!isMobile && (
+                            <div className="text-xs text-neutral-400 dark:text-neutral-500">
+                              💡 Drag column headers to reorder
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -655,24 +735,48 @@ const RealTimeGrid: React.FC = () => {
                   {orderedColumns.map((column, index) => (
                     <th
                       key={column.key}
-                      className={`px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider border-r border-neutral-200 dark:border-neutral-700 ${
+                      draggable={!isMobile}
+                      onDragStart={(e) => handleDragStart(e, column.key)}
+                      onDragOver={(e) => handleDragOver(e, column.key)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, column.key)}
+                      onDragEnd={handleDragEnd}
+                      className={`px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider border-r border-neutral-200 dark:border-neutral-700 select-none transition-colors ${
                         index === 0 ? 'sticky left-0 bg-neutral-50 dark:bg-neutral-800 z-20' : ''
+                      } ${
+                        draggedColumn === column.key 
+                          ? 'opacity-50' 
+                          : dragOverColumn === column.key 
+                            ? 'bg-blue-100 dark:bg-blue-900/30' 
+                            : ''
+                      } ${
+                        !isMobile ? 'cursor-move hover:bg-neutral-100 dark:hover:bg-neutral-700' : ''
                       }`}
                       style={{ width: column.width }}
                     >
-                      {column.sortable ? (
-                        <button
-                          onClick={() => handleSort(column.key)}
-                          className="flex items-center gap-1 hover:text-neutral-700 dark:hover:text-neutral-200"
-                        >
-                          {column.label}
-                          {sortColumn === column.key && (
-                            sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />
+                      <div className="flex items-center gap-2">
+                        {!isMobile && (
+                          <GripVertical 
+                            size={12} 
+                            className="text-neutral-400 dark:text-neutral-500 flex-shrink-0" 
+                          />
+                        )}
+                        <div className="flex items-center gap-1 flex-1">
+                          {column.sortable ? (
+                            <button
+                              onClick={() => handleSort(column.key)}
+                              className="flex items-center gap-1 hover:text-neutral-700 dark:hover:text-neutral-200"
+                            >
+                              <span className="truncate">{column.label}</span>
+                              {sortColumn === column.key && (
+                                sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />
+                              )}
+                            </button>
+                          ) : (
+                            <span className="truncate">{column.label}</span>
                           )}
-                        </button>
-                      ) : (
-                        column.label
-                      )}
+                        </div>
+                      </div>
                     </th>
                   ))}
                 </tr>
