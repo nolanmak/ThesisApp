@@ -104,8 +104,8 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
       label: 'Transcript', 
       message: relatedMessages.transcript,
       colors: {
-        active: 'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200',
-        inactive: 'text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 hover:bg-amber-50 dark:hover:bg-amber-900/30'
+        active: 'bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200',
+        inactive: 'text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 hover:bg-purple-50 dark:hover:bg-purple-900/30'
       }
     });
     // Always show fundamentals tab if we have a ticker and metrics data
@@ -482,7 +482,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                   // Display transcript analysis with structured data
                   <div className="space-y-4">
                     {/* Show just the preview text */}
-                    <div className="text-amber-700 dark:text-amber-400 font-semibold mb-3">
+                    <div className="text-purple-700 dark:text-purple-400 font-semibold mb-3">
                       {currentMessage && ParseTranscriptMessage(currentMessage) || '📊 Earnings Call Transcript Analysis'}
                     </div>
                     
@@ -491,7 +491,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                       <div className="space-y-4">
                         {Object.entries(parsedTranscriptData).map(([section, items]) => (
                           <div key={section}>
-                            <div className="text-amber-700 dark:text-amber-400 font-semibold mb-2">{section}</div>
+                            <div className="text-purple-700 dark:text-purple-400 font-semibold mb-2">{section}</div>
                             <ul className="space-y-1 list-disc pl-5">
                               {items.map((item, idx) => (
                                 <li key={idx} className="text-neutral-600 dark:text-neutral-300">
