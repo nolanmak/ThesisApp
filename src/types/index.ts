@@ -16,23 +16,28 @@ export type MetricItem = {
 } | string;
 
 export interface Message {
-  message_id: string;
-  discord_message: string;
+  message_id?: string;
+  id?: string; // Alternative ID field used in fallback messages
+  discord_message?: string;
   timestamp: string;
   ticker: string;
-  year: string;
-  quarter: string;
+  year?: string;
+  quarter?: string;
   is_read?: boolean;
   subject?: string;
   source?: string;
-  link?: string;
+  link?: string | null;
   company_name?: string;
   audio_url?: string;
   transcript_data?: string;
   sentiment_additional_metrics?: string;
   report_data?: {
     link?: string;
-  }
+  };
+  title?: string; // Used for message titles
+  content?: string; // Used for message content
+  type?: string; // Used for message type classification
+  fundamentals_data?: string | object; // Used for fundamentals analysis data
 }
 
 export interface VerifyKeywords {

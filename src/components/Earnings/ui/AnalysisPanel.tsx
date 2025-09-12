@@ -13,7 +13,6 @@ interface AnalysisPanelProps {
   setFeedbackModalOpen: (open: boolean) => void;
   messages?: Message[]; // Add messages prop to access all messages for tab filtering
   selectedTicker?: string | null; // Add selected ticker from RealTimeGrid
-  tickerMessagesLoading?: boolean; // Add loading state from RealTimeGrid
 }
 
 const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
@@ -24,8 +23,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   handleCloseAnalysisPanel,
   setFeedbackModalOpen,
   messages = [],
-  selectedTicker = null,
-  tickerMessagesLoading = false
+  selectedTicker = null
 }) => {
   const [activeTab, setActiveTab] = useState<string>('earnings');
   const { metricsData } = useGlobalData();
@@ -122,8 +120,10 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
           type: 'fundamentals',
           title: `Fundamentals for ${currentTicker}`,
           content: '',
-          link: null
-        }, 
+          link: null,
+          year: undefined,
+          quarter: undefined
+        } as Message, 
         colors: {
           active: 'bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-200',
           inactive: 'text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-200 hover:bg-orange-50 dark:hover:bg-orange-900/30'
@@ -162,11 +162,14 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
         setActiveTab('fundamentals');
       } else if (availableTabIds.length > 0) {
         // Default to first available tab
-        setActiveTab(availableTabIds[0]);
+        const firstTab = availableTabIds[0];
+        if (firstTab) {
+          setActiveTab(firstTab);
+        }
       }
       
-      setLastMessageId(selectedMessage?.message_id || null);
-      setLastTicker(currentTicker);
+      setLastMessageId(selectedMessage?.message_id ?? selectedMessage?.id ?? null);
+      setLastTicker(currentTicker || null);
     }
   }, [selectedMessage, availableTabs, lastMessageId, currentTicker, lastTicker]);
 
