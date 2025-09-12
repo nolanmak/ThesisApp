@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter, Eye, EyeOff } from 'lucide-react';
+import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter, Eye, EyeOff, Search, GripVertical } from 'lucide-react';
 import { useMetricsData } from '../../hooks/useGlobalData';
 import { useWatchlist } from '../../hooks/useWatchlist';
 import AnalysisPanel from '../Earnings/ui/AnalysisPanel';
@@ -48,6 +48,12 @@ const RealTimeGrid: React.FC = () => {
   const [initialMessageSet, setInitialMessageSet] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showAnalysisPanel, setShowAnalysisPanel] = useState(false);
+  
+  // Search state
+  const [searchValue, setSearchValue] = useState<string>('');
+  const [searchColumn, setSearchColumn] = useState<string>('ticker');
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const searchDropdownRef = useRef<HTMLDivElement>(null);
 
   // Define column configuration
   const defaultColumns: ColumnConfig[] = [
@@ -68,6 +74,22 @@ const RealTimeGrid: React.FC = () => {
     { key: 'gmgn%q', label: 'Gross Margin %', width: 140, sortable: true, type: 'percentage', colorCode: 'performance' },
     { key: 'projpenextfy', label: 'Proj P/E Next FY', width: 140, sortable: true, type: 'number' },
   ];
+
+  // Searchable columns (subset of default columns that make sense to search)
+  const searchableColumns = useMemo(() => [
+    { key: 'ticker', label: 'Ticker' },
+    { key: 'industry', label: 'Industry' },
+    { key: '$eps0', label: 'Current EPS' },
+    { key: '$eps1', label: 'EPS -1Q' },
+    { key: '$eps2', label: 'EPS -2Q' },
+    { key: '$eps3', label: 'EPS -3Q' },
+    { key: '$eps4', label: 'EPS -4Q' },
+    { key: 'nextfyepsmean', label: 'Next FY EPS' },
+    { key: 'peexclxorttm', label: 'P/E Ratio' },
+    { key: 'pr2bookq', label: 'P/B Ratio' },
+    { key: 'salesa', label: 'Sales (Annual)' },
+    { key: 'gmgn%q', label: 'Gross Margin %' },
+  ], []);
 
   // Initialize column order and visibility
   useEffect(() => {
@@ -120,19 +142,22 @@ const RealTimeGrid: React.FC = () => {
     }
   }, [messages, initialMessageSet]);
 
-  // Close column toggle when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (columnToggleRef.current && !columnToggleRef.current.contains(event.target as Node)) {
         setShowColumnToggle(false);
       }
+      if (searchDropdownRef.current && !searchDropdownRef.current.contains(event.target as Node)) {
+        setShowSearchDropdown(false);
+      }
     };
 
-    if (showColumnToggle) {
+    if (showColumnToggle || showSearchDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showColumnToggle]);
+  }, [showColumnToggle, showSearchDropdown]);
 
   // No need for local API fetching - data comes from GlobalDataProvider
 
@@ -189,6 +214,57 @@ const RealTimeGrid: React.FC = () => {
     }
   };
 
+  // Search function that works with different column types
+  const matchesSearch = useCallback((stock: any, searchTerm: string, columnKey: string) => {
+    if (!searchTerm.trim()) return true;
+    
+    const value = stock[columnKey];
+    if (value === null || value === undefined || value === 'N/A' || value === '') return false;
+    
+    const searchLower = searchTerm.toLowerCase().trim();
+    const column = defaultColumns.find(col => col.key === columnKey);
+    
+    // Handle different column types
+    switch (column?.type) {
+      case 'text':
+        return String(value).toLowerCase().includes(searchLower);
+      
+      case 'number':
+      case 'currency':
+      case 'percentage':
+        const numValue = parseFloat(String(value));
+        if (isNaN(numValue)) return false;
+        
+        // Check if search term is a number for exact/range matching
+        const searchNum = parseFloat(searchTerm);
+        if (!isNaN(searchNum)) {
+          // Allow for range searches like ">5", "<10", ">=2.5"
+          if (searchTerm.startsWith('>=')) {
+            const threshold = parseFloat(searchTerm.substring(2));
+            return !isNaN(threshold) && numValue >= threshold;
+          } else if (searchTerm.startsWith('<=')) {
+            const threshold = parseFloat(searchTerm.substring(2));
+            return !isNaN(threshold) && numValue <= threshold;
+          } else if (searchTerm.startsWith('>')) {
+            const threshold = parseFloat(searchTerm.substring(1));
+            return !isNaN(threshold) && numValue > threshold;
+          } else if (searchTerm.startsWith('<')) {
+            const threshold = parseFloat(searchTerm.substring(1));
+            return !isNaN(threshold) && numValue < threshold;
+          } else {
+            // Exact match or contains
+            return Math.abs(numValue - searchNum) < 0.01 || String(value).toLowerCase().includes(searchLower);
+          }
+        } else {
+          // Text search in formatted value
+          return String(value).toLowerCase().includes(searchLower);
+        }
+      
+      default:
+        return String(value).toLowerCase().includes(searchLower);
+    }
+  }, [defaultColumns]);
+
   const sortedData = useMemo(() => {
     if (!stockData.length) return [];
     
@@ -198,6 +274,13 @@ const RealTimeGrid: React.FC = () => {
     if (showWatchlistOnly && watchlist.length > 0) {
       filteredData = stockData.filter(stock => 
         watchlist.includes(stock.ticker.toUpperCase())
+      );
+    }
+    
+    // Filter by search
+    if (searchValue.trim()) {
+      filteredData = filteredData.filter(stock => 
+        matchesSearch(stock, searchValue, searchColumn)
       );
     }
     
@@ -221,7 +304,7 @@ const RealTimeGrid: React.FC = () => {
       
       return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [stockData, sortColumn, sortDirection, showWatchlistOnly, watchlist]);
+  }, [stockData, sortColumn, sortDirection, showWatchlistOnly, watchlist, searchValue, searchColumn, matchesSearch]);
 
   // Toggle column visibility
   const toggleColumnVisibility = useCallback((columnKey: string) => {
@@ -403,7 +486,7 @@ const RealTimeGrid: React.FC = () => {
             {/* Filters */}
             <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-4 sm:px-6 py-2">
               <div className="flex items-center justify-between max-w-full mx-auto">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 flex-wrap">
                   <label className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
                     <input
                       type="checkbox"
@@ -423,6 +506,51 @@ const RealTimeGrid: React.FC = () => {
                       className="text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
                     />
                   </div>
+                  
+                  {/* Search */}
+                  <div className="flex items-center gap-2">
+                    <div className="relative" ref={searchDropdownRef}>
+                      <button
+                        onClick={() => setShowSearchDropdown(!showSearchDropdown)}
+                        className="flex items-center gap-1 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded border border-neutral-300 dark:border-neutral-600"
+                      >
+                        {searchableColumns.find(col => col.key === searchColumn)?.label || 'Ticker'}
+                        <ChevronDown size={12} />
+                      </button>
+                      
+                      {showSearchDropdown && (
+                        <div className="absolute left-0 top-full mt-1 w-40 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                          {searchableColumns.map((column) => (
+                            <button
+                              key={column.key}
+                              onClick={() => {
+                                setSearchColumn(column.key);
+                                setShowSearchDropdown(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 ${
+                                searchColumn === column.key 
+                                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' 
+                                  : 'text-neutral-900 dark:text-neutral-100'
+                              }`}
+                            >
+                              {column.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="relative">
+                      <Search size={16} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-neutral-500" />
+                      <input
+                        type="text"
+                        placeholder={`Search in ${searchableColumns.find(col => col.key === searchColumn)?.label || 'Ticker'}...`}
+                        value={searchValue}
+                        onChange={(e) => setSearchValue(e.target.value)}
+                        className="text-sm border border-neutral-300 dark:border-neutral-600 rounded-md pl-8 pr-3 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 w-48"
+                      />
+                    </div>
+                  </div>
                 </div>
                 
                 <div className="text-sm text-neutral-500 dark:text-neutral-400">
@@ -430,6 +558,11 @@ const RealTimeGrid: React.FC = () => {
                   {showWatchlistOnly && (
                     <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
                       Watchlist ({watchlist.length})
+                    </span>
+                  )}
+                  {searchValue.trim() && (
+                    <span className="ml-2 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">
+                      Filtered
                     </span>
                   )}
                 </div>
@@ -462,36 +595,56 @@ const RealTimeGrid: React.FC = () => {
           <div className="flex items-center justify-center p-8">
             <div className="text-center">
               <div className="flex items-center justify-center w-16 h-16 bg-neutral-100 dark:bg-neutral-800 rounded-full mx-auto mb-4">
-                {showWatchlistOnly ? (
+                {searchValue.trim() ? (
+                  <Search className="text-neutral-500" size={32} />
+                ) : showWatchlistOnly ? (
                   <Filter className="text-neutral-500" size={32} />
                 ) : (
                   <Activity className="text-neutral-500" size={32} />
                 )}
               </div>
               <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">
-                {showWatchlistOnly ? "No Watchlist Stocks Found" : "No Metrics Available"}
+                {searchValue.trim() 
+                  ? "No Search Results Found"
+                  : showWatchlistOnly 
+                    ? "No Watchlist Stocks Found" 
+                    : "No Metrics Available"
+                }
               </h3>
               <p className="text-neutral-500 dark:text-neutral-400 mb-4">
-                {showWatchlistOnly 
-                  ? `No stocks from your watchlist (${watchlist.length} symbols) are currently available in the metrics data.`
-                  : "No real-time metrics data found. The API may be returning an empty dataset."
+                {searchValue.trim()
+                  ? `No stocks match "${searchValue}" in ${searchableColumns.find(col => col.key === searchColumn)?.label || 'Ticker'}.`
+                  : showWatchlistOnly 
+                    ? `No stocks from your watchlist (${watchlist.length} symbols) are currently available in the metrics data.`
+                    : "No real-time metrics data found. The API may be returning an empty dataset."
                 }
               </p>
-              {showWatchlistOnly ? (
-                <button
-                  onClick={() => setShowWatchlistOnly(false)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  Show All Stocks
-                </button>
-              ) : (
-                <button
-                  onClick={handleRefresh}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  Refresh Data
-                </button>
-              )}
+              <div className="flex gap-2 justify-center">
+                {searchValue.trim() && (
+                  <button
+                    onClick={() => setSearchValue('')}
+                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                  >
+                    Clear Search
+                  </button>
+                )}
+                {showWatchlistOnly && (
+                  <button
+                    onClick={() => setShowWatchlistOnly(false)}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  >
+                    Show All Stocks
+                  </button>
+                )}
+                {!searchValue.trim() && !showWatchlistOnly && (
+                  <button
+                    onClick={handleRefresh}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  >
+                    Refresh Data
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         ) : (
