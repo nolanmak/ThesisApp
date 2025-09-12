@@ -574,12 +574,15 @@ const RealTimeGrid: React.FC = () => {
         return calculatePercentageChange(stock.curfyepsmean, stock.nextfyeps13wkago);
       case 'cy_rev_change_pct':
         return calculatePercentageChange(stock.curfysalesmean, stock.nextfysales13wkago);
-      // Placeholder fields that might not exist in data yet
+      // Map guidance fields to available data
       case 'nq_eps_guide':
+        return stock.nextfyeps13wkago; // Use 13-week-ago next FY EPS as guidance baseline
       case 'nq_rev_guide':
+        return stock.nextfysales13wkago; // Use 13-week-ago next FY sales as guidance baseline
       case 'cy_eps_guide':
+        return stock.curfyeps13wkago; // Use 13-week-ago current FY EPS as guidance baseline
       case 'cy_rev_guide':
-        return 'N/A'; // These would come from guidance data when available
+        return stock.curfysales13wkago; // Use 13-week-ago current FY sales as guidance baseline
       default:
         return stock[columnKey];
     }
