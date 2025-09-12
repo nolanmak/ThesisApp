@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter, Eye, EyeOff, Search, GripVertical, Save, Bookmark, Edit3, Plus, AlertTriangle } from 'lucide-react';
+import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter, Eye, EyeOff, Search, GripVertical, Bookmark, Edit3, Plus } from 'lucide-react';
 import { useMetricsData } from '../../hooks/useGlobalData';
 import { useWatchlist } from '../../hooks/useWatchlist';
 import AnalysisPanel from '../Earnings/ui/AnalysisPanel';
@@ -426,7 +426,7 @@ const RealTimeGrid: React.FC = () => {
     setCurrentViewId(view.id);
     
     console.log('✅ View applied with new column structure preserved');
-  }, [initialColumnVisibility]);
+  }, []);
 
   const getCurrentViewSettings = useCallback(() => {
     return {
@@ -1558,7 +1558,7 @@ const RealTimeGrid: React.FC = () => {
                   {orderedColumns.map((column, index) => (
                     <th
                       key={column.key}
-                      className={`px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider border-r border-neutral-200 dark:border-neutral-700 select-none transition-colors group ${
+                      className={`px-2 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 border-r border-neutral-200 dark:border-neutral-700 select-none transition-colors group ${
                         index === 0 ? 'sticky left-0 bg-neutral-50 dark:bg-neutral-800 z-20' : ''
                       } ${
                         draggedColumn === column.key 
@@ -1570,37 +1570,62 @@ const RealTimeGrid: React.FC = () => {
                       style={{ 
                         width: getColumnWidth(column.key, column.width),
                         maxWidth: getColumnWidth(column.key, column.width),
-                        minWidth: getColumnWidth(column.key, column.width)
+                        minWidth: getColumnWidth(column.key, column.width),
+                        overflow: 'hidden'
                       }}
                       onDragOver={(e) => handleDragOver(e, column.key)}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, column.key)}
                     >
                       <div 
-                        className={`flex items-center gap-2 ${!isMobile ? 'cursor-move hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded px-1 -mx-1' : ''}`}
+                        className={`flex items-center gap-1 ${!isMobile ? 'cursor-move hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded px-1 -mx-1' : ''}`}
                         draggable={!isMobile}
                         onDragStart={(e) => handleDragStart(e, column.key)}
                         onDragEnd={handleDragEnd}
+                        style={{ width: '100%', minWidth: 0 }}
                       >
                         {!isMobile && (
                           <GripVertical 
-                            size={12} 
+                            size={10} 
                             className="text-neutral-400 dark:text-neutral-500 flex-shrink-0" 
                           />
                         )}
-                        <div className="flex items-center gap-1 flex-1">
+                        <div className="flex items-center gap-1 flex-1 min-w-0 overflow-hidden">
                           {column.sortable ? (
                             <button
                               onClick={() => handleSort(column.key)}
-                              className="flex items-center gap-1 hover:text-neutral-700 dark:hover:text-neutral-200"
+                              className="flex items-center gap-1 hover:text-neutral-700 dark:hover:text-neutral-200 min-w-0 flex-1 overflow-hidden"
+                              style={{ justifyContent: 'flex-start' }}
                             >
-                              <span className="truncate">{column.label}</span>
+                              <span 
+                                className="text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis"
+                                style={{ 
+                                  fontSize: 'clamp(9px, 0.8vw, 12px)',
+                                  maxWidth: '100%',
+                                  display: 'block'
+                                }}
+                                title={column.label}
+                              >
+                                {column.label}
+                              </span>
                               {sortColumn === column.key && (
-                                sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />
+                                <div className="flex-shrink-0 ml-1">
+                                  {sortDirection === 'asc' ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                                </div>
                               )}
                             </button>
                           ) : (
-                            <span className="truncate">{column.label}</span>
+                            <span 
+                              className="text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis"
+                              style={{ 
+                                fontSize: 'clamp(9px, 0.8vw, 12px)',
+                                maxWidth: '100%',
+                                display: 'block'
+                              }}
+                              title={column.label}
+                            >
+                              {column.label}
+                            </span>
                           )}
                         </div>
                       </div>
@@ -1683,7 +1708,6 @@ const RealTimeGrid: React.FC = () => {
             setFeedbackModalOpen={setFeedbackModalOpen}
             messages={selectedTicker ? tickerMessages : messages}
             selectedTicker={selectedTicker}
-            tickerMessagesLoading={tickerMessagesLoading}
           />
         </div>
       </div>
