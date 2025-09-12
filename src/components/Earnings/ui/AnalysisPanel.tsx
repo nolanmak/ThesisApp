@@ -74,6 +74,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
       }
     });
     
+    
     return grouped;
   }, [selectedMessage, messages]);
 
@@ -438,8 +439,8 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
               )}
             </div>
 
-            {/* Tabs row - only show if multiple tabs available */}
-            {availableTabs.length > 1 && (
+            {/* Tabs row - show if any tabs available */}
+            {availableTabs.length > 0 && (
               <div className="flex bg-neutral-100 dark:bg-neutral-700 rounded-lg p-1">
                 {availableTabs.map((tab) => (
                   <button

@@ -792,12 +792,23 @@ const RealTimeGrid: React.FC = () => {
       // Use the existing getMessages function with ticker search
       const data = await getMessages(50, undefined, ticker.toUpperCase());
       
+      // Use the same message type logic as AnalysisPanel
+      const getMessageType = (message: Message): string => {
+        if (message.link || message.report_data?.link || 
+            message.source?.toLowerCase() === 'link' || 
+            message.type?.toLowerCase() === 'link') return 'report';
+        if (message.source === 'transcript_analysis') return 'transcript';
+        if (message.source === 'sentiment_analysis' || message.sentiment_additional_metrics) return 'sentiment';
+        if (message.source === 'fundamentals_analysis') return 'fundamentals';
+        return 'earnings';
+      };
+
       // Group by message type and get the newest for each type
       const messagesByType: Record<string, Message> = {};
       
       if (data.messages && Array.isArray(data.messages)) {
         data.messages.forEach((message: Message) => {
-          const messageType = message.type || 'default';
+          const messageType = getMessageType(message);
           
           // If we don't have a message of this type yet, or this message is newer
           if (!messagesByType[messageType] || 
@@ -823,7 +834,7 @@ const RealTimeGrid: React.FC = () => {
       }
       
       console.log(`✅ Found ${newestMessages.length} unique message types for ${ticker}:`, 
-        newestMessages.map(m => `${m.type} (${m.timestamp})`));
+        newestMessages.map(m => `${getMessageType(m)} (${m.timestamp})`));
       
     } catch (error) {
       console.error('Error fetching ticker messages:', error);
