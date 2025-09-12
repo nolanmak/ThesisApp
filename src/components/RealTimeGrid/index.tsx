@@ -30,7 +30,8 @@ interface GridView {
     showWatchlistOnly: boolean;
     searchValue: string;
     searchColumn: string;
-    selectedDate?: string; // For future date range functionality
+    startDate?: string;
+    endDate?: string;
   };
   createdAt: string;
   updatedAt: string;
@@ -52,7 +53,8 @@ const RealTimeGrid: React.FC = () => {
   // Get messages and websocket data for the analysis panel
   const {
     messages,
-    convertToEasternTime
+    convertToEasternTime,
+    earningsItems
   } = useGlobalData();
 
   // User authentication for views
@@ -61,7 +63,12 @@ const RealTimeGrid: React.FC = () => {
   const [sortColumn, setSortColumn] = useState<string>('ticker');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showWatchlistOnly, setShowWatchlistOnly] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [dateRange, setDateRange] = useState<{start: string; end: string}>({start: '', end: ''});
+  const [tempDateRange, setTempDateRange] = useState<{start: string; end: string}>({start: '', end: ''});
+  const [scheduledTickers, setScheduledTickers] = useState<string[]>([]);
+  const [dateFilterLoading, setDateFilterLoading] = useState<boolean>(false);
+  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+  const datePickerRef = useRef<HTMLDivElement>(null);
   const [columnOrder, setColumnOrder] = useState<string[]>([]);
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set());
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
@@ -93,6 +100,53 @@ const RealTimeGrid: React.FC = () => {
   const [editingView, setEditingView] = useState<GridView | null>(null);
   const [viewsLoading, setViewsLoading] = useState(false);
   const viewsDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Date picker handlers (defined early to avoid initialization order issues)
+  const handleDatePickerOpen = useCallback(() => {
+    setTempDateRange(dateRange);
+    setShowDatePicker(true);
+  }, [dateRange]);
+
+  const handleDatePickerApply = useCallback(() => {
+    // Validate date range - start date must be before end date
+    if (tempDateRange.start && tempDateRange.end && tempDateRange.start > tempDateRange.end) {
+      // Swap dates if start is after end
+      const swappedRange = {
+        start: tempDateRange.end,
+        end: tempDateRange.start
+      };
+      setTempDateRange(swappedRange);
+      setDateRange(swappedRange);
+    } else {
+      setDateRange(tempDateRange);
+    }
+    setShowDatePicker(false);
+  }, [tempDateRange]);
+
+  const handleDatePickerCancel = useCallback(() => {
+    setTempDateRange(dateRange);
+    setShowDatePicker(false);
+  }, [dateRange]);
+
+  const handleDatePickerClear = useCallback(() => {
+    const emptyRange = {start: '', end: ''};
+    setTempDateRange(emptyRange);
+    setDateRange(emptyRange);
+    setShowDatePicker(false);
+  }, []);
+
+  // Calculate date restrictions (allow past dates, block future dates beyond 7 days)
+  const getDateRestrictions = useCallback(() => {
+    const today = new Date();
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(today.getDate() + 7);
+    
+    return {
+      maxDate: sevenDaysFromNow.toISOString().split('T')[0] // 7 days from today
+    };
+  }, []);
+
+  const { maxDate } = getDateRestrictions();
 
   // Define column configuration
   const defaultColumns: ColumnConfig[] = [
@@ -142,34 +196,11 @@ const RealTimeGrid: React.FC = () => {
   // Initialize column order and visibility
   useEffect(() => {
     if (columnOrder.length === 0) {
-      // Load saved column order or use default
-      const savedOrder = localStorage.getItem('realTimeGrid-columnOrder');
-      if (savedOrder) {
-        const parsedOrder = JSON.parse(savedOrder);
-        // Ensure all default columns are present and remove any that no longer exist
-        const validOrder = parsedOrder.filter((key: string) => defaultColumns.some(col => col.key === key));
-        const missingColumns = defaultColumns.filter(col => !validOrder.includes(col.key)).map(col => col.key);
-        setColumnOrder([...validOrder, ...missingColumns]);
-      } else {
-        setColumnOrder(defaultColumns.map(col => col.key));
-      }
+      setColumnOrder(defaultColumns.map(col => col.key));
     }
     if (visibleColumns.size === 0) {
-      // Load saved preferences or show all columns by default
-      const savedVisibility = localStorage.getItem('realTimeGrid-visibleColumns');
-      if (savedVisibility) {
-        const parsedSet = new Set(JSON.parse(savedVisibility));
-        setVisibleColumns(parsedSet);
-        // Also update columnVisibility state
-        const visibility = { ...initialColumnVisibility };
-        Object.keys(visibility).forEach(key => {
-          visibility[key] = parsedSet.has(key);
-        });
-        setColumnVisibility(visibility);
-      } else {
-        setVisibleColumns(new Set(defaultColumns.map(col => col.key)));
-        setColumnVisibility(initialColumnVisibility);
-      }
+      setVisibleColumns(new Set(defaultColumns.map(col => col.key)));
+      setColumnVisibility(initialColumnVisibility);
     }
   }, [initialColumnVisibility]);
 
@@ -220,13 +251,16 @@ const RealTimeGrid: React.FC = () => {
       if (viewsDropdownRef.current && !viewsDropdownRef.current.contains(event.target as Node)) {
         setShowViewsDropdown(false);
       }
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+        handleDatePickerCancel();
+      }
     };
 
-    if (showColumnToggle || showSearchDropdown || showViewsDropdown) {
+    if (showColumnToggle || showSearchDropdown || showViewsDropdown || showDatePicker) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showColumnToggle, showSearchDropdown, showViewsDropdown]);
+  }, [showColumnToggle, showSearchDropdown, showViewsDropdown, showDatePicker, handleDatePickerCancel]);
 
   // View management functions (defined before useEffects that use them)
   const loadUserViews = useCallback(async () => {
@@ -323,14 +357,12 @@ const RealTimeGrid: React.FC = () => {
     // Apply column order
     if (settings.columnOrder) {
       setColumnOrder(settings.columnOrder);
-      localStorage.setItem('realTimeGrid-columnOrder', JSON.stringify(settings.columnOrder));
     }
     
     // Apply visible columns
     if (settings.visibleColumns) {
       const visibleSet = new Set(settings.visibleColumns);
       setVisibleColumns(visibleSet);
-      localStorage.setItem('realTimeGrid-visibleColumns', JSON.stringify(settings.visibleColumns));
       
       // Also update columnVisibility state
       const visibility = { ...initialColumnVisibility };
@@ -353,9 +385,16 @@ const RealTimeGrid: React.FC = () => {
     setSearchValue(settings.searchValue || '');
     setSearchColumn(settings.searchColumn || 'ticker');
     
-    // Apply selected date if available
-    if (settings.selectedDate) {
-      setSelectedDate(settings.selectedDate);
+    // Apply date range if available
+    if (settings.startDate || settings.endDate) {
+      const newRange = {
+        start: settings.startDate || '',
+        end: settings.endDate || ''
+      };
+      // Show loading immediately when applying view with date range
+      setDateFilterLoading(true);
+      setDateRange(newRange);
+      setTempDateRange(newRange);
     }
     
     setCurrentViewId(view.id);
@@ -370,9 +409,10 @@ const RealTimeGrid: React.FC = () => {
       showWatchlistOnly,
       searchValue,
       searchColumn,
-      selectedDate
+      startDate: dateRange.start,
+      endDate: dateRange.end
     };
-  }, [columnOrder, visibleColumns, sortColumn, sortDirection, showWatchlistOnly, searchValue, searchColumn, selectedDate]);
+  }, [columnOrder, visibleColumns, sortColumn, sortDirection, showWatchlistOnly, searchValue, searchColumn, dateRange.start, dateRange.end]);
 
   const createNewView = useCallback(async (name: string, description?: string, isDefault?: boolean) => {
     const newView: GridView = {
@@ -411,6 +451,46 @@ const RealTimeGrid: React.FC = () => {
       loadUserViews();
     }
   }, [user?.email, loadUserViews]);
+
+  // Filter earnings data locally when date range changes (much faster than API calls)
+  useEffect(() => {
+    const filterLocalEarnings = () => {
+      if (dateRange.start || dateRange.end) {
+        setDateFilterLoading(true);
+        
+        // Filter earnings data that's already loaded in memory
+        const filteredEarnings = earningsItems.filter(earning => {
+          const earningDate = earning.date;
+          
+          // Check start date
+          if (dateRange.start && earningDate < dateRange.start) {
+            return false;
+          }
+          
+          // Check end date (or use start date as end if only start is provided)
+          const endDate = dateRange.end || dateRange.start;
+          if (endDate && earningDate > endDate) {
+            return false;
+          }
+          
+          return true;
+        });
+        
+        const tickers = filteredEarnings.map(earning => earning.ticker.toUpperCase());
+        setScheduledTickers(tickers);
+        setDateFilterLoading(false);
+      } else {
+        // Clear filter when no dates are selected
+        setScheduledTickers([]);
+        setDateFilterLoading(false);
+      }
+    };
+
+    // Small debounce to batch rapid changes, but much shorter since no API call
+    const debounceTimer = setTimeout(filterLocalEarnings, 100);
+    
+    return () => clearTimeout(debounceTimer);
+  }, [dateRange.start, dateRange.end, earningsItems]);
 
   // No need for local API fetching - data comes from GlobalDataProvider
 
@@ -523,9 +603,16 @@ const RealTimeGrid: React.FC = () => {
     
     let filteredData = stockData;
     
+    // Filter by date range (scheduled earnings) if dates are selected
+    if ((dateRange.start || dateRange.end) && scheduledTickers.length > 0) {
+      filteredData = filteredData.filter(stock => 
+        scheduledTickers.includes(stock.ticker.toUpperCase())
+      );
+    }
+    
     // Filter by watchlist if enabled
     if (showWatchlistOnly && watchlist.length > 0) {
-      filteredData = stockData.filter(stock => 
+      filteredData = filteredData.filter(stock => 
         watchlist.includes(stock.ticker.toUpperCase())
       );
     }
@@ -557,7 +644,7 @@ const RealTimeGrid: React.FC = () => {
       
       return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [stockData, sortColumn, sortDirection, showWatchlistOnly, watchlist, searchValue, searchColumn, matchesSearch]);
+  }, [stockData, sortColumn, sortDirection, showWatchlistOnly, watchlist, searchValue, searchColumn, matchesSearch, dateRange.start, dateRange.end, scheduledTickers]);
 
   // Toggle column visibility
   const toggleColumnVisibility = useCallback((columnKey: string) => {
@@ -568,8 +655,6 @@ const RealTimeGrid: React.FC = () => {
       } else {
         newSet.add(columnKey);
       }
-      // Save to localStorage
-      localStorage.setItem('realTimeGrid-visibleColumns', JSON.stringify([...newSet]));
       return newSet;
     });
   }, []);
@@ -578,14 +663,12 @@ const RealTimeGrid: React.FC = () => {
   const toggleAllColumns = useCallback((show: boolean) => {
     const newSet = show ? new Set(defaultColumns.map(col => col.key)) : new Set(['ticker']); // Always keep ticker visible
     setVisibleColumns(newSet);
-    localStorage.setItem('realTimeGrid-visibleColumns', JSON.stringify([...newSet]));
   }, []);
 
   // Reset column order to default
   const resetColumnOrder = useCallback(() => {
     const defaultOrder = defaultColumns.map(col => col.key);
     setColumnOrder(defaultOrder);
-    localStorage.setItem('realTimeGrid-columnOrder', JSON.stringify(defaultOrder));
   }, []);
 
   const orderedColumns = useMemo(() => {
@@ -637,8 +720,6 @@ const RealTimeGrid: React.FC = () => {
         newOrder.splice(targetIndex, 0, sourceColumnKey);
         
         setColumnOrder(newOrder);
-        // Save to localStorage
-        localStorage.setItem('realTimeGrid-columnOrder', JSON.stringify(newOrder));
       }
     }
     
@@ -953,14 +1034,89 @@ const RealTimeGrid: React.FC = () => {
                     </button>
                   </div>
                   
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 relative" ref={datePickerRef}>
                     <Calendar size={16} className="text-neutral-500" />
-                    <input
-                      type="date"
-                      value={selectedDate}
-                      onChange={(e) => setSelectedDate(e.target.value)}
-                      className="text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
-                    />
+                    <button
+                      onClick={handleDatePickerOpen}
+                      className="text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-3 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 hover:border-neutral-400 dark:hover:border-neutral-500 flex items-center gap-2 min-w-[200px] justify-between"
+                      disabled={dateFilterLoading}
+                    >
+                      <span className="text-left">
+                        {dateRange.start && dateRange.end && dateRange.start !== dateRange.end
+                          ? `${dateRange.start} to ${dateRange.end}`
+                          : dateRange.start
+                          ? dateRange.start
+                          : 'Select date range'}
+                      </span>
+                      <ChevronDown size={14} className={`transition-transform ${showDatePicker ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {dateFilterLoading && (
+                      <RefreshCw size={14} className="animate-spin text-neutral-500" />
+                    )}
+                    
+                    {(dateRange.start || dateRange.end) && !dateFilterLoading && (
+                      <button
+                        onClick={handleDatePickerClear}
+                        className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 px-2 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
+                        title="Clear date range"
+                      >
+                        Clear
+                      </button>
+                    )}
+
+                    {/* Date Range Picker Dropdown */}
+                    {showDatePicker && (
+                      <div className="absolute top-full left-0 mt-1 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-lg p-4 z-50 min-w-[320px]">
+                        <div className="space-y-3">
+                          <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
+                            Future dates blocked beyond 7 days from today
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 w-16">From:</label>
+                            <input
+                              type="date"
+                              value={tempDateRange.start}
+                              onChange={(e) => setTempDateRange(prev => ({...prev, start: e.target.value}))}
+                              max={maxDate}
+                              className="text-sm border border-neutral-300 dark:border-neutral-600 rounded px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 flex-1"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 w-16">To:</label>
+                            <input
+                              type="date"
+                              value={tempDateRange.end}
+                              onChange={(e) => setTempDateRange(prev => ({...prev, end: e.target.value}))}
+                              max={maxDate}
+                              className="text-sm border border-neutral-300 dark:border-neutral-600 rounded px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 flex-1"
+                            />
+                          </div>
+                          <div className="flex justify-between pt-2 border-t border-neutral-200 dark:border-neutral-700">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={handleDatePickerClear}
+                                className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 px-3 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
+                              >
+                                Clear All
+                              </button>
+                              <button
+                                onClick={handleDatePickerCancel}
+                                className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 px-3 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                            <button
+                              onClick={handleDatePickerApply}
+                              className="text-xs bg-primary-500 hover:bg-primary-600 text-white px-3 py-1 rounded"
+                            >
+                              Apply
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   {/* Search */}
@@ -1016,6 +1172,11 @@ const RealTimeGrid: React.FC = () => {
                       Watchlist ({watchlist.length})
                     </span>
                   )}
+                  {(dateRange.start || dateRange.end) && scheduledTickers.length > 0 && (
+                    <span className="ml-2 text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded">
+                      Scheduled ({scheduledTickers.length})
+                    </span>
+                  )}
                   {searchValue.trim() && (
                     <span className="ml-2 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">
                       Filtered
@@ -1026,7 +1187,26 @@ const RealTimeGrid: React.FC = () => {
             </div>
 
             {/* Grid Content */}
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 overflow-auto relative">
+              {/* Date Filter Loading Overlay */}
+              {dateFilterLoading && (
+                <div className="absolute inset-0 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm z-10 flex items-center justify-center">
+                  <div className="flex flex-col items-center gap-3 p-6 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700">
+                    <RefreshCw size={24} className="animate-spin text-blue-500" />
+                    <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                      Filtering by date range...
+                    </span>
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                      {dateRange.start && dateRange.end && dateRange.start !== dateRange.end
+                        ? `${dateRange.start} to ${dateRange.end}`
+                        : dateRange.start || dateRange.end
+                        ? `${dateRange.start || dateRange.end}`
+                        : 'Loading...'}
+                    </span>
+                  </div>
+                </div>
+              )}
+              
         {error ? (
           <div className="flex items-center justify-center p-8">
             <div className="text-center">
@@ -1298,7 +1478,8 @@ const RealTimeGrid: React.FC = () => {
                   updateExistingView(editingView.id, {
                     name: name.trim(),
                     description: description || undefined,
-                    isDefault
+                    isDefault,
+                    settings: getCurrentViewSettings()
                   });
                   setShowEditViewModal(false);
                   setEditingView(null);
@@ -1348,12 +1529,14 @@ const RealTimeGrid: React.FC = () => {
               
               <div className="mb-6">
                 <div className="text-xs text-neutral-500 dark:text-neutral-400 space-y-1">
-                  <p>Current settings will be preserved:</p>
+                  <p>Current settings will be saved:</p>
                   <ul className="pl-4 space-y-0.5">
                     <li>• Column order and visibility</li>
-                    <li>• Sort: {editingView.settings.sortColumn} ({editingView.settings.sortDirection})</li>
-                    <li>• Search: {editingView.settings.searchColumn}</li>
-                    <li>• Watchlist: {editingView.settings.showWatchlistOnly ? 'On' : 'Off'}</li>
+                    <li>• Sort: {sortColumn} ({sortDirection})</li>
+                    <li>• Search: {searchColumn}</li>
+                    <li>• Watchlist: {showWatchlistOnly ? 'On' : 'Off'}</li>
+                    <li>• Date range: {dateRange.start || dateRange.end ? 
+                      `${dateRange.start || 'Any'} to ${dateRange.end || 'Any'}` : 'None'}</li>
                   </ul>
                 </div>
               </div>
