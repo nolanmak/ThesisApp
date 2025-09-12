@@ -6,7 +6,7 @@ import AnalysisPanel from '../Earnings/ui/AnalysisPanel';
 import useGlobalData from '../../hooks/useGlobalData';
 import { Message } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
-import { getUserProfile, updateUserProfile, UserProfile, getScheduledEarnings, ScheduledEarning } from '../../services/api';
+import { getUserProfile, updateUserProfile, UserProfile } from '../../services/api';
 
 interface ColumnConfig {
   key: string;
@@ -53,7 +53,8 @@ const RealTimeGrid: React.FC = () => {
   // Get messages and websocket data for the analysis panel
   const {
     messages,
-    convertToEasternTime
+    convertToEasternTime,
+    earningsItems
   } = useGlobalData();
 
   // User authentication for views
@@ -107,7 +108,18 @@ const RealTimeGrid: React.FC = () => {
   }, [dateRange]);
 
   const handleDatePickerApply = useCallback(() => {
-    setDateRange(tempDateRange);
+    // Validate date range - start date must be before end date
+    if (tempDateRange.start && tempDateRange.end && tempDateRange.start > tempDateRange.end) {
+      // Swap dates if start is after end
+      const swappedRange = {
+        start: tempDateRange.end,
+        end: tempDateRange.start
+      };
+      setTempDateRange(swappedRange);
+      setDateRange(swappedRange);
+    } else {
+      setDateRange(tempDateRange);
+    }
     setShowDatePicker(false);
   }, [tempDateRange]);
 
@@ -123,19 +135,18 @@ const RealTimeGrid: React.FC = () => {
     setShowDatePicker(false);
   }, []);
 
-  // Calculate date restrictions (today and 7 days ago)
+  // Calculate date restrictions (allow past dates, block future dates beyond 7 days)
   const getDateRestrictions = useCallback(() => {
     const today = new Date();
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(today.getDate() - 7);
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(today.getDate() + 7);
     
     return {
-      maxDate: today.toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
-      minDate: sevenDaysAgo.toISOString().split('T')[0] // 7 days ago in YYYY-MM-DD format
+      maxDate: sevenDaysFromNow.toISOString().split('T')[0] // 7 days from today
     };
   }, []);
 
-  const { maxDate, minDate } = getDateRestrictions();
+  const { maxDate } = getDateRestrictions();
 
   // Define column configuration
   const defaultColumns: ColumnConfig[] = [
@@ -439,24 +450,33 @@ const RealTimeGrid: React.FC = () => {
     }
   }, [user?.email, loadUserViews]);
 
-  // Fetch scheduled earnings when date range changes
+  // Filter earnings data locally when date range changes (much faster than API calls)
   useEffect(() => {
-    const fetchScheduledEarnings = async () => {
+    const filterLocalEarnings = () => {
       if (dateRange.start || dateRange.end) {
         setDateFilterLoading(true);
-        try {
-          const scheduled = await getScheduledEarnings(
-            dateRange.start || undefined, 
-            dateRange.end || dateRange.start || undefined // If only start date, use it as end date too
-          );
-          const tickers = scheduled.map(earning => earning.ticker.toUpperCase());
-          setScheduledTickers(tickers);
-        } catch (error) {
-          console.error('Error fetching scheduled earnings:', error);
-          setScheduledTickers([]);
-        } finally {
-          setDateFilterLoading(false);
-        }
+        
+        // Filter earnings data that's already loaded in memory
+        const filteredEarnings = earningsItems.filter(earning => {
+          const earningDate = earning.date;
+          
+          // Check start date
+          if (dateRange.start && earningDate < dateRange.start) {
+            return false;
+          }
+          
+          // Check end date (or use start date as end if only start is provided)
+          const endDate = dateRange.end || dateRange.start;
+          if (endDate && earningDate > endDate) {
+            return false;
+          }
+          
+          return true;
+        });
+        
+        const tickers = filteredEarnings.map(earning => earning.ticker.toUpperCase());
+        setScheduledTickers(tickers);
+        setDateFilterLoading(false);
       } else {
         // Clear filter when no dates are selected
         setScheduledTickers([]);
@@ -464,8 +484,11 @@ const RealTimeGrid: React.FC = () => {
       }
     };
 
-    fetchScheduledEarnings();
-  }, [dateRange.start, dateRange.end]);
+    // Small debounce to batch rapid changes, but much shorter since no API call
+    const debounceTimer = setTimeout(filterLocalEarnings, 100);
+    
+    return () => clearTimeout(debounceTimer);
+  }, [dateRange.start, dateRange.end, earningsItems]);
 
   // No need for local API fetching - data comes from GlobalDataProvider
 
@@ -1044,13 +1067,15 @@ const RealTimeGrid: React.FC = () => {
                     {showDatePicker && (
                       <div className="absolute top-full left-0 mt-1 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-lg p-4 z-50 min-w-[320px]">
                         <div className="space-y-3">
+                          <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
+                            Future dates blocked beyond 7 days from today
+                          </div>
                           <div className="flex items-center gap-2">
                             <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 w-16">From:</label>
                             <input
                               type="date"
                               value={tempDateRange.start}
                               onChange={(e) => setTempDateRange(prev => ({...prev, start: e.target.value}))}
-                              min={minDate}
                               max={maxDate}
                               className="text-sm border border-neutral-300 dark:border-neutral-600 rounded px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 flex-1"
                             />
@@ -1061,7 +1086,6 @@ const RealTimeGrid: React.FC = () => {
                               type="date"
                               value={tempDateRange.end}
                               onChange={(e) => setTempDateRange(prev => ({...prev, end: e.target.value}))}
-                              min={minDate}
                               max={maxDate}
                               className="text-sm border border-neutral-300 dark:border-neutral-600 rounded px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 flex-1"
                             />
