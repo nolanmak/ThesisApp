@@ -346,19 +346,20 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
 
             {/* Tabs row - only show if multiple tabs available */}
             {availableTabs.length > 1 && (
-              <div className="flex flex-wrap gap-1 bg-neutral-100 dark:bg-neutral-700 rounded-lg p-1">
+              <div className="flex bg-neutral-100 dark:bg-neutral-700 rounded-lg p-1">
                 {availableTabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex-1 min-w-0 px-2 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors truncate ${
+                    className={`flex-1 px-2 py-1.5 font-medium rounded-md transition-colors text-center ${
                       activeTab === tab.id
                         ? `${tab.colors.active} shadow-sm`
                         : tab.colors.inactive
                     }`}
-                    style={{ 
-                      minWidth: isMobile ? '70px' : '80px',
-                      maxWidth: isMobile ? '90px' : '120px'
+                    style={{
+                      fontSize: availableTabs.length > 3 ? (isMobile ? '0.65rem' : '0.75rem') : 
+                               availableTabs.length > 2 ? (isMobile ? '0.7rem' : '0.8rem') :
+                               (isMobile ? '0.75rem' : '0.875rem')
                     }}
                   >
                     {tab.label}
@@ -378,12 +379,12 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                   lineHeight: isMobile ? '1.5' : undefined,
                 }}
               >
-                {currentMessage?.source === 'transcript_analysis' ? (
+                {activeTab === 'transcript' ? (
                   // Display transcript analysis with structured data
                   <div className="space-y-4">
                     {/* Show just the preview text */}
                     <div className="text-purple-700 dark:text-purple-400 font-semibold mb-3">
-                      {ParseTranscriptMessage(currentMessage) || '📊 Earnings Call Transcript Analysis'}
+                      {currentMessage && ParseTranscriptMessage(currentMessage) || '📊 Earnings Call Transcript Analysis'}
                     </div>
                     
                     {/* Display structured transcript data in human-readable format */}
@@ -408,7 +409,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                       </div>
                     )}
                   </div>
-                ) : (activeTab === 'fundamentals') ? (
+                ) : activeTab === 'fundamentals' ? (
                   // Display fundamentals charts using metrics data
                   <div className="space-y-4">
                     {/* Header */}
@@ -451,10 +452,10 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                             parseFloat(String(tickerMetrics['$s5'] || 0).replace(/,/g, '')),
                             parseFloat(String(tickerMetrics['$s4'] || 0).replace(/,/g, ''))
                           ]}
-                          labels={['Q-3', 'Q-2', 'Q-1', 'Q0']}
+                          labels={['S3', 'S2', 'S1', 'S0']}
                           title="Q/Q Sales"
-                          series1Color="#ef4444" // red for recent quarters
-                          series2Color="#3b82f6" // blue for older quarters
+                          series1Color="#10b981" // green for recent quarters (S0-S3)
+                          series2Color="#3b82f6" // blue for older quarters (S4-S7)
                           height={140}
                         />
 
@@ -514,12 +515,12 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                       </div>
                     )}
                   </div>
-                ) : (currentMessage?.source === 'sentiment_analysis' || currentMessage?.sentiment_additional_metrics) ? (
+                ) : activeTab === 'sentiment' ? (
                   // Display sentiment analysis with structured data
                   <div className="space-y-4">
                     {/* Show the preview text */}
                     <div className="text-green-700 dark:text-green-400 font-semibold mb-3">
-                      {ParseSentimentMessage(currentMessage) || '📈 Sentiment Analysis'}
+                      {currentMessage && ParseSentimentMessage(currentMessage) || '📈 Sentiment Analysis'}
                     </div>
                     
                     {/* Display structured sentiment data in human-readable format */}
