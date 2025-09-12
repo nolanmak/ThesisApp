@@ -117,9 +117,10 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     return tabMessage || selectedMessage;
   }, [activeTab, availableTabs, selectedMessage]);
 
-  // Reset active tab when selected message changes
+  // Reset active tab only when selected message ID actually changes
+  const [lastMessageId, setLastMessageId] = useState<string | null>(null);
   useEffect(() => {
-    if (selectedMessage) {
+    if (selectedMessage && selectedMessage.id !== lastMessageId) {
       const messageType = getMessageType(selectedMessage);
       const availableTabIds = availableTabs.map(tab => tab.id);
       
@@ -129,8 +130,10 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
       } else if (availableTabIds.length > 0) {
         setActiveTab(availableTabIds[0]);
       }
+      
+      setLastMessageId(selectedMessage.id);
     }
-  }, [selectedMessage, availableTabs]);
+  }, [selectedMessage, availableTabs, lastMessageId]);
 
   const parsedMessage = currentMessage ? ParseMessagePayload(currentMessage) : null;
   const parsedTranscriptData = currentMessage ? ParseTranscriptData(currentMessage) : null;
@@ -269,17 +272,17 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                 </span>
                 
                 {/* Hover Tooltip */}
-                {hoveredIndex === index && (isValid1 || isValid2) && (
+                {hoveredIndex === index && (value1 !== null || value2 !== null) && (
                   <div className="absolute bottom-full mb-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 px-2 py-1 rounded text-xs whitespace-nowrap z-10 shadow-lg">
                     <div className="text-center">
                       <div className="font-medium mb-1">{labels[index]}</div>
-                      {isValid1 && (
+                      {value1 !== null && !isNaN(value1) && (
                         <div>
                           <span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: series1Color }}></span>
                           Recent: {value1.toLocaleString()}
                         </div>
                       )}
-                      {isValid2 && (
+                      {value2 !== null && !isNaN(value2) && (
                         <div>
                           <span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: series2Color }}></span>
                           Prior: {value2.toLocaleString()}
