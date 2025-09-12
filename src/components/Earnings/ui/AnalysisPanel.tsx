@@ -120,7 +120,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   // Reset active tab only when selected message ID actually changes
   const [lastMessageId, setLastMessageId] = useState<string | null>(null);
   useEffect(() => {
-    if (selectedMessage && selectedMessage.id !== lastMessageId) {
+    if (selectedMessage && selectedMessage.message_id !== lastMessageId) {
       const messageType = getMessageType(selectedMessage);
       const availableTabIds = availableTabs.map(tab => tab.id);
       
@@ -131,7 +131,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
         setActiveTab(availableTabIds[0]);
       }
       
-      setLastMessageId(selectedMessage.id);
+      setLastMessageId(selectedMessage.message_id);
     }
   }, [selectedMessage, availableTabs, lastMessageId]);
 
@@ -559,7 +559,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                   // Display sentiment analysis with structured data
                   <div className="space-y-4">
                     {/* Show the preview text */}
-                    <div className="text-green-700 dark:text-green-400 font-semibold mb-3">
+                    <div className="text-green-700 dark:text-green-400 font-medium mb-3" style={{ fontSize: isMobile ? '0.875rem' : '0.75rem' }}>
                       {currentMessage && ParseSentimentMessage(currentMessage) || '📈 Sentiment Analysis'}
                     </div>
                     
@@ -568,7 +568,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                       <div className="space-y-4">
                         {Object.entries(parsedSentimentData).map(([section, items]) => (
                           <div key={section}>
-                            <div className="text-green-700 dark:text-green-400 font-semibold mb-2">{section}</div>
+                            <div className="text-green-700 dark:text-green-400 font-medium mb-2" style={{ fontSize: isMobile ? '0.875rem' : '0.75rem' }}>{section}</div>
                             {['Key Quotes', 'Key Sentiment Drivers'].includes(section) ? (
                               <ul className="space-y-2 list-disc pl-5">
                                 {items.map((item, idx) => (
