@@ -120,6 +120,15 @@ const Layout: React.FC = () => {
                     <span>Real Time Feed</span>
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    to="/dashboard/realtime-grid"
+                    className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/realtime-grid')}`}
+                  >
+                    <Activity className="mr-1" size={14} />
+                    <span>Real Time Grid</span>
+                  </Link>
+                </li>
                 {isAdmin && (
                   <li>
                     <Link
@@ -138,15 +147,6 @@ const Layout: React.FC = () => {
                   >
                     <List className="mr-1" size={14} />
                     <span>Watch List</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/dashboard/realtime-grid"
-                    className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/realtime-grid')}`}
-                  >
-                    <Activity className="mr-1" size={14} />
-                    <span>Real Time Grid</span>
                   </Link>
                 </li>
               </ul>
@@ -170,6 +170,16 @@ const Layout: React.FC = () => {
                       <span>Real Time Feed</span>
                     </Link>
                   </li>
+                  <li>
+                    <Link
+                      to="/dashboard/realtime-grid"
+                      className={`flex items-center px-3 py-2 text-base rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/realtime-grid')}`}
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <Activity className="mr-2" size={18} />
+                      <span>Real Time Grid</span>
+                    </Link>
+                  </li>
                   {isAdmin && (
                     <li>
                       <Link
@@ -190,16 +200,6 @@ const Layout: React.FC = () => {
                     >
                       <List className="mr-2" size={18} />
                       <span>Watch List</span>
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/dashboard/realtime-grid"
-                      className={`flex items-center px-3 py-2 text-base rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/realtime-grid')}`}
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      <Activity className="mr-2" size={18} />
-                      <span>Real Time Grid</span>
                     </Link>
                   </li>
                 </ul>
