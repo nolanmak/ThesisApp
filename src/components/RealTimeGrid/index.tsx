@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter, Eye, EyeOff, Search, GripVertical } from 'lucide-react';
+import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter, Eye, EyeOff, Search, GripVertical, Save, Bookmark, Edit3, Plus } from 'lucide-react';
 import { useMetricsData } from '../../hooks/useGlobalData';
 import { useWatchlist } from '../../hooks/useWatchlist';
 import AnalysisPanel from '../Earnings/ui/AnalysisPanel';
 import useGlobalData from '../../hooks/useGlobalData';
 import { Message } from '../../types';
+import { useAuth } from '../../contexts/AuthContext';
+import { getUserProfile, updateUserProfile, UserProfile } from '../../services/api';
 
 interface ColumnConfig {
   key: string;
@@ -13,6 +15,25 @@ interface ColumnConfig {
   sortable?: boolean;
   type?: 'text' | 'number' | 'percentage' | 'currency';
   colorCode?: 'beats' | 'performance';
+}
+
+interface GridView {
+  id: string;
+  name: string;
+  description?: string;
+  isDefault?: boolean;
+  settings: {
+    columnOrder: string[];
+    visibleColumns: string[];
+    sortColumn: string;
+    sortDirection: 'asc' | 'desc';
+    showWatchlistOnly: boolean;
+    searchValue: string;
+    searchColumn: string;
+    selectedDate?: string; // For future date range functionality
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 const RealTimeGrid: React.FC = () => {
@@ -34,12 +55,16 @@ const RealTimeGrid: React.FC = () => {
     convertToEasternTime
   } = useGlobalData();
 
+  // User authentication for views
+  const { user } = useAuth();
+
   const [sortColumn, setSortColumn] = useState<string>('ticker');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showWatchlistOnly, setShowWatchlistOnly] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [columnOrder, setColumnOrder] = useState<string[]>([]);
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set());
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
   const [showColumnToggle, setShowColumnToggle] = useState(false);
   const columnToggleRef = useRef<HTMLDivElement>(null);
   
@@ -58,6 +83,16 @@ const RealTimeGrid: React.FC = () => {
   // Drag and drop state
   const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+  
+  // Views state
+  const [savedViews, setSavedViews] = useState<GridView[]>([]);
+  const [currentViewId, setCurrentViewId] = useState<string | null>(null);
+  const [showViewsDropdown, setShowViewsDropdown] = useState(false);
+  const [showSaveViewModal, setShowSaveViewModal] = useState(false);
+  const [showEditViewModal, setShowEditViewModal] = useState(false);
+  const [editingView, setEditingView] = useState<GridView | null>(null);
+  const [viewsLoading, setViewsLoading] = useState(false);
+  const viewsDropdownRef = useRef<HTMLDivElement>(null);
 
   // Define column configuration
   const defaultColumns: ColumnConfig[] = [
@@ -95,6 +130,15 @@ const RealTimeGrid: React.FC = () => {
     { key: 'gmgn%q', label: 'Gross Margin %' },
   ], []);
 
+  // Initialize column visibility state
+  const initialColumnVisibility = useMemo(() => {
+    const visibility: Record<string, boolean> = {};
+    defaultColumns.forEach(col => {
+      visibility[col.key] = true;
+    });
+    return visibility;
+  }, []);
+
   // Initialize column order and visibility
   useEffect(() => {
     if (columnOrder.length === 0) {
@@ -114,12 +158,20 @@ const RealTimeGrid: React.FC = () => {
       // Load saved preferences or show all columns by default
       const savedVisibility = localStorage.getItem('realTimeGrid-visibleColumns');
       if (savedVisibility) {
-        setVisibleColumns(new Set(JSON.parse(savedVisibility)));
+        const parsedSet = new Set(JSON.parse(savedVisibility));
+        setVisibleColumns(parsedSet);
+        // Also update columnVisibility state
+        const visibility = { ...initialColumnVisibility };
+        Object.keys(visibility).forEach(key => {
+          visibility[key] = parsedSet.has(key);
+        });
+        setColumnVisibility(visibility);
       } else {
         setVisibleColumns(new Set(defaultColumns.map(col => col.key)));
+        setColumnVisibility(initialColumnVisibility);
       }
     }
-  }, []);
+  }, [initialColumnVisibility]);
 
   // Mobile detection
   useEffect(() => {
@@ -165,13 +217,200 @@ const RealTimeGrid: React.FC = () => {
       if (searchDropdownRef.current && !searchDropdownRef.current.contains(event.target as Node)) {
         setShowSearchDropdown(false);
       }
+      if (viewsDropdownRef.current && !viewsDropdownRef.current.contains(event.target as Node)) {
+        setShowViewsDropdown(false);
+      }
     };
 
-    if (showColumnToggle || showSearchDropdown) {
+    if (showColumnToggle || showSearchDropdown || showViewsDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showColumnToggle, showSearchDropdown]);
+  }, [showColumnToggle, showSearchDropdown, showViewsDropdown]);
+
+  // View management functions (defined before useEffects that use them)
+  const loadUserViews = useCallback(async () => {
+    if (!user?.email) return;
+    
+    try {
+      setViewsLoading(true);
+      const profile = await getUserProfile(user.email);
+      if (profile?.settings?.gridViews) {
+        setSavedViews(profile.settings.gridViews as GridView[]);
+        
+        // Set current view if there's a default one
+        const defaultView = (profile.settings.gridViews as GridView[]).find(view => view.isDefault);
+        if (defaultView) {
+          setCurrentViewId(defaultView.id);
+          applyView(defaultView);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load user views:', error);
+    } finally {
+      setViewsLoading(false);
+    }
+  }, [user?.email]);
+
+  const saveView = useCallback(async (view: GridView, isUpdate: boolean = false) => {
+    if (!user?.email) return;
+    
+    try {
+      const profile = await getUserProfile(user.email);
+      const currentViews = (profile?.settings?.gridViews as GridView[]) || [];
+      
+      let updatedViews;
+      if (isUpdate) {
+        updatedViews = currentViews.map(v => v.id === view.id ? view : v);
+      } else {
+        // If this is marked as default, unmark other default views
+        if (view.isDefault) {
+          currentViews.forEach(v => v.isDefault = false);
+        }
+        updatedViews = [...currentViews, view];
+      }
+      
+      const updatedProfile: UserProfile = {
+        email: user.email,
+        watchlist: profile?.watchlist,
+        watchListOn: profile?.watchListOn,
+        settings: {
+          ...profile?.settings,
+          gridViews: updatedViews
+        }
+      };
+      
+      await updateUserProfile(updatedProfile);
+      setSavedViews(updatedViews);
+      setCurrentViewId(view.id);
+    } catch (error) {
+      console.error('Failed to save view:', error);
+    }
+  }, [user?.email]);
+
+  const deleteView = useCallback(async (viewId: string) => {
+    if (!user?.email) return;
+    
+    try {
+      const profile = await getUserProfile(user.email);
+      const currentViews = (profile?.settings?.gridViews as GridView[]) || [];
+      const updatedViews = currentViews.filter(v => v.id !== viewId);
+      
+      const updatedProfile: UserProfile = {
+        email: user.email,
+        watchlist: profile?.watchlist,
+        watchListOn: profile?.watchListOn,
+        settings: {
+          ...profile?.settings,
+          gridViews: updatedViews
+        }
+      };
+      
+      await updateUserProfile(updatedProfile);
+      setSavedViews(updatedViews);
+      
+      if (currentViewId === viewId) {
+        setCurrentViewId(null);
+      }
+    } catch (error) {
+      console.error('Failed to delete view:', error);
+    }
+  }, [user?.email, currentViewId]);
+
+  const applyView = useCallback((view: GridView) => {
+    const { settings } = view;
+    
+    // Apply column order
+    if (settings.columnOrder) {
+      setColumnOrder(settings.columnOrder);
+      localStorage.setItem('realTimeGrid-columnOrder', JSON.stringify(settings.columnOrder));
+    }
+    
+    // Apply visible columns
+    if (settings.visibleColumns) {
+      const visibleSet = new Set(settings.visibleColumns);
+      setVisibleColumns(visibleSet);
+      localStorage.setItem('realTimeGrid-visibleColumns', JSON.stringify(settings.visibleColumns));
+      
+      // Also update columnVisibility state
+      const visibility = { ...initialColumnVisibility };
+      Object.keys(visibility).forEach(key => {
+        visibility[key] = visibleSet.has(key);
+      });
+      setColumnVisibility(visibility);
+    }
+    
+    // Apply sorting
+    if (settings.sortColumn && settings.sortDirection) {
+      setSortColumn(settings.sortColumn);
+      setSortDirection(settings.sortDirection);
+    }
+    
+    // Apply watchlist toggle
+    setShowWatchlistOnly(settings.showWatchlistOnly || false);
+    
+    // Apply search
+    setSearchValue(settings.searchValue || '');
+    setSearchColumn(settings.searchColumn || 'ticker');
+    
+    // Apply selected date if available
+    if (settings.selectedDate) {
+      setSelectedDate(settings.selectedDate);
+    }
+    
+    setCurrentViewId(view.id);
+  }, [initialColumnVisibility]);
+
+  const getCurrentViewSettings = useCallback(() => {
+    return {
+      columnOrder,
+      visibleColumns: Array.from(visibleColumns),
+      sortColumn,
+      sortDirection,
+      showWatchlistOnly,
+      searchValue,
+      searchColumn,
+      selectedDate
+    };
+  }, [columnOrder, visibleColumns, sortColumn, sortDirection, showWatchlistOnly, searchValue, searchColumn, selectedDate]);
+
+  const createNewView = useCallback(async (name: string, description?: string, isDefault?: boolean) => {
+    const newView: GridView = {
+      id: `view_${Date.now()}`,
+      name,
+      description,
+      isDefault,
+      settings: getCurrentViewSettings(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    await saveView(newView);
+  }, [getCurrentViewSettings, saveView]);
+
+  const updateExistingView = useCallback(async (viewId: string, updates: Partial<GridView>) => {
+    const existingView = savedViews.find(v => v.id === viewId);
+    if (!existingView) return;
+    
+    const updatedView: GridView = {
+      ...existingView,
+      ...updates,
+      updatedAt: new Date().toISOString()
+    };
+    
+    await saveView(updatedView, true);
+  }, [savedViews, saveView]);
+
+  const saveCurrentAsView = useCallback(async (name: string, description?: string, isDefault?: boolean) => {
+    await createNewView(name, description, isDefault);
+  }, [createNewView]);
+
+  // Load user views on mount (placed after function definitions)
+  useEffect(() => {
+    if (user?.email) {
+      loadUserViews();
+    }
+  }, [user?.email, loadUserViews]);
 
   // No need for local API fetching - data comes from GlobalDataProvider
 
@@ -362,7 +601,7 @@ const RealTimeGrid: React.FC = () => {
   };
 
   // Dummy handler for feedback modal (not implemented in this context)
-  const setFeedbackModalOpen = (open: boolean) => {
+  const setFeedbackModalOpen = (_open: boolean) => {
     // Could be implemented later if needed
   };
 
@@ -550,15 +789,141 @@ const RealTimeGrid: React.FC = () => {
                     )}
                   </div>
                   
-                  <button
-                    onClick={handleRefresh}
-                    disabled={isLoading}
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors disabled:opacity-50"
-                    title="Refresh metrics"
-                  >
-                    <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-                    Refresh
-                  </button>
+                  {/* Views Dropdown */}
+                  <div className="relative" ref={viewsDropdownRef}>
+                    <button
+                      onClick={() => setShowViewsDropdown(!showViewsDropdown)}
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+                      title="Manage views"
+                    >
+                      <Bookmark size={16} />
+                      Views
+                      {currentViewId && (
+                        <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-1.5 py-0.5 rounded">
+                          {savedViews.find(v => v.id === currentViewId)?.name}
+                        </span>
+                      )}
+                    </button>
+                    
+                    {showViewsDropdown && (
+                      <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
+                        <div className="p-3 border-b border-neutral-200 dark:border-neutral-700">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                              Saved Views
+                            </span>
+                            <button
+                              onClick={() => setShowViewsDropdown(false)}
+                              className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setShowSaveViewModal(true);
+                              setShowViewsDropdown(false);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+                          >
+                            <Plus size={14} />
+                            Save Current View
+                          </button>
+                        </div>
+                        
+                        <div className="p-2">
+                          {viewsLoading ? (
+                            <div className="flex items-center justify-center py-4">
+                              <RefreshCw size={16} className="animate-spin text-neutral-500" />
+                              <span className="ml-2 text-sm text-neutral-500">Loading views...</span>
+                            </div>
+                          ) : savedViews.length === 0 ? (
+                            <div className="text-center py-4">
+                              <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-2">
+                                No saved views yet
+                              </p>
+                              <p className="text-xs text-neutral-400 dark:text-neutral-500">
+                                Create your first view by clicking "Save Current View"
+                              </p>
+                            </div>
+                          ) : (
+                            savedViews.map((view) => (
+                              <div
+                                key={view.id}
+                                className={`flex items-center justify-between p-2 rounded hover:bg-neutral-50 dark:hover:bg-neutral-700 ${
+                                  currentViewId === view.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                                }`}
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => {
+                                        applyView(view);
+                                        setShowViewsDropdown(false);
+                                      }}
+                                      className="text-left flex-1"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <span className={`text-sm font-medium ${
+                                          currentViewId === view.id 
+                                            ? 'text-blue-700 dark:text-blue-300' 
+                                            : 'text-neutral-900 dark:text-neutral-100'
+                                        }`}>
+                                          {view.name}
+                                        </span>
+                                        {view.isDefault && (
+                                          <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-1.5 py-0.5 rounded">
+                                            Default
+                                          </span>
+                                        )}
+                                      </div>
+                                      {view.description && (
+                                        <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                                          {view.description}
+                                        </p>
+                                      )}
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1 ml-2">
+                                  <button
+                                    onClick={() => {
+                                      setEditingView(view);
+                                      setShowEditViewModal(true);
+                                      setShowViewsDropdown(false);
+                                    }}
+                                    className="p-1 text-neutral-400 hover:text-blue-600 dark:hover:text-blue-400"
+                                    title="Edit view"
+                                  >
+                                    <Edit3 size={12} />
+                                  </button>
+                                  {!view.isDefault && (
+                                    <button
+                                      onClick={() => {
+                                        if (confirm(`Are you sure you want to delete the view "${view.name}"?`)) {
+                                          deleteView(view.id);
+                                        }
+                                      }}
+                                      className="p-1 text-neutral-400 hover:text-red-600 dark:hover:text-red-400"
+                                      title="Delete view"
+                                    >
+                                      ×
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                        
+                        {savedViews.length > 0 && (
+                          <div className="p-2 border-t border-neutral-200 dark:border-neutral-700 text-xs text-neutral-500 dark:text-neutral-400">
+                            {savedViews.length} saved view{savedViews.length !== 1 ? 's' : ''}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -793,7 +1158,7 @@ const RealTimeGrid: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-neutral-900 divide-y divide-neutral-200 dark:divide-neutral-700">
-                {sortedData.map((stock, rowIndex) => (
+                {sortedData.map((stock) => (
                   <tr key={stock.ticker} className="hover:bg-neutral-50 dark:hover:bg-neutral-800">
                     {orderedColumns.map((column, colIndex) => {
                       const value = stock[column.key];
@@ -832,6 +1197,189 @@ const RealTimeGrid: React.FC = () => {
           />
         </div>
       </div>
+      
+      {/* Save View Modal */}
+      {showSaveViewModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-4">
+              Save Current View
+            </h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target as HTMLFormElement);
+                const name = formData.get('name') as string;
+                const description = formData.get('description') as string;
+                const isDefault = formData.get('isDefault') === 'on';
+                
+                if (name.trim()) {
+                  saveCurrentAsView(name.trim(), description || undefined, isDefault);
+                  setShowSaveViewModal(false);
+                }
+              }}
+            >
+              <div className="mb-4">
+                <label htmlFor="viewName" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                  View Name *
+                </label>
+                <input
+                  id="viewName"
+                  name="name"
+                  type="text"
+                  required
+                  placeholder="My Custom View"
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+                />
+              </div>
+              
+              <div className="mb-4">
+                <label htmlFor="viewDescription" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                  Description (optional)
+                </label>
+                <textarea
+                  id="viewDescription"
+                  name="description"
+                  rows={2}
+                  placeholder="What makes this view special..."
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+                />
+              </div>
+              
+              <div className="mb-6">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="isDefault"
+                    className="rounded border-neutral-300 dark:border-neutral-600 text-blue-500 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-neutral-700 dark:text-neutral-300">
+                    Set as default view
+                  </span>
+                </label>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowSaveViewModal(false)}
+                  className="flex-1 px-4 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 border border-neutral-300 dark:border-neutral-600 rounded-md hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                >
+                  Save View
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      
+      {/* Edit View Modal */}
+      {showEditViewModal && editingView && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-4">
+              Edit View
+            </h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target as HTMLFormElement);
+                const name = formData.get('name') as string;
+                const description = formData.get('description') as string;
+                const isDefault = formData.get('isDefault') === 'on';
+                
+                if (name.trim()) {
+                  updateExistingView(editingView.id, {
+                    name: name.trim(),
+                    description: description || undefined,
+                    isDefault
+                  });
+                  setShowEditViewModal(false);
+                  setEditingView(null);
+                }
+              }}
+            >
+              <div className="mb-4">
+                <label htmlFor="editViewName" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                  View Name *
+                </label>
+                <input
+                  id="editViewName"
+                  name="name"
+                  type="text"
+                  required
+                  defaultValue={editingView.name}
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+                />
+              </div>
+              
+              <div className="mb-4">
+                <label htmlFor="editViewDescription" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                  Description (optional)
+                </label>
+                <textarea
+                  id="editViewDescription"
+                  name="description"
+                  rows={2}
+                  defaultValue={editingView.description || ''}
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+                />
+              </div>
+              
+              <div className="mb-4">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="isDefault"
+                    defaultChecked={editingView.isDefault}
+                    className="rounded border-neutral-300 dark:border-neutral-600 text-blue-500 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-neutral-700 dark:text-neutral-300">
+                    Set as default view
+                  </span>
+                </label>
+              </div>
+              
+              <div className="mb-6">
+                <div className="text-xs text-neutral-500 dark:text-neutral-400 space-y-1">
+                  <p>Current settings will be preserved:</p>
+                  <ul className="pl-4 space-y-0.5">
+                    <li>• Column order and visibility</li>
+                    <li>• Sort: {editingView.settings.sortColumn} ({editingView.settings.sortDirection})</li>
+                    <li>• Search: {editingView.settings.searchColumn}</li>
+                    <li>• Watchlist: {editingView.settings.showWatchlistOnly ? 'On' : 'Off'}</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditViewModal(false);
+                    setEditingView(null);
+                  }}
+                  className="flex-1 px-4 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 border border-neutral-300 dark:border-neutral-600 rounded-md hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                >
+                  Update View
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
