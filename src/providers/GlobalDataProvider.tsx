@@ -166,7 +166,6 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   // Function to fetch metrics data
   const fetchMetrics = useCallback(async () => {
     if (!user?.email) {
-      console.log('User not authenticated, skipping metrics fetch');
       return;
     }
 
@@ -186,18 +185,14 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
 
       const data = await response.json();
-      console.log('📊 Global metrics API response:', data);
 
       if (data.metrics && Array.isArray(data.metrics)) {
         setMetricsData(data.metrics);
         setMetricsLastUpdated(new Date());
-        console.log(`✅ Loaded ${data.metrics.length} stock metrics globally`);
       } else {
-        console.log('⚠️ Unexpected metrics API response format');
         setMetricsData([]);
       }
     } catch (err) {
-      console.error('❌ Error fetching metrics globally:', err);
       setMetricsError(err instanceof Error ? err.message : 'Failed to fetch metrics');
     }
   }, [user?.email, METRICS_ENDPOINT, API_KEY]);
@@ -243,7 +238,6 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         return updated;
       });
     } catch (error) {
-      console.error('❌ Error fetching company names for date:', error);
     } finally {
       setCompanyNamesLoading(false);
     }
@@ -256,7 +250,6 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   // Initial metrics load when user is authenticated
   useEffect(() => {
     if (user?.email) {
-      console.log('🚀 Loading metrics data globally on app startup');
       refreshMetrics();
     }
   }, [user?.email, refreshMetrics]);
@@ -266,7 +259,6 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (!user?.email) return;
     
     const interval = setInterval(() => {
-      console.log('🔄 Auto-refreshing metrics data globally');
       fetchMetrics();
     }, 120000); // 2 minutes
 

@@ -48,22 +48,14 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
 
   // Find related messages for the same ticker, quarter, and year
   const relatedMessages = useMemo(() => {
-    console.log(`🔍 AnalysisPanel: Processing messages for analysis`, {
-      selectedMessage: selectedMessage ? `${selectedMessage.ticker} (${selectedMessage.message_id?.substring(0, 8) || selectedMessage.id?.substring(0, 8) || 'no-id'})` : 'none',
-      selectedTicker: selectedTicker,
-      messagesCount: messages.length,
-      messagesFrom: messages.length > 0 ? 'RealTimeGrid' : 'none'
-    });
 
     if (!selectedMessage && !selectedTicker) {
-      console.log(`⚠️ AnalysisPanel: No selected message or ticker`);
       return {};
     }
     
     // If we have a selectedTicker but no selectedMessage, group all messages for that ticker
     const targetTicker = selectedTicker || selectedMessage?.ticker;
     if (!targetTicker) {
-      console.log(`⚠️ AnalysisPanel: No target ticker available`);
       return {};
     }
 
@@ -73,7 +65,6 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
       return msg.ticker.toUpperCase() === targetTicker.toUpperCase();
     });
     
-    console.log(`🎯 AnalysisPanel: Found ${related.length} related messages for ${targetTicker}`);
     
     // Group by message type
     const grouped: Record<string, Message> = {};
@@ -84,7 +75,6 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
       }
     });
     
-    console.log(`📊 AnalysisPanel: Grouped message types for ${targetTicker}:`, Object.keys(grouped));
     
     return grouped;
   }, [selectedMessage, messages, selectedTicker]);

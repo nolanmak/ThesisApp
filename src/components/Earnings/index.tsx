@@ -53,13 +53,11 @@ const Messages: React.FC = () => {
 
   // Handle new real-time messages from websocket (replicating RealTimeGrid pattern)
   const handleNewWebSocketMessage = useCallback((newMessage: Message) => {
-    console.log(`📨 Earnings: Received new websocket message for ${newMessage.ticker}:`, newMessage.message_id?.substring(0, 8) || newMessage.id?.substring(0, 8) || 'no-id');
 
     setRealtimeMessages(prev => {
       // Check if message already exists
       const exists = prev.some(msg => msg.message_id === newMessage.message_id || msg.id === newMessage.id);
       if (exists) {
-        console.log(`⚠️ Message already exists, skipping duplicate`);
         return prev;
       }
 
@@ -68,7 +66,6 @@ const Messages: React.FC = () => {
         (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
 
-      console.log(`✅ Added new message, total real-time messages: ${updated.length}`);
       return updated;
     });
   }, []);
@@ -99,22 +96,12 @@ const Messages: React.FC = () => {
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
 
-    console.log(`📊 Earnings: Combined messages - Global: ${globalMessages.length}, Realtime: ${realtimeMessages.length}, Unique: ${sorted.length}`);
 
-    // Add timestamp to help debug timing issues
-    console.log(`⏰ Earnings: Messages updated at ${new Date().toISOString()}`);
 
     return sorted;
   }, [globalMessages, realtimeMessages]);
 
 
-  // Debug effect to track messages updates
-  useEffect(() => {
-    console.log(`🔄 Earnings: Messages prop changed, length: ${messages.length}, passing to components at ${new Date().toISOString()}`);
-    if (messages.length > 0) {
-      console.log(`📝 Earnings: First message ID: ${messages[0].message_id || messages[0].id}, ticker: ${messages[0].ticker}`);
-    }
-  }, [messages]);
 
   // Set initial message after first load
   useEffect(() => {
@@ -144,7 +131,6 @@ const Messages: React.FC = () => {
     if (!messagesLoading && messages.length > 0 && !initialLoadCompletedRef.current) {
       prevMessagesRef.current = [...messages];
       initialLoadCompletedRef.current = true;
-      console.log(`📋 Earnings: Initial load completed with ${messages.length} messages`);
     }
   }, [messagesLoading, messages]);
 
@@ -168,14 +154,12 @@ const Messages: React.FC = () => {
     
     // If we have genuinely new messages, auto-select the newest one from ANY ticker
     if (genuinelyNewMessages.length > 0) {
-      console.log(`🆕 Earnings: Found ${genuinelyNewMessages.length} genuinely new messages`);
       
       // Sort all new messages by timestamp (newest first) and select the newest one
       const newestMessage = genuinelyNewMessages.sort(
         (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       )[0];
       
-      console.log(`🎯 Earnings: Auto-selecting newest message from ANY ticker (${newestMessage.ticker}):`, newestMessage.message_id?.substring(0, 8) || newestMessage.id?.substring(0, 8));
       
       // Update selected message to the newest one from any ticker
       setSelectedMessage(newestMessage);
