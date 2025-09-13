@@ -1020,24 +1020,17 @@ const RealTimeGrid: React.FC = () => {
             }}
             className="bg-white dark:bg-neutral-900"
           >
-            {/* Header */}
-            <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-4 sm:px-6 py-3 sm:py-4">
+            {/* Compact Controls Header */}
+            <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-3 sm:px-4 py-2">
               <div className="flex items-center justify-between max-w-full mx-auto">
-                <div className="flex items-center gap-3">
-                  <Activity className="text-blue-500" size={24} />
-                  <h1 className="text-lg sm:text-xl font-medium text-neutral-900 dark:text-neutral-100">
-                    Real Time Grid
-                  </h1>
-                </div>
-                
                 <div className="flex items-center gap-2">
                   <div className="relative" ref={columnToggleRef}>
                     <button
                       onClick={() => setShowColumnToggle(!showColumnToggle)}
-                      className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+                      className="flex items-center gap-1 px-2 py-1 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
                       title="Toggle columns"
                     >
-                      <Settings size={16} />
+                      <Settings size={14} />
                       Columns
                     </button>
                     
@@ -1131,10 +1124,10 @@ const RealTimeGrid: React.FC = () => {
                   <div className="relative" ref={viewsDropdownRef}>
                     <button
                       onClick={() => setShowViewsDropdown(!showViewsDropdown)}
-                      className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+                      className="flex items-center gap-1 px-2 py-1 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
                       title="Manage views"
                     >
-                      <Bookmark size={16} />
+                      <Bookmark size={14} />
                       Views
                       {currentViewId && (
                         <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-1.5 py-0.5 rounded">
@@ -1263,11 +1256,12 @@ const RealTimeGrid: React.FC = () => {
                     )}
                   </div>
                 </div>
+                
               </div>
             </div>
 
             {/* Filters */}
-            <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-4 sm:px-6 py-2">
+            <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-3 sm:px-4 py-1">
               <div className="flex items-center justify-between max-w-full mx-auto">
                 <div className="flex items-center gap-4 flex-wrap">
                   <div className="flex items-center gap-3">
@@ -1423,7 +1417,6 @@ const RealTimeGrid: React.FC = () => {
                 </div>
                 
                 <div className="text-sm text-neutral-500 dark:text-neutral-400">
-                  {sortedData.length} stocks
                   {showWatchlistOnly && (
                     <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
                       Watchlist ({watchlist.length})
@@ -1437,19 +1430,6 @@ const RealTimeGrid: React.FC = () => {
                   {searchValue.trim() && (
                     <span className="ml-2 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">
                       Filtered
-                    </span>
-                  )}
-                  {selectedTicker && (
-                    <span className={`ml-2 text-xs px-2 py-1 rounded flex items-center gap-1 ${
-                      tickerMessages.length === 0 && !tickerMessagesLoading
-                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-                        : 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200'
-                    }`}>
-                      {tickerMessagesLoading && <RefreshCw size={12} className="animate-spin" />}
-                      Selected: {selectedTicker}
-                      {tickerMessages.length === 0 && !tickerMessagesLoading && (
-                        <span className="text-xs opacity-75">(Fundamentals)</span>
-                      )}
                     </span>
                   )}
                 </div>
