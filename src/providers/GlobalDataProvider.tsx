@@ -295,7 +295,7 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     webSocketEnabled,
     refreshMessages: async (bypassCache?: boolean) => {
       // Call the fetchMessages function from the hook
-      fetchMessagesFromHook(bypassCache);
+      fetchMessagesFromHook();
       return Promise.resolve();
     },
     loadMoreMessages: async () => {
