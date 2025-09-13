@@ -175,6 +175,8 @@ const MessagesList: React.FC<MessagesListProps> = ({
   }, []);
   
   useEffect(() => {
+    console.log(`📥 MessagesList: Received messages update, length: ${messages?.length || 0} at ${new Date().toISOString()}`);
+
     if (!messages || messages.length === 0) {
       setDeduplicatedMessages([]);
       return;

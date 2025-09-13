@@ -186,8 +186,9 @@ export const GlobalAudioProvider: React.FC<GlobalAudioProviderProps> = ({ childr
       if (!audioEnabled) reasons.push('disabled');
       if (!userHasInteracted) reasons.push('no user interaction');
       if (audioLockRef.current) reasons.push('locked');
-      
+
       console.log(`[GLOBAL AUDIO] ⏸️ Queue paused (${audioQueue.length} items): ${reasons.join(', ')}`);
+      console.log(`[GLOBAL AUDIO] 🔍 Debug - isInAuthenticatedArea: ${isInAuthenticatedArea}, audioEnabled: ${audioEnabled}, userHasInteracted: ${userHasInteracted}`);
     }
   }, [audioQueue, isPlaying, audioLoading, userHasInteracted, audioEnabled, isInAuthenticatedArea]);
   
@@ -378,6 +379,48 @@ export const GlobalAudioProvider: React.FC<GlobalAudioProviderProps> = ({ childr
       return () => clearInterval(checkPlaybackInterval);
     }
   }, [isPlaying, audioLoading]);
+
+  // Debug helper function for testing (attach to window for console access)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).debugAudio = {
+        testNotification: (ticker = 'TEST') => {
+          const testNotification = {
+            type: 'new_audio',
+            timestamp: new Date().toISOString(),
+            data: {
+              message_id: `test-${Date.now()}`,
+              audio_url: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // Public test audio
+              bucket: 'test-bucket',
+              key: 'test-key',
+              content_type: 'audio/wav',
+              size: 12345,
+              metadata: {
+                ticker: ticker,
+                company_name: ticker
+              }
+            }
+          };
+
+          console.log('[DEBUG] Injecting test audio notification:', testNotification);
+          setAudioQueue(prev => [...prev, testNotification]);
+        },
+        getState: () => ({
+          audioEnabled,
+          userHasInteracted,
+          isPlaying,
+          audioLoading,
+          queueLength: audioQueue.length,
+          currentAudio,
+          audioConnected
+        }),
+        clearFilter: () => {
+          audioWebsocketService.setWatchlistFilter([]);
+          console.log('[DEBUG] Cleared watchlist filter - all tickers now allowed');
+        }
+      };
+    }
+  }, [audioEnabled, userHasInteracted, isPlaying, audioLoading, audioQueue, currentAudio, audioConnected]);
 
   const contextValue: GlobalAudioContextType = {
     currentAudio,

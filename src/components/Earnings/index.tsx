@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import MessagesList from './ui/MessagesList';
 import WebSocketStatus from './ui/WebSocketStatus';
 import WatchlistToggle from './ui/WatchlistToggle';
@@ -6,6 +6,7 @@ import AnalysisPanel from './ui/AnalysisPanel';
 import FeedbackModal from './ui/FeedbackModal';
 import { Message } from '../../types';
 import useGlobalData from '../../hooks/useGlobalData';
+import { useWebSocket } from '../../hooks/useWebSocket';
 
 const Messages: React.FC = () => {
   const [searchMessageTicker, setSearchMessageTicker] = useState<string>('');
@@ -14,6 +15,9 @@ const Messages: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [showAnalysisPanel, setShowAnalysisPanel] = useState(false);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+
+  // State for real-time messages from websocket (similar to RealTimeGrid pattern)
+  const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
 
   // Refs for tracking message changes (similar to RealTimeGrid pattern)
   const prevMessagesRef = useRef<Message[]>([]);
@@ -32,7 +36,7 @@ const Messages: React.FC = () => {
   }, []);
 
   const {
-    messages,
+    messages: globalMessages,
     messagesLoading,
     messagesRefreshing: refreshing,
     messagesHasMore,
@@ -47,6 +51,70 @@ const Messages: React.FC = () => {
     convertToEasternTime
   } = useGlobalData();
 
+  // Handle new real-time messages from websocket (replicating RealTimeGrid pattern)
+  const handleNewWebSocketMessage = useCallback((newMessage: Message) => {
+    console.log(`📨 Earnings: Received new websocket message for ${newMessage.ticker}:`, newMessage.message_id?.substring(0, 8) || newMessage.id?.substring(0, 8) || 'no-id');
+
+    setRealtimeMessages(prev => {
+      // Check if message already exists
+      const exists = prev.some(msg => msg.message_id === newMessage.message_id || msg.id === newMessage.id);
+      if (exists) {
+        console.log(`⚠️ Message already exists, skipping duplicate`);
+        return prev;
+      }
+
+      // Add new message and sort by timestamp (newest first)
+      const updated = [...prev, newMessage].sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+
+      console.log(`✅ Added new message, total real-time messages: ${updated.length}`);
+      return updated;
+    });
+  }, []);
+
+  // Use WebSocket hook for real-time updates (replicating RealTimeGrid pattern)
+  useWebSocket({
+    onMessage: handleNewWebSocketMessage,
+    persistConnection: true // Keep connection alive for real-time updates
+  });
+
+  // Combine global messages and real-time messages (replicating RealTimeGrid pattern)
+  const messages = useMemo(() => {
+    const combined = [...globalMessages, ...realtimeMessages];
+
+    // Remove duplicates based on message_id or id
+    const seen = new Set();
+    const unique = combined.filter(msg => {
+      const id = msg.message_id || msg.id;
+      if (seen.has(id)) {
+        return false;
+      }
+      seen.add(id);
+      return true;
+    });
+
+    // Sort by timestamp (newest first)
+    const sorted = unique.sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+
+    console.log(`📊 Earnings: Combined messages - Global: ${globalMessages.length}, Realtime: ${realtimeMessages.length}, Unique: ${sorted.length}`);
+
+    // Add timestamp to help debug timing issues
+    console.log(`⏰ Earnings: Messages updated at ${new Date().toISOString()}`);
+
+    return sorted;
+  }, [globalMessages, realtimeMessages]);
+
+
+  // Debug effect to track messages updates
+  useEffect(() => {
+    console.log(`🔄 Earnings: Messages prop changed, length: ${messages.length}, passing to components at ${new Date().toISOString()}`);
+    if (messages.length > 0) {
+      console.log(`📝 Earnings: First message ID: ${messages[0].message_id || messages[0].id}, ticker: ${messages[0].ticker}`);
+    }
+  }, [messages]);
 
   // Set initial message after first load
   useEffect(() => {
@@ -183,6 +251,7 @@ const Messages: React.FC = () => {
             <WatchlistToggle />
             
             <MessagesList
+              key={`messages-${messages.length}-${messages[0]?.message_id || messages[0]?.id || 'empty'}`}
               messages={messages}
               loading={messagesLoading}
               convertToEasternTime={convertToEasternTime}
@@ -196,6 +265,7 @@ const Messages: React.FC = () => {
           
           {/* Analysis panel */}
           <AnalysisPanel
+            key={`analysis-${messages.length}-${selectedMessage?.message_id || selectedMessage?.id || 'no-msg'}`}
             selectedMessage={selectedMessage}
             isMobile={isMobile}
             showAnalysisPanel={showAnalysisPanel}
