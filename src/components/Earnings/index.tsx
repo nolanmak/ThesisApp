@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import MessagesList from './ui/MessagesList';
 import WebSocketStatus from './ui/WebSocketStatus';
 import WatchlistToggle from './ui/WatchlistToggle';
@@ -14,6 +14,10 @@ const Messages: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [showAnalysisPanel, setShowAnalysisPanel] = useState(false);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+
+  // Refs for tracking message changes (similar to RealTimeGrid pattern)
+  const prevMessagesRef = useRef<Message[]>([]);
+  const initialLoadCompletedRef = useRef<boolean>(false);
   
   useEffect(() => {
     const checkIfMobile = () => {
@@ -44,6 +48,7 @@ const Messages: React.FC = () => {
   } = useGlobalData();
 
 
+  // Set initial message after first load
   useEffect(() => {
     if (!initialMessageSet && messages.length > 0 && !messagesLoading) {
       const analysisMessages = messages.filter(msg => !msg.link);
@@ -65,6 +70,57 @@ const Messages: React.FC = () => {
       setInitialMessageSet(true);
     }
   }, [messages, messagesLoading, initialMessageSet]);
+
+  // Set initial messages after first load (similar to RealTimeGrid pattern)
+  useEffect(() => {
+    if (!messagesLoading && messages.length > 0 && !initialLoadCompletedRef.current) {
+      prevMessagesRef.current = [...messages];
+      initialLoadCompletedRef.current = true;
+      console.log(`📋 Earnings: Initial load completed with ${messages.length} messages`);
+    }
+  }, [messagesLoading, messages]);
+
+  // Detect new messages for real-time auto-selection (similar to RealTimeGrid pattern)
+  useEffect(() => {
+    // Skip this effect until initial load is completed
+    if (!initialLoadCompletedRef.current || !messages || messages.length === 0) return;
+    
+    // Find genuinely new messages (following MessagesList pattern)
+    const prevMessageIds = new Set(prevMessagesRef.current.map(msg => msg.message_id || msg.id));
+    
+    const genuinelyNewMessages = messages.filter(msg => {
+      const msgId = msg.message_id || msg.id;
+      const isNewToState = !prevMessageIds.has(msgId);
+      const messageTime = new Date(msg.timestamp).getTime();
+      const isRecentMessage = messageTime > (Date.now() - 2 * 60 * 1000); // Last 2 minutes
+      
+      // Only consider it truly new if it's new to our state AND is a very recent message
+      return isNewToState && isRecentMessage;
+    });
+    
+    // If we have genuinely new messages, auto-select the newest one from ANY ticker
+    if (genuinelyNewMessages.length > 0) {
+      console.log(`🆕 Earnings: Found ${genuinelyNewMessages.length} genuinely new messages`);
+      
+      // Sort all new messages by timestamp (newest first) and select the newest one
+      const newestMessage = genuinelyNewMessages.sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      )[0];
+      
+      console.log(`🎯 Earnings: Auto-selecting newest message from ANY ticker (${newestMessage.ticker}):`, newestMessage.message_id?.substring(0, 8) || newestMessage.id?.substring(0, 8));
+      
+      // Update selected message to the newest one from any ticker
+      setSelectedMessage(newestMessage);
+      
+      // Show analysis panel on mobile if a new message is selected
+      if (isMobile) {
+        setShowAnalysisPanel(true);
+      }
+    }
+    
+    // Update the previous messages ref
+    prevMessagesRef.current = messages;
+  }, [messages, isMobile]);
 
   const handleMessageSearchChange = (value: string) => {
     setSearchMessageTicker(value);
