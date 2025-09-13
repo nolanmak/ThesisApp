@@ -4,6 +4,7 @@ import { useMetricsData } from '../../hooks/useGlobalData';
 import { useWatchlist } from '../../hooks/useWatchlist';
 import AnalysisPanel from '../Earnings/ui/AnalysisPanel';
 import useGlobalData from '../../hooks/useGlobalData';
+import { useWebSocket } from '../../hooks/useWebSocket';
 import { Message } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { getUserProfile, updateUserProfile, UserProfile } from '../../services/api';
@@ -53,10 +54,74 @@ const RealTimeGrid: React.FC = () => {
 
   // Get messages and websocket data for the analysis panel
   const {
-    messages,
+    messages: globalMessages,
     convertToEasternTime,
-    earningsItems
+    earningsItems,
+    messagesLoading: loading
   } = useGlobalData();
+
+  // State for real-time messages from websocket
+  const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
+
+  // Refs for tracking message changes (similar to MessagesList pattern)
+  const prevMessagesRef = useRef<Message[]>([]);
+  const initialLoadCompletedRef = useRef<boolean>(false);
+
+  // Handle new real-time messages from websocket
+  const handleNewWebSocketMessage = useCallback((newMessage: Message) => {
+    console.log(`📨 RealTimeGrid: Received new websocket message for ${newMessage.ticker}:`, newMessage.message_id?.substring(0, 8) || newMessage.id?.substring(0, 8) || 'no-id');
+    
+    setRealtimeMessages(prev => {
+      // Check if message already exists
+      const exists = prev.some(msg => msg.message_id === newMessage.message_id || msg.id === newMessage.id);
+      if (exists) {
+        console.log(`⚠️ Message already exists, skipping duplicate`);
+        return prev;
+      }
+      
+      // Add new message and sort by timestamp (newest first)
+      const updated = [...prev, newMessage].sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+      
+      console.log(`✅ Added new message, total real-time messages: ${updated.length}`);
+      return updated;
+    });
+  }, []);
+
+  // Use WebSocket hook for real-time updates
+  const {
+    connected: webSocketConnected,
+    enabled: webSocketEnabled
+  } = useWebSocket({
+    onMessage: handleNewWebSocketMessage,
+    persistConnection: true // Keep connection alive for real-time updates
+  });
+
+  // Combine global messages and real-time messages
+  const messages = useMemo(() => {
+    const combined = [...globalMessages, ...realtimeMessages];
+    
+    // Remove duplicates based on message_id or id
+    const seen = new Set();
+    const unique = combined.filter(msg => {
+      const id = msg.message_id || msg.id;
+      if (seen.has(id)) {
+        return false;
+      }
+      seen.add(id);
+      return true;
+    });
+    
+    // Sort by timestamp (newest first)
+    const sorted = unique.sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+    
+    console.log(`📊 RealTimeGrid: Combined messages - Global: ${globalMessages.length}, Realtime: ${realtimeMessages.length}, Unique: ${sorted.length}`);
+    
+    return sorted;
+  }, [globalMessages, realtimeMessages]);
 
   // User authentication for views
   const { user } = useAuth();
@@ -262,6 +327,119 @@ const RealTimeGrid: React.FC = () => {
       setInitialMessageSet(true);
     }
   }, [messages, initialMessageSet]);
+
+  // Set initial messages after first load (similar to MessagesList pattern)
+  useEffect(() => {
+    if (!loading && messages.length > 0 && !initialLoadCompletedRef.current) {
+      prevMessagesRef.current = [...messages];
+      initialLoadCompletedRef.current = true;
+      console.log(`📋 RealTimeGrid: Initial load completed with ${messages.length} messages`);
+    }
+  }, [loading, messages]);
+
+  // Detect new messages for real-time updates (similar to MessagesList pattern)
+  useEffect(() => {
+    // Skip this effect until initial load is completed
+    if (!initialLoadCompletedRef.current || !messages || messages.length === 0) return;
+    
+    // Find genuinely new messages (following MessagesList pattern)
+    const prevMessageIds = new Set(prevMessagesRef.current.map(msg => msg.message_id || msg.id));
+    
+    const genuinelyNewMessages = messages.filter(msg => {
+      const msgId = msg.message_id || msg.id;
+      const isNewToState = !prevMessageIds.has(msgId);
+      const messageTime = new Date(msg.timestamp).getTime();
+      const isRecentMessage = messageTime > (Date.now() - 2 * 60 * 1000); // Last 2 minutes
+      
+      // Only consider it truly new if it's new to our state AND is a very recent message
+      return isNewToState && isRecentMessage;
+    });
+    
+    // If we have genuinely new messages, auto-select the newest one from ANY ticker
+    if (genuinelyNewMessages.length > 0) {
+      console.log(`🆕 RealTimeGrid: Found ${genuinelyNewMessages.length} genuinely new messages`);
+      
+      // Sort all new messages by timestamp (newest first) and select the newest one
+      const newestMessage = genuinelyNewMessages.sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      )[0];
+      
+      console.log(`🎯 RealTimeGrid: Auto-selecting newest message from ANY ticker (${newestMessage.ticker}):`, newestMessage.message_id?.substring(0, 8) || newestMessage.id?.substring(0, 8));
+      
+      // Update selected message to the newest one from any ticker
+      setSelectedMessage(newestMessage);
+      
+      // Also update the selected ticker to match the new message
+      if (newestMessage.ticker) {
+        console.log(`📍 RealTimeGrid: Switching selected ticker to ${newestMessage.ticker}`);
+        setSelectedTicker(newestMessage.ticker);
+        setShowAnalysisPanel(true); // Ensure analysis panel is visible
+        
+        // Note: fetchTickerMessages will be called automatically when selectedTicker changes
+        // due to the existing useEffect that handles ticker selection
+      }
+    }
+    
+    // Update the previous messages ref
+    prevMessagesRef.current = messages;
+  }, [messages]);
+
+  // Process ticker-specific messages for AnalysisPanel
+  useEffect(() => {
+    if (!selectedTicker) {
+      setTickerMessages([]);
+      return;
+    }
+
+    console.log(`🔍 RealTimeGrid: Processing messages for ticker: ${selectedTicker}`);
+
+    // Filter messages for the selected ticker
+    const tickerSpecificMessages = messages.filter(msg => 
+      msg.ticker && msg.ticker.toUpperCase() === selectedTicker.toUpperCase()
+    );
+
+    console.log(`🎯 Found ${tickerSpecificMessages.length} messages for ${selectedTicker}`);
+
+    if (tickerSpecificMessages.length === 0) {
+      console.log(`⚠️ No messages found for ${selectedTicker}, clearing ticker messages`);
+      setTickerMessages([]);
+      return;
+    }
+
+    // Group messages by type and get the newest for each type
+    const getMessageType = (message: Message): string => {
+      if (message.link || message.report_data?.link || 
+          message.source?.toLowerCase() === 'link' || 
+          message.type?.toLowerCase() === 'link') return 'report';
+      if (message.source === 'transcript_analysis') return 'transcript';
+      if (message.source === 'sentiment_analysis' || message.sentiment_additional_metrics) return 'sentiment';
+      if (message.source === 'fundamentals_analysis') return 'fundamentals';
+      return 'earnings';
+    };
+
+    const messagesByType: Record<string, Message> = {};
+    
+    tickerSpecificMessages.forEach((message: Message) => {
+      const messageType = getMessageType(message);
+      
+      // If we don't have a message of this type yet, or this message is newer
+      if (!messagesByType[messageType] || 
+          new Date(message.timestamp) > new Date(messagesByType[messageType].timestamp)) {
+        messagesByType[messageType] = message;
+      }
+    });
+    
+    // Convert to array and sort by timestamp (newest first)
+    const newestMessages = Object.values(messagesByType).sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+    
+    console.log(`📈 Processed message types for ${selectedTicker}:`, 
+      newestMessages.map(msg => `${getMessageType(msg)}(${msg.message_id?.substring(0, 8) || msg.id?.substring(0, 8) || 'no-id'})`));
+    
+    // Update ticker messages for AnalysisPanel
+    setTickerMessages(newestMessages);
+  }, [selectedTicker, messages]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -862,8 +1040,9 @@ const RealTimeGrid: React.FC = () => {
     setDragOverColumn(null);
   };
 
-  // Fetch ticker-specific messages
+  // Fetch ticker-specific messages (now supplementary to real-time websocket data)
   const fetchTickerMessages = useCallback(async (ticker: string) => {
+    console.log(`🔍 Fetching API messages for ticker: ${ticker}`);
     setTickerMessagesLoading(true);
     try {
       // Import the API function from your existing services
@@ -872,54 +1051,23 @@ const RealTimeGrid: React.FC = () => {
       // Use the existing getMessages function with ticker search
       const data = await getMessages(50, undefined, ticker.toUpperCase());
       
-      // Use the same message type logic as AnalysisPanel
-      const getMessageType = (message: Message): string => {
-        if (message.link || message.report_data?.link || 
-            message.source?.toLowerCase() === 'link' || 
-            message.type?.toLowerCase() === 'link') return 'report';
-        if (message.source === 'transcript_analysis') return 'transcript';
-        if (message.source === 'sentiment_analysis' || message.sentiment_additional_metrics) return 'sentiment';
-        if (message.source === 'fundamentals_analysis') return 'fundamentals';
-        return 'earnings';
-      };
-
-      // Group by message type and get the newest for each type
-      const messagesByType: Record<string, Message> = {};
+      console.log(`📡 API returned ${data.messages?.length || 0} messages for ${ticker}`);
       
-      if (data.messages && Array.isArray(data.messages)) {
-        data.messages.forEach((message: Message) => {
-          const messageType = getMessageType(message);
-          
-          // If we don't have a message of this type yet, or this message is newer
-          if (!messagesByType[messageType] || 
-              new Date(message.timestamp) > new Date(messagesByType[messageType].timestamp)) {
-            messagesByType[messageType] = message;
-          }
-        });
-      }
+      // Note: Don't set ticker messages directly here anymore since real-time websocket
+      // handling will take care of processing and filtering messages
+      // This is just to ensure we have the latest data from API to supplement websocket
       
-      // Convert to array and sort by timestamp (newest first)
-      const newestMessages = Object.values(messagesByType).sort(
-        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      );
-      
-      setTickerMessages(newestMessages);
-      
-      // Set the first (newest) message as selected for the analysis panel
-      if (newestMessages.length > 0) {
-        setSelectedMessage(newestMessages[0]);
+      if (data.messages && data.messages.length > 0) {
+        console.log(`✅ API fetch complete for ${ticker}, websocket will process messages`);
       } else {
-        // No messages found - set to null so fundamentals tab will show by default
+        console.log(`⚠️ No messages found via API for ${ticker}`);
+        // If no API messages found, clear the selected message
         setSelectedMessage(null);
       }
       
-      console.log(`✅ Found ${newestMessages.length} unique message types for ${ticker}:`, 
-        newestMessages.map(m => `${getMessageType(m)} (${m.timestamp})`));
-      
     } catch (error) {
-      console.error('Error fetching ticker messages:', error);
-      setTickerMessages([]);
-      setSelectedMessage(null);
+      console.error('Error fetching ticker messages via API:', error);
+      // Don't clear ticker messages here - let the websocket handling manage the state
     } finally {
       setTickerMessagesLoading(false);
     }
@@ -1416,22 +1564,38 @@ const RealTimeGrid: React.FC = () => {
                   </div>
                 </div>
                 
-                <div className="text-sm text-neutral-500 dark:text-neutral-400">
-                  {showWatchlistOnly && (
-                    <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
-                      Watchlist ({watchlist.length})
-                    </span>
-                  )}
-                  {(dateRange.start || dateRange.end) && scheduledTickers.length > 0 && (
-                    <span className="ml-2 text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded">
-                      Earnings ({scheduledTickers.length})
-                    </span>
-                  )}
-                  {searchValue.trim() && (
-                    <span className="ml-2 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">
-                      Filtered
-                    </span>
-                  )}
+                <div className="text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    {/* WebSocket Connection Status */}
+                    {webSocketEnabled && (
+                      <span className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${
+                        webSocketConnected 
+                          ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' 
+                          : 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
+                      }`}>
+                        <div className={`w-2 h-2 rounded-full ${
+                          webSocketConnected ? 'bg-green-500' : 'bg-yellow-500'
+                        }`} />
+                        {webSocketConnected ? 'Live' : 'Connecting...'}
+                      </span>
+                    )}
+                    
+                    {showWatchlistOnly && (
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
+                        Watchlist ({watchlist.length})
+                      </span>
+                    )}
+                    {(dateRange.start || dateRange.end) && scheduledTickers.length > 0 && (
+                      <span className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded">
+                        Earnings ({scheduledTickers.length})
+                      </span>
+                    )}
+                    {searchValue.trim() && (
+                      <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">
+                        Filtered
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

@@ -48,22 +48,32 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
 
   // Find related messages for the same ticker, quarter, and year
   const relatedMessages = useMemo(() => {
-    if (!selectedMessage) return {};
-    
-    const related = messages.filter(msg => {
-      if (msg.ticker !== selectedMessage.ticker) return false;
-      
-      // Convert to strings for comparison to handle type mismatches
-      const msgQuarter = String(msg.quarter);
-      const selectedQuarter = String(selectedMessage.quarter);
-      const msgYear = String(msg.year);
-      const selectedYear = String(selectedMessage.year);
-      
-      if (msgQuarter !== selectedQuarter) return false;
-      if (msgYear !== selectedYear) return false;
-      
-      return true;
+    console.log(`🔍 AnalysisPanel: Processing messages for analysis`, {
+      selectedMessage: selectedMessage ? `${selectedMessage.ticker} (${selectedMessage.message_id?.substring(0, 8) || selectedMessage.id?.substring(0, 8) || 'no-id'})` : 'none',
+      selectedTicker: selectedTicker,
+      messagesCount: messages.length,
+      messagesFrom: messages.length > 0 ? 'RealTimeGrid' : 'none'
     });
+
+    if (!selectedMessage && !selectedTicker) {
+      console.log(`⚠️ AnalysisPanel: No selected message or ticker`);
+      return {};
+    }
+    
+    // If we have a selectedTicker but no selectedMessage, group all messages for that ticker
+    const targetTicker = selectedTicker || selectedMessage?.ticker;
+    if (!targetTicker) {
+      console.log(`⚠️ AnalysisPanel: No target ticker available`);
+      return {};
+    }
+
+    // Filter messages by ticker
+    const related = messages.filter(msg => {
+      if (!msg.ticker) return false;
+      return msg.ticker.toUpperCase() === targetTicker.toUpperCase();
+    });
+    
+    console.log(`🎯 AnalysisPanel: Found ${related.length} related messages for ${targetTicker}`);
     
     // Group by message type
     const grouped: Record<string, Message> = {};
@@ -74,9 +84,10 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
       }
     });
     
+    console.log(`📊 AnalysisPanel: Grouped message types for ${targetTicker}:`, Object.keys(grouped));
     
     return grouped;
-  }, [selectedMessage, messages]);
+  }, [selectedMessage, messages, selectedTicker]);
 
   // Available tabs based on related messages
   const availableTabs = useMemo(() => {
