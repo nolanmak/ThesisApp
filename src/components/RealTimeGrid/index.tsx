@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter, Eye, EyeOff, Search, GripVertical, Bookmark, Edit3, Plus } from 'lucide-react';
+import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter, Eye, EyeOff, Search, GripVertical, Bookmark, Edit3, Plus, Trash2 } from 'lucide-react';
 // Removed useMetricsData import - now using local metrics fetching
 import { useWatchlist } from '../../hooks/useWatchlist';
 import AnalysisPanel from '../Earnings/ui/AnalysisPanel';
@@ -714,7 +714,16 @@ const RealTimeGrid: React.FC = () => {
       const profile = await getUserProfile(user.email);
       const currentViews = (profile?.settings?.gridViews as GridView[]) || [];
       const updatedViews = currentViews.filter(v => v.id !== viewId);
-      
+
+      // Check if we're deleting the last manual view and auto-save exists
+      const remainingManualViews = updatedViews.filter(view => view.name !== AUTO_SAVE_VIEW_NAME);
+      const autoSaveView = updatedViews.find(view => view.name === AUTO_SAVE_VIEW_NAME);
+
+      if (remainingManualViews.length === 0 && autoSaveView && !autoSaveView.isDefault) {
+        console.log('🎯 Making auto-save view default after deleting last manual view');
+        autoSaveView.isDefault = true;
+      }
+
       const updatedProfile: UserProfile = {
         email: user.email,
         watchlist: profile?.watchlist,
@@ -741,8 +750,51 @@ const RealTimeGrid: React.FC = () => {
     
     console.log('🔄 Applying saved view:', view.name, 'with settings:', settings);
     
-    // DON'T apply old column configurations - they're outdated
-    // Only apply non-column related settings to preserve the new column structure
+    // Apply column configurations if they exist and are valid
+    console.log('🔍 View settings column data:', {
+      hasColumnOrder: !!settings.columnOrder,
+      hasVisibleColumns: !!settings.visibleColumns,
+      hasColumnWidths: !!settings.columnWidths
+    });
+
+    // Apply column order if saved and valid
+    if (settings.columnOrder && Array.isArray(settings.columnOrder)) {
+      // Filter to only columns that exist in current defaultColumns
+      const validColumnOrder = settings.columnOrder.filter(colKey =>
+        defaultColumns.some(col => col.key === colKey)
+      );
+      if (validColumnOrder.length > 0) {
+        console.log('✅ Applying saved column order:', validColumnOrder.slice(0, 5).join(', ') + '...');
+        setColumnOrder(validColumnOrder);
+      }
+    }
+
+    // Apply visible columns if saved and valid
+    if (settings.visibleColumns && Array.isArray(settings.visibleColumns)) {
+      // Filter to only columns that exist in current defaultColumns
+      const validVisibleColumns = settings.visibleColumns.filter(colKey =>
+        defaultColumns.some(col => col.key === colKey)
+      );
+      if (validVisibleColumns.length > 0) {
+        console.log('✅ Applying saved visible columns:', validVisibleColumns.length, 'columns');
+        setVisibleColumns(new Set(validVisibleColumns));
+      }
+    }
+
+    // Apply column widths if saved and valid
+    if (settings.columnWidths && typeof settings.columnWidths === 'object') {
+      // Filter to only columns that exist in current defaultColumns
+      const validColumnWidths: Record<string, number> = {};
+      Object.entries(settings.columnWidths).forEach(([colKey, width]) => {
+        if (defaultColumns.some(col => col.key === colKey) && typeof width === 'number') {
+          validColumnWidths[colKey] = width;
+        }
+      });
+      if (Object.keys(validColumnWidths).length > 0) {
+        console.log('✅ Applying saved column widths:', Object.keys(validColumnWidths).length, 'columns');
+        setColumnWidths(validColumnWidths);
+      }
+    }
     
     // Apply sorting
     if (settings.sortColumn && settings.sortDirection) {
@@ -807,7 +859,10 @@ const RealTimeGrid: React.FC = () => {
       showWatchlistOnly: settings.showWatchlistOnly,
       searchValue: settings.searchValue,
       sortColumn: settings.sortColumn,
-      sortDirection: settings.sortDirection
+      sortDirection: settings.sortDirection,
+      columnOrder: settings.columnOrder.slice(0, 5).join(', ') + '...',
+      visibleColumnsCount: settings.visibleColumns.length,
+      columnWidthsCount: Object.keys(settings.columnWidths).length
     });
     return settings;
   }, [columnOrder, visibleColumns, columnWidths, sortColumn, sortDirection, showWatchlistOnly, searchValue, searchColumn, dateRange.start, dateRange.end]);
@@ -909,22 +964,39 @@ const RealTimeGrid: React.FC = () => {
       const existingAutoSave = savedViews.find(view => view.name === AUTO_SAVE_VIEW_NAME);
 
       if (existingAutoSave) {
+        // Check if there are any manual views (non-auto-save views)
+        const manualViews = savedViews.filter(view => view.name !== AUTO_SAVE_VIEW_NAME);
+        const shouldBeDefault = manualViews.length === 0;
+
+        if (shouldBeDefault && !existingAutoSave.isDefault) {
+          console.log('🎯 Making auto-save view default since no other views exist');
+        }
+
         // Update existing auto-save view
         console.log('📝 Updating existing auto-save view:', existingAutoSave.id);
         const updatedView: GridView = {
           ...existingAutoSave,
           settings: currentSettings,
+          isDefault: shouldBeDefault,
           updatedAt: new Date().toISOString()
         };
         await autoSaveView(updatedView, true);
         console.log('✅ Auto-saved current view state successfully');
       } else {
+        // Check if there are any manual views (non-auto-save views)
+        const manualViews = savedViews.filter(view => view.name !== AUTO_SAVE_VIEW_NAME);
+        const shouldBeDefault = manualViews.length === 0;
+
+        if (shouldBeDefault) {
+          console.log('🎯 Making auto-save view default since no other views exist');
+        }
+
         // Create new auto-save view
         const newAutoSaveView: GridView = {
           id: `auto-save-${Date.now()}`,
           name: AUTO_SAVE_VIEW_NAME,
           description: 'Automatically saved view with your latest settings',
-          isDefault: false,
+          isDefault: shouldBeDefault,
           settings: currentSettings,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
@@ -977,6 +1049,18 @@ const RealTimeGrid: React.FC = () => {
     console.log('🔄 State changed - Sort:', { column: sortColumn, direction: sortDirection });
   }, [sortColumn, sortDirection]);
 
+  useEffect(() => {
+    console.log('🔄 State changed - Column order:', columnOrder.slice(0, 5).join(', ') + '...');
+  }, [columnOrder]);
+
+  useEffect(() => {
+    console.log('🔄 State changed - Visible columns:', Array.from(visibleColumns).slice(0, 5).join(', ') + '...');
+  }, [visibleColumns]);
+
+  useEffect(() => {
+    console.log('🔄 State changed - Column widths:', Object.keys(columnWidths).length, 'columns');
+  }, [columnWidths]);
+
   // Simple auto-save that reacts to changes (debounced)
   useEffect(() => {
     // Don't auto-save during initial load or if no user
@@ -986,7 +1070,10 @@ const RealTimeGrid: React.FC = () => {
       dateStart: dateRange.start,
       dateEnd: dateRange.end,
       watchlist: showWatchlistOnly,
-      search: searchValue
+      search: searchValue,
+      columnOrder: columnOrder.slice(0, 3).join(',') + '...', // Show first 3 columns
+      visibleColumnsCount: visibleColumns.size,
+      columnWidthsCount: Object.keys(columnWidths).length
     });
 
     // Debounce the auto-save
@@ -1004,9 +1091,12 @@ const RealTimeGrid: React.FC = () => {
     sortDirection,
     showWatchlistOnly,
     searchValue,
-    searchColumn
-    // Removed: columnOrder, visibleColumns, columnWidths, triggerAutoSave, user.email, savedViews.length
-    // These were causing infinite loops
+    searchColumn,
+    columnOrder,
+    visibleColumns,
+    columnWidths
+    // Note: user.email and savedViews.length removed to prevent infinite loops
+    // columnOrder, visibleColumns, columnWidths added back - should be stable now
   ]);
 
   // Auto-restore functionality - apply auto-saved view on initial load
@@ -1726,17 +1816,18 @@ const RealTimeGrid: React.FC = () => {
                                   >
                                     <Edit3 size={12} />
                                   </button>
-                                  {!view.isDefault && (
+                                  {!view.isDefault && view.name !== AUTO_SAVE_VIEW_NAME && (
                                     <button
                                       onClick={() => {
-                                        if (confirm(`Are you sure you want to delete the view "${view.name}"?`)) {
+                                        if (confirm(`Are you sure you want to delete the view "${view.name}"?\n\nThis action cannot be undone.`)) {
                                           deleteView(view.id);
+                                          setShowViewsDropdown(false);
                                         }
                                       }}
-                                      className="p-1 text-neutral-400 hover:text-red-600 dark:hover:text-red-400"
+                                      className="p-1 text-neutral-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                                       title="Delete view"
                                     >
-                                      ×
+                                      <Trash2 size={12} />
                                     </button>
                                   )}
                                 </div>
