@@ -132,7 +132,7 @@ const RealTimeGrid: React.FC = () => {
   const [dateRange, setDateRange] = useState<{start: string; end: string}>({start: '', end: ''});
   const [tempDateRange, setTempDateRange] = useState<{start: string; end: string}>({start: '', end: ''});
   // scheduledTickers state removed - backend now handles date filtering
-  const [dateFilterLoading, setDateFilterLoading] = useState<boolean>(false);
+  // dateFilterLoading state removed - now uses metricsLoading since backend handles date filtering
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const datePickerRef = useRef<HTMLDivElement>(null);
   const [columnOrder, setColumnOrder] = useState<string[]>([]);
@@ -595,8 +595,7 @@ const RealTimeGrid: React.FC = () => {
         start: settings.startDate || '',
         end: settings.endDate || ''
       };
-      // Show loading immediately when applying view with date range
-      setDateFilterLoading(true);
+      // Loading will be handled by handleRefresh/refreshMetrics when date range changes
       setDateRange(newRange);
       setTempDateRange(newRange);
     }
@@ -662,17 +661,11 @@ const RealTimeGrid: React.FC = () => {
   // Refresh metrics data when date range changes (backend date filtering)
   useEffect(() => {
     if (dateRange.start || dateRange.end) {
-      setDateFilterLoading(true);
-      // Call backend with date filtering
-      handleRefresh(dateRange.start, dateRange.end).finally(() => {
-        setDateFilterLoading(false);
-      });
+      // Call backend with date filtering - handleRefresh manages metricsLoading state
+      handleRefresh(dateRange.start, dateRange.end);
     } else {
       // No date range - refresh without date filter to get all data
-      setDateFilterLoading(true);
-      handleRefresh().finally(() => {
-        setDateFilterLoading(false);
-      });
+      handleRefresh();
     }
   }, [dateRange.start, dateRange.end, handleRefresh]);
 
@@ -1409,7 +1402,7 @@ const RealTimeGrid: React.FC = () => {
                     <button
                       onClick={handleDatePickerOpen}
                       className="text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-3 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 hover:border-neutral-400 dark:hover:border-neutral-500 flex items-center gap-2 min-w-[200px] justify-between"
-                      disabled={dateFilterLoading}
+                      disabled={isLoading}
                     >
                       <span className="text-left">
                         {dateRange.start && dateRange.end && dateRange.start !== dateRange.end
@@ -1421,11 +1414,11 @@ const RealTimeGrid: React.FC = () => {
                       <ChevronDown size={14} className={`transition-transform ${showDatePicker ? 'rotate-180' : ''}`} />
                     </button>
                     
-                    {dateFilterLoading && (
+                    {isLoading && (
                       <RefreshCw size={14} className="animate-spin text-neutral-500" />
                     )}
                     
-                    {(dateRange.start || dateRange.end) && !dateFilterLoading && (
+                    {(dateRange.start || dateRange.end) && !isLoading && (
                       <button
                         onClick={handleDatePickerClear}
                         className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 px-2 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
@@ -1573,7 +1566,7 @@ const RealTimeGrid: React.FC = () => {
 
             {/* Grid Content */}
             <div className="flex-1 overflow-hidden">
-              {dateFilterLoading ? (
+              {isLoading && stockData.length === 0 ? (
                 <div className="flex items-center justify-center h-full py-20">
                   <RefreshCw size={40} className="animate-spin text-blue-500" />
                 </div>
