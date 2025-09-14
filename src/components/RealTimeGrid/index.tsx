@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter, Eye, EyeOff, Search, GripVertical, Bookmark, Edit3, Plus } from 'lucide-react';
-import { useMetricsData } from '../../hooks/useGlobalData';
+// Removed useMetricsData import - now using local metrics fetching
 import { useWatchlist } from '../../hooks/useWatchlist';
 import AnalysisPanel from '../Earnings/ui/AnalysisPanel';
 import useGlobalData from '../../hooks/useGlobalData';
@@ -8,6 +8,7 @@ import { useWebSocket } from '../../hooks/useWebSocket';
 import { Message } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { getUserProfile, updateUserProfile, UserProfile } from '../../services/api';
+import { StockMetric } from '../../providers/GlobalDataProvider';
 
 interface ColumnConfig {
   key: string;
@@ -40,14 +41,16 @@ interface GridView {
 }
 
 const RealTimeGrid: React.FC = () => {
-  // Use global metrics data instead of local fetching
-  const {
-    metricsData: stockData,
-    metricsLoading: isLoading,
-    metricsError: error,
-    metricsLastUpdated: lastUpdated,
-    refreshMetrics: handleRefresh
-  } = useMetricsData();
+  // Local metrics state instead of using GlobalDataProvider
+  const [stockData, setStockData] = useState<StockMetric[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  // API configuration for local metrics fetching
+  const API_BASE = import.meta.env.VITE_RESEARCH_API_BASE_URL;
+  const API_KEY = import.meta.env.VITE_USER_PROFILE_API_KEY;
+  const METRICS_ENDPOINT = `${API_BASE}/metrics`;
 
   // Use watchlist data for filtering
   const { watchlist } = useWatchlist();
@@ -89,11 +92,8 @@ const RealTimeGrid: React.FC = () => {
     });
   }, []);
 
-  // Use WebSocket hook for real-time updates
-  const {
-    connected: webSocketConnected,
-    enabled: webSocketEnabled
-  } = useWebSocket({
+  // Use WebSocket hook for real-time updates (status not shown in UI)
+  useWebSocket({
     onMessage: handleNewWebSocketMessage,
     persistConnection: true // Keep connection alive for real-time updates
   });
@@ -125,6 +125,67 @@ const RealTimeGrid: React.FC = () => {
 
   // User authentication for views
   const { user } = useAuth();
+
+  // Local metrics fetching function
+  const fetchMetrics = useCallback(async (startDate?: string, endDate?: string) => {
+    if (!user?.email) {
+      return;
+    }
+
+    try {
+      setError(null);
+      setIsLoading(true);
+
+      // Prepare request body with date filtering
+      const requestBody: { start_date?: string; end_date?: string } = {};
+      if (startDate) {
+        requestBody.start_date = startDate;
+        requestBody.end_date = endDate || startDate; // If single day, use same date for end
+      }
+
+      const response = await fetch(METRICS_ENDPOINT, {
+        method: Object.keys(requestBody).length > 0 ? 'POST' : 'GET',
+        headers: {
+          'X-API-Key': API_KEY,
+          'Content-Type': 'application/json',
+        },
+        ...(Object.keys(requestBody).length > 0 && { body: JSON.stringify(requestBody) })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (data.metrics && Array.isArray(data.metrics)) {
+        // Log the new response structure for debugging
+        console.log('📊 New API response structure:', {
+          count: data.count,
+          start_date: data.start_date,
+          end_date: data.end_date,
+          scheduled_tickers: data.scheduled_tickers,
+          metrics_count: data.metrics.length
+        });
+
+        // The metrics are already enriched with company_name, last_earnings_date, etc.
+        setStockData(data.metrics);
+        setLastUpdated(new Date());
+      } else {
+        console.warn('⚠️ Invalid API response structure:', data);
+        setStockData([]);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch metrics');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user?.email, METRICS_ENDPOINT, API_KEY]);
+
+  // Handle refresh function
+  const handleRefresh = useCallback(async (startDate?: string, endDate?: string) => {
+    await fetchMetrics(startDate, endDate);
+  }, [fetchMetrics]);
 
   const [sortColumn, setSortColumn] = useState<string>('ticker');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -221,9 +282,68 @@ const RealTimeGrid: React.FC = () => {
 
   const { maxDate } = getDateRestrictions();
 
+  // Utility function to get current date in Eastern Time (EST/EDT with DST handling)
+  const getCurrentEasternDate = useCallback(() => {
+    const now = new Date();
+    // Convert to Eastern Time using Intl.DateTimeFormat
+    const easternTime = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(now);
+
+    // Convert MM/DD/YYYY to YYYY-MM-DD format
+    const [month, day, year] = easternTime.split('/');
+    return `${year}-${month}-${day}`;
+  }, []);
+
+  // Utility function to get date N days ago in Eastern Time
+  const getEasternDateDaysAgo = useCallback((daysAgo: number) => {
+    const now = new Date();
+    const pastDate = new Date(now.getTime() - (daysAgo * 24 * 60 * 60 * 1000));
+
+    // Convert to Eastern Time
+    const easternTime = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(pastDate);
+
+    // Convert MM/DD/YYYY to YYYY-MM-DD format
+    const [month, day, year] = easternTime.split('/');
+    return `${year}-${month}-${day}`;
+  }, []);
+
+  // Default 7-day date range (last 7 days to today in Eastern Time)
+  const getDefault7DayRange = useCallback(() => {
+    return {
+      start: getEasternDateDaysAgo(7),
+      end: getCurrentEasternDate()
+    };
+  }, [getCurrentEasternDate, getEasternDateDaysAgo]);
+
+  // Utility function to clean company names
+  const cleanCompanyName = useCallback((name: string | undefined): string => {
+    if (!name) return '';
+
+    let cleaned = name.trim();
+
+    // Remove "Common Stock" from the end
+    cleaned = cleaned.replace(/\s+Common\s+Stock\s*$/i, '');
+
+    // Remove everything from "American depositary" onwards (case insensitive)
+    cleaned = cleaned.replace(/\s+American\s+depositary.*$/i, '');
+
+    return cleaned.trim();
+  }, []);
+
   // Define column configuration
   const defaultColumns: ColumnConfig[] = [
     { key: 'ticker', label: 'Ticker', width: 80, sortable: true, type: 'text' },
+    { key: 'company_name', label: 'Company', width: 200, sortable: true, type: 'text' },
+    { key: 'last_earnings_date', label: 'Last Earnings', width: 120, sortable: true, type: 'text' },
     // Current Quarter Earnings
     { key: '$eps0', label: 'EPS Estimate', width: 110, sortable: true, type: 'number' },
     { key: '$qeps0', label: 'EPS Actual', width: 110, sortable: true, type: 'number', colorCode: 'beats' },
@@ -251,6 +371,7 @@ const RealTimeGrid: React.FC = () => {
   // Searchable columns (subset of default columns that make sense to search)
   const searchableColumns = useMemo(() => [
     { key: 'ticker', label: 'Ticker' },
+    { key: 'company_name', label: 'Company' },
     { key: '$eps0', label: 'EPS Estimate' },
     { key: '$qeps0', label: 'EPS Actual' },
     { key: '$salesqest', label: 'Rev Est' },
@@ -292,6 +413,36 @@ const RealTimeGrid: React.FC = () => {
       count: defaultColumns.length
     });
   }, []); // Run once on mount
+
+  // Initial metrics load when user is authenticated (with default 7-day filter)
+  useEffect(() => {
+    if (user?.email && stockData.length === 0 && !isLoading) {
+      // Apply default date filtering on initial load
+      const defaultRange = getDefault7DayRange();
+      console.log('📅 Initial load: Applying default 7-day date filter:', defaultRange);
+      setDateRange(defaultRange);
+      setTempDateRange(defaultRange);
+      // fetchMetrics will be called by the dateRange change effect
+    }
+  }, [user?.email, stockData.length, isLoading, getDefault7DayRange]);
+
+  // Apply default date filtering after views are loaded (or if no views exist)
+  useEffect(() => {
+    // Only apply default if we don't already have a date range and views are not loading
+    if (!viewsLoading && !dateRange.start && !dateRange.end && stockData.length === 0) {
+      // Check if user has views and if default view has date filtering
+      const defaultView = savedViews.find(view => view.isDefault);
+      const hasDateFiltering = defaultView?.settings?.startDate || defaultView?.settings?.endDate;
+
+      // If no views exist or default view has no date filtering, apply 7-day default
+      if (savedViews.length === 0 || !hasDateFiltering) {
+        const defaultRange = getDefault7DayRange();
+        console.log('📅 Post-views load: Applying default 7-day date filter:', defaultRange);
+        setDateRange(defaultRange);
+        setTempDateRange(defaultRange);
+      }
+    }
+  }, [viewsLoading, savedViews, dateRange.start, dateRange.end, stockData.length, getDefault7DayRange]);
 
   // Mobile detection
   useEffect(() => {
@@ -589,7 +740,7 @@ const RealTimeGrid: React.FC = () => {
     }
     setSearchValue(settings.searchValue || '');
     
-    // Apply date range if available
+    // Apply date range if available, otherwise use default 7-day range
     if (settings.startDate || settings.endDate) {
       const newRange = {
         start: settings.startDate || '',
@@ -598,12 +749,18 @@ const RealTimeGrid: React.FC = () => {
       // Loading will be handled by handleRefresh/refreshMetrics when date range changes
       setDateRange(newRange);
       setTempDateRange(newRange);
+    } else {
+      // If view has no date filtering, apply default 7-day range
+      const defaultRange = getDefault7DayRange();
+      console.log('📅 View has no date filtering, applying default 7-day range:', defaultRange);
+      setDateRange(defaultRange);
+      setTempDateRange(defaultRange);
     }
     
     setCurrentViewId(view.id);
     
     console.log('✅ View applied with new column structure preserved');
-  }, []);
+  }, [getDefault7DayRange]);
 
   const getCurrentViewSettings = useCallback(() => {
     return {
@@ -662,10 +819,11 @@ const RealTimeGrid: React.FC = () => {
   useEffect(() => {
     if (dateRange.start || dateRange.end) {
       // Call backend with date filtering - handleRefresh manages metricsLoading state
+      console.log('🔄 Fetching metrics with date filter:', dateRange.start, 'to', dateRange.end);
       handleRefresh(dateRange.start, dateRange.end);
     } else {
-      // No date range - refresh without date filter to get all data
-      handleRefresh();
+      // Don't fetch all data when date range is empty - user should always have a date filter
+      console.log('⚠️ No date range set - skipping metrics fetch to prevent loading all data');
     }
   }, [dateRange.start, dateRange.end, handleRefresh]);
 
@@ -730,6 +888,8 @@ const RealTimeGrid: React.FC = () => {
         return stock.curfyeps13wkago; // Use 13-week-ago current FY EPS as guidance baseline
       case 'cy_rev_guide':
         return stock.curfysales13wkago; // Use 13-week-ago current FY sales as guidance baseline
+      case 'company_name':
+        return cleanCompanyName(stock.company_name);
       default:
         return stock[columnKey];
     }
@@ -1530,28 +1690,11 @@ const RealTimeGrid: React.FC = () => {
                 
                 <div className="text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-2">
                   <div className="flex items-center gap-2">
-                    {/* WebSocket Connection Status */}
-                    {webSocketEnabled && (
-                      <span className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${
-                        webSocketConnected 
-                          ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' 
-                          : 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
-                      }`}>
-                        <div className={`w-2 h-2 rounded-full ${
-                          webSocketConnected ? 'bg-green-500' : 'bg-yellow-500'
-                        }`} />
-                        {webSocketConnected ? 'Live' : 'Connecting...'}
-                      </span>
-                    )}
+                    {/* WebSocket connection status removed - still using WebSocket but not showing UI status */}
                     
                     {showWatchlistOnly && (
                       <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
                         Watchlist ({watchlist.length})
-                      </span>
-                    )}
-                    {(dateRange.start || dateRange.end) && sortedData.length > 0 && (
-                      <span className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded">
-                        Date Filtered ({sortedData.length})
                       </span>
                     )}
                     {searchValue.trim() && (

@@ -46,6 +46,10 @@ export interface StockMetric {
   $salesa3?: number | string; // 3 quarters ago revenue actual
   $salesa4?: number | string; // 4 quarters ago revenue actual
   $salesa5?: number | string; // 5 quarters ago revenue actual
+  // New enriched fields from scheduling data
+  company_name?: string; // Company name from scheduling data
+  last_earnings_date?: string; // Last earnings date from scheduling data
+  scheduled_dates?: string[]; // Array of scheduled dates in range
   [key: string]: any;
 }
 
