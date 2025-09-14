@@ -169,6 +169,18 @@ const RealTimeGrid: React.FC = () => {
         });
 
         // The metrics are already enriched with company_name, last_earnings_date, etc.
+        // Debug: Log first few items to see the actual data structure
+        if (data.metrics && data.metrics.length > 0) {
+          console.log('📊 Sample metrics data (first 3 items):', {
+            count: data.metrics.length,
+            sample: data.metrics.slice(0, 3).map(item => ({
+              ticker: item.ticker,
+              company_name: item.company_name,
+              last_earnings_date: item.last_earnings_date,
+              last_earnings_date_type: typeof item.last_earnings_date
+            }))
+          });
+        }
         setStockData(data.metrics);
         setLastUpdated(new Date());
       } else {
@@ -645,24 +657,34 @@ const RealTimeGrid: React.FC = () => {
     }
   }, [user?.email]);
 
-  const saveView = useCallback(async (view: GridView, isUpdate: boolean = false) => {
+  const saveView = useCallback(async (view: GridView, isUpdate: boolean = false, setAsCurrent: boolean = true) => {
     if (!user?.email) return;
-    
+
     try {
       const profile = await getUserProfile(user.email);
       const currentViews = (profile?.settings?.gridViews as GridView[]) || [];
-      
+
+      // If this view is marked as default, unmark other default views first
+      if (view.isDefault) {
+        const previousDefaults = currentViews.filter(v => v.isDefault && v.id !== view.id);
+        if (previousDefaults.length > 0) {
+          console.log('🔄 Unmarking previous default views:', previousDefaults.map(v => v.name));
+        }
+        currentViews.forEach(v => {
+          if (v.id !== view.id) {
+            v.isDefault = false;
+          }
+        });
+        console.log('✅ Setting new default view:', view.name);
+      }
+
       let updatedViews;
       if (isUpdate) {
         updatedViews = currentViews.map(v => v.id === view.id ? view : v);
       } else {
-        // If this is marked as default, unmark other default views
-        if (view.isDefault) {
-          currentViews.forEach(v => v.isDefault = false);
-        }
         updatedViews = [...currentViews, view];
       }
-      
+
       const updatedProfile: UserProfile = {
         email: user.email,
         watchlist: profile?.watchlist,
@@ -672,10 +694,14 @@ const RealTimeGrid: React.FC = () => {
           gridViews: updatedViews
         }
       };
-      
+
       await updateUserProfile(updatedProfile);
       setSavedViews(updatedViews);
-      setCurrentViewId(view.id);
+
+      // Only set as current view if explicitly requested (not for auto-save)
+      if (setAsCurrent) {
+        setCurrentViewId(view.id);
+      }
     } catch (error) {
       console.error('Failed to save view:', error);
     }
@@ -763,7 +789,7 @@ const RealTimeGrid: React.FC = () => {
   }, [getDefault7DayRange]);
 
   const getCurrentViewSettings = useCallback(() => {
-    return {
+    const settings = {
       columnOrder,
       visibleColumns: Array.from(visibleColumns),
       columnWidths,
@@ -775,6 +801,15 @@ const RealTimeGrid: React.FC = () => {
       startDate: dateRange.start,
       endDate: dateRange.end
     };
+    console.log('🔍 getCurrentViewSettings called, returning:', {
+      startDate: settings.startDate,
+      endDate: settings.endDate,
+      showWatchlistOnly: settings.showWatchlistOnly,
+      searchValue: settings.searchValue,
+      sortColumn: settings.sortColumn,
+      sortDirection: settings.sortDirection
+    });
+    return settings;
   }, [columnOrder, visibleColumns, columnWidths, sortColumn, sortDirection, showWatchlistOnly, searchValue, searchColumn, dateRange.start, dateRange.end]);
 
   const createNewView = useCallback(async (name: string, description?: string, isDefault?: boolean) => {
@@ -792,21 +827,119 @@ const RealTimeGrid: React.FC = () => {
   }, [getCurrentViewSettings, saveView]);
 
   const updateExistingView = useCallback(async (viewId: string, updates: Partial<GridView>) => {
+    console.log('🔧 updateExistingView called with:', { viewId, updates });
     const existingView = savedViews.find(v => v.id === viewId);
-    if (!existingView) return;
-    
+    if (!existingView) {
+      console.error('❌ View not found with ID:', viewId);
+      return;
+    }
+
+    console.log('🔍 Found existing view:', existingView.name);
+
     const updatedView: GridView = {
       ...existingView,
       ...updates,
       updatedAt: new Date().toISOString()
     };
-    
-    await saveView(updatedView, true);
-  }, [savedViews, saveView]);
+
+    console.log('📝 Updating view:', updatedView.name, 'with ID:', updatedView.id);
+    console.log('🔍 Current view ID before update:', currentViewId);
+    await saveView(updatedView, true, false); // isUpdate=true, setAsCurrent=false
+    console.log('🔍 Current view ID after update:', currentViewId);
+    console.log('✅ View update completed');
+  }, [savedViews, saveView, currentViewId]);
 
   const saveCurrentAsView = useCallback(async (name: string, description?: string, isDefault?: boolean) => {
     await createNewView(name, description, isDefault);
   }, [createNewView]);
+
+  // Auto-save functionality
+  const AUTO_SAVE_VIEW_NAME = '🔄 Auto-saved';
+
+  // Auto-save specific function that doesn't interfere with current view state
+  const autoSaveView = useCallback(async (view: GridView, isUpdate: boolean = false) => {
+    if (!user?.email) return;
+
+    try {
+      console.log('🔄 Auto-saving view to backend:', view.name);
+      const profile = await getUserProfile(user.email);
+      const currentViews = (profile?.settings?.gridViews as GridView[]) || [];
+
+      let updatedViews;
+      if (isUpdate) {
+        updatedViews = currentViews.map(v => v.id === view.id ? view : v);
+      } else {
+        updatedViews = [...currentViews, view];
+      }
+
+      const updatedProfile: UserProfile = {
+        email: user.email,
+        watchlist: profile?.watchlist,
+        watchListOn: profile?.watchListOn,
+        settings: {
+          ...profile?.settings,
+          gridViews: updatedViews
+        }
+      };
+
+      await updateUserProfile(updatedProfile);
+      setSavedViews(updatedViews);
+      console.log('✅ Auto-save API call completed successfully');
+    } catch (error) {
+      console.error('❌ Failed to auto-save view:', error);
+    }
+  }, [user?.email]);
+
+  const autoSaveCurrentView = useCallback(async () => {
+    if (!user?.email) {
+      console.log('⚠️ Auto-save skipped: no user email');
+      return;
+    }
+
+    if (savedViews.length === 0) {
+      console.log('⚠️ Auto-save skipped: views not loaded yet');
+      return;
+    }
+
+    try {
+      const currentSettings = getCurrentViewSettings();
+      console.log('🔄 Auto-saving current view state:', currentSettings);
+
+      // Find existing auto-save view or create new one
+      const existingAutoSave = savedViews.find(view => view.name === AUTO_SAVE_VIEW_NAME);
+
+      if (existingAutoSave) {
+        // Update existing auto-save view
+        console.log('📝 Updating existing auto-save view:', existingAutoSave.id);
+        const updatedView: GridView = {
+          ...existingAutoSave,
+          settings: currentSettings,
+          updatedAt: new Date().toISOString()
+        };
+        await autoSaveView(updatedView, true);
+        console.log('✅ Auto-saved current view state successfully');
+      } else {
+        // Create new auto-save view
+        const newAutoSaveView: GridView = {
+          id: `auto-save-${Date.now()}`,
+          name: AUTO_SAVE_VIEW_NAME,
+          description: 'Automatically saved view with your latest settings',
+          isDefault: false,
+          settings: currentSettings,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        console.log('➕ Creating new auto-save view:', newAutoSaveView);
+        await autoSaveView(newAutoSaveView, false);
+        console.log('✅ Created auto-save view successfully');
+      }
+    } catch (error) {
+      console.error('❌ Failed to auto-save view:', error);
+    }
+  }, [user?.email, savedViews, getCurrentViewSettings, autoSaveView]);
+
+  // Removed triggerAutoSave - now using direct useEffect approach
 
   // Load user views on mount (placed after function definitions)
   useEffect(() => {
@@ -826,6 +959,87 @@ const RealTimeGrid: React.FC = () => {
       console.log('⚠️ No date range set - skipping metrics fetch to prevent loading all data');
     }
   }, [dateRange.start, dateRange.end, handleRefresh]);
+
+  // Debug state changes
+  useEffect(() => {
+    console.log('🔄 State changed - Date range:', { start: dateRange.start, end: dateRange.end });
+  }, [dateRange.start, dateRange.end]);
+
+  useEffect(() => {
+    console.log('🔄 State changed - Watchlist filter:', showWatchlistOnly);
+  }, [showWatchlistOnly]);
+
+  useEffect(() => {
+    console.log('🔄 State changed - Search:', { value: searchValue, column: searchColumn });
+  }, [searchValue, searchColumn]);
+
+  useEffect(() => {
+    console.log('🔄 State changed - Sort:', { column: sortColumn, direction: sortDirection });
+  }, [sortColumn, sortDirection]);
+
+  // Simple auto-save that reacts to changes (debounced)
+  useEffect(() => {
+    // Don't auto-save during initial load or if no user
+    if (!user?.email || savedViews.length === 0) return;
+
+    console.log('🔄 Auto-save useEffect triggered with values:', {
+      dateStart: dateRange.start,
+      dateEnd: dateRange.end,
+      watchlist: showWatchlistOnly,
+      search: searchValue
+    });
+
+    // Debounce the auto-save
+    const timeoutId = setTimeout(() => {
+      console.log('🔄 Auto-save timeout executing...');
+      autoSaveCurrentView();
+    }, 2000);
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    // Only the actual values that should trigger auto-save
+    dateRange.start,
+    dateRange.end,
+    sortColumn,
+    sortDirection,
+    showWatchlistOnly,
+    searchValue,
+    searchColumn
+    // Removed: columnOrder, visibleColumns, columnWidths, triggerAutoSave, user.email, savedViews.length
+    // These were causing infinite loops
+  ]);
+
+  // Auto-restore functionality - apply auto-saved view on initial load
+  useEffect(() => {
+    console.log('🔍 Auto-restore check:', {
+      userEmail: user?.email,
+      savedViewsLength: savedViews.length,
+      currentViewId,
+      stockDataLength: stockData.length,
+      hasAutoSave: savedViews.find(view => view.name === AUTO_SAVE_VIEW_NAME) ? true : false
+    });
+
+    if (!user?.email || savedViews.length === 0) {
+      console.log('⚠️ Auto-restore skipped: no user or no saved views');
+      return;
+    }
+
+    // Only auto-restore if no view is currently applied and we haven't loaded data yet
+    if (!currentViewId && stockData.length === 0) {
+      const autoSaveView = savedViews.find(view => view.name === AUTO_SAVE_VIEW_NAME);
+
+      if (autoSaveView && autoSaveView.settings) {
+        console.log('🔄 Auto-restoring saved view state:', autoSaveView.settings);
+        applyView(autoSaveView);
+      } else {
+        console.log('⚠️ No auto-save view found or no settings');
+      }
+    } else {
+      console.log('⚠️ Auto-restore skipped: view already applied or data loaded');
+    }
+  }, [user?.email, savedViews, currentViewId, stockData.length, AUTO_SAVE_VIEW_NAME, applyView]);
+
+  // Auto-save cleanup is handled by the useEffect return function above
 
   // No need for local API fetching - data comes from GlobalDataProvider
 
@@ -890,6 +1104,13 @@ const RealTimeGrid: React.FC = () => {
         return stock.curfysales13wkago; // Use 13-week-ago current FY sales as guidance baseline
       case 'company_name':
         return cleanCompanyName(stock.company_name);
+      case 'last_earnings_date':
+        // Handle last earnings date - if it's a valid date string, return it; otherwise return null for N/A display
+        const dateValue = stock.last_earnings_date;
+        if (!dateValue || dateValue === '' || dateValue === 'null' || dateValue === 'undefined') {
+          return null; // This will be formatted as N/A
+        }
+        return dateValue; // Return the date string as-is (2025-06-16 format)
       default:
         return stock[columnKey];
     }
@@ -1381,6 +1602,11 @@ const RealTimeGrid: React.FC = () => {
                           <div className="mb-1">
                             {visibleColumns.size} of {defaultColumns.length} columns visible
                           </div>
+                          {savedViews.find(view => view.name === AUTO_SAVE_VIEW_NAME) && (
+                            <div className="text-xs text-green-600 dark:text-green-400 opacity-75 mb-1">
+                              🔄 Auto-saved
+                            </div>
+                          )}
                           {!isMobile && (
                             <div className="text-xs text-neutral-400 dark:text-neutral-500 space-y-0.5">
                               <div>💡 Drag column headers to reorder</div>
@@ -1521,7 +1747,12 @@ const RealTimeGrid: React.FC = () => {
                         
                         {savedViews.length > 0 && (
                           <div className="p-2 border-t border-neutral-200 dark:border-neutral-700 text-xs text-neutral-500 dark:text-neutral-400">
-                            {savedViews.length} saved view{savedViews.length !== 1 ? 's' : ''}
+                            <div>{savedViews.length} saved view{savedViews.length !== 1 ? 's' : ''}</div>
+                            {savedViews.find(view => view.name === AUTO_SAVE_VIEW_NAME) && (
+                              <div className="text-green-600 dark:text-green-400 opacity-75 mt-1">
+                                Auto-save enabled
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
