@@ -1,6 +1,6 @@
 import React from 'react';
 import { Search, Wifi, WifiOff, Loader, RefreshCw } from 'lucide-react';
-import { useWatchlist } from '../../../hooks/useWatchlist';
+import { useWatchlistToggle } from '../../../hooks/useWatchlistToggle';
 import GlobalAudioControls from '../../ui/GlobalAudioControls';
 
 
@@ -26,7 +26,7 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
   onToggleWebSocket
 }) => {
   // Watchlist hook (automatically updates audio service filter)
-  useWatchlist();
+  useWatchlistToggle();
   return (
     <div className="mb-3 flex items-center">
       {/* Message search box */}

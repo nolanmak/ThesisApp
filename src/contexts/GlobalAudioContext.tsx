@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, ReactNod
 import { useLocation } from 'react-router-dom';
 import { useAudioWebSocket } from '../hooks/useAudioWebSocket';
 import { AudioNotification } from '../services/audioWebsocket';
-import { useWatchlist } from '../hooks/useWatchlist';
+import { useWatchlistToggle } from '../hooks/useWatchlistToggle';
 import { useAudioSettings } from './AudioSettingsContext';
 import { useAuth } from './AuthContext';
 
@@ -45,7 +45,7 @@ export const GlobalAudioProvider: React.FC<GlobalAudioProviderProps> = ({ childr
   
   // Only initialize watchlist hook if we're in authenticated area
   // This prevents errors on landing page where auth context might not be available
-  const watchlistResult = useWatchlist();
+  const watchlistResult = useWatchlistToggle();
   
   // Audio settings hook
   const { settings } = useAudioSettings();
