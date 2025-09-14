@@ -87,7 +87,7 @@ interface GlobalDataContextType {
   metricsLoading: boolean;
   metricsError: string | null;
   metricsLastUpdated: Date | null;
-  refreshMetrics: () => Promise<void>;
+  refreshMetrics: (startDate?: string, endDate?: string) => Promise<void>;
   
   // Company names data
   companyNames: Record<string, CompanyNameData>;
@@ -163,21 +163,29 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return map;
   }, [earningsItems]);
 
-  // Function to fetch metrics data
-  const fetchMetrics = useCallback(async () => {
+  // Function to fetch metrics data with optional date filtering
+  const fetchMetrics = useCallback(async (startDate?: string, endDate?: string) => {
     if (!user?.email) {
       return;
     }
 
     try {
       setMetricsError(null);
-      
+
+      // Prepare request body with date filtering
+      const requestBody: { start_date?: string; end_date?: string } = {};
+      if (startDate) {
+        requestBody.start_date = startDate;
+        requestBody.end_date = endDate || startDate; // If single day, use same date for end
+      }
+
       const response = await fetch(METRICS_ENDPOINT, {
-        method: 'GET',
+        method: Object.keys(requestBody).length > 0 ? 'POST' : 'GET',
         headers: {
           'X-API-Key': API_KEY,
           'Content-Type': 'application/json',
         },
+        ...(Object.keys(requestBody).length > 0 && { body: JSON.stringify(requestBody) })
       });
 
       if (!response.ok) {
@@ -197,9 +205,9 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, [user?.email, METRICS_ENDPOINT, API_KEY]);
 
-  const refreshMetrics = useCallback(async () => {
+  const refreshMetrics = useCallback(async (startDate?: string, endDate?: string) => {
     setMetricsLoading(true);
-    await fetchMetrics();
+    await fetchMetrics(startDate, endDate);
     setMetricsLoading(false);
   }, [fetchMetrics]);
 
@@ -254,12 +262,12 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, [user?.email, refreshMetrics]);
 
-  // Auto-refresh metrics every 2 minutes
+  // Auto-refresh metrics every 2 minutes (without date filtering for background refresh)
   useEffect(() => {
     if (!user?.email) return;
-    
+
     const interval = setInterval(() => {
-      fetchMetrics();
+      fetchMetrics(); // No date params for background refresh - gets all data
     }, 120000); // 2 minutes
 
     return () => clearInterval(interval);

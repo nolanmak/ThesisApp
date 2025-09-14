@@ -131,7 +131,7 @@ const RealTimeGrid: React.FC = () => {
   const [showWatchlistOnly, setShowWatchlistOnly] = useState(false);
   const [dateRange, setDateRange] = useState<{start: string; end: string}>({start: '', end: ''});
   const [tempDateRange, setTempDateRange] = useState<{start: string; end: string}>({start: '', end: ''});
-  const [scheduledTickers, setScheduledTickers] = useState<string[]>([]);
+  // scheduledTickers state removed - backend now handles date filtering
   const [dateFilterLoading, setDateFilterLoading] = useState<boolean>(false);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const datePickerRef = useRef<HTMLDivElement>(null);
@@ -659,46 +659,22 @@ const RealTimeGrid: React.FC = () => {
     }
   }, [user?.email, loadUserViews]);
 
-  // Start date filtering loading when date range changes
+  // Refresh metrics data when date range changes (backend date filtering)
   useEffect(() => {
     if (dateRange.start || dateRange.end) {
-      // Date fetching starts - turn loading to true
       setDateFilterLoading(true);
-    } else {
-      // No date range - turn loading to false immediately
-      setDateFilterLoading(false);
-      setScheduledTickers([]);
-    }
-  }, [dateRange.start, dateRange.end]);
-
-  // Perform actual filtering and stop loading when data is available
-  useEffect(() => {
-    if ((dateRange.start || dateRange.end) && earningsItems.length > 0) {
-      // Filter earnings data that's already loaded in memory
-      const filteredEarnings = earningsItems.filter(earning => {
-        const earningDate = earning.date;
-        
-        // Check start date
-        if (dateRange.start && earningDate < dateRange.start) {
-          return false;
-        }
-        
-        // Check end date (or use start date as end if only start is provided)
-        const endDate = dateRange.end || dateRange.start;
-        if (endDate && earningDate > endDate) {
-          return false;
-        }
-        
-        return true;
+      // Call backend with date filtering
+      handleRefresh(dateRange.start, dateRange.end).finally(() => {
+        setDateFilterLoading(false);
       });
-      
-      const tickers = filteredEarnings.map(earning => earning.ticker.toUpperCase());
-      setScheduledTickers(tickers);
-      
-      // Filtering stops - turn loading to false
-      setDateFilterLoading(false);
+    } else {
+      // No date range - refresh without date filter to get all data
+      setDateFilterLoading(true);
+      handleRefresh().finally(() => {
+        setDateFilterLoading(false);
+      });
     }
-  }, [dateRange.start, dateRange.end, earningsItems]);
+  }, [dateRange.start, dateRange.end, handleRefresh]);
 
   // No need for local API fetching - data comes from GlobalDataProvider
 
@@ -872,51 +848,46 @@ const RealTimeGrid: React.FC = () => {
 
   const sortedData = useMemo(() => {
     if (!stockData.length) return [];
-    
+
     let filteredData = stockData;
-    
-    // Filter by date range (scheduled earnings) if dates are selected
-    if ((dateRange.start || dateRange.end) && scheduledTickers.length > 0) {
-      filteredData = filteredData.filter(stock => 
-        scheduledTickers.includes(stock.ticker.toUpperCase())
-      );
-    }
-    
+
+    // Backend now handles date filtering, so we don't need frontend scheduledTickers filtering
+
     // Filter by watchlist if enabled
     if (showWatchlistOnly && watchlist.length > 0) {
-      filteredData = filteredData.filter(stock => 
+      filteredData = filteredData.filter(stock =>
         watchlist.includes(stock.ticker.toUpperCase())
       );
     }
-    
+
     // Filter by search
     if (searchValue.trim()) {
-      filteredData = filteredData.filter(stock => 
+      filteredData = filteredData.filter(stock =>
         matchesSearch(stock, searchValue, searchColumn)
       );
     }
-    
+
     return [...filteredData].sort((a, b) => {
       const aValue = getValue(a, sortColumn);
       const bValue = getValue(b, sortColumn);
-      
+
       // Handle null/undefined/N/A values
       if (aValue === 'N/A' || aValue === null || aValue === undefined) return 1;
       if (bValue === 'N/A' || bValue === null || bValue === undefined) return -1;
-      
+
       const aNum = parseFloat(String(aValue));
       const bNum = parseFloat(String(bValue));
-      
+
       let comparison = 0;
       if (!isNaN(aNum) && !isNaN(bNum)) {
         comparison = aNum - bNum;
       } else {
         comparison = String(aValue).localeCompare(String(bValue));
       }
-      
+
       return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [stockData, sortColumn, sortDirection, showWatchlistOnly, watchlist, searchValue, searchColumn, matchesSearch, dateRange.start, dateRange.end, scheduledTickers]);
+  }, [stockData, sortColumn, sortDirection, showWatchlistOnly, watchlist, searchValue, searchColumn, matchesSearch]);
 
   // Toggle column visibility
   const toggleColumnVisibility = useCallback((columnKey: string) => {
@@ -1585,9 +1556,9 @@ const RealTimeGrid: React.FC = () => {
                         Watchlist ({watchlist.length})
                       </span>
                     )}
-                    {(dateRange.start || dateRange.end) && scheduledTickers.length > 0 && (
+                    {(dateRange.start || dateRange.end) && sortedData.length > 0 && (
                       <span className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded">
-                        Earnings ({scheduledTickers.length})
+                        Date Filtered ({sortedData.length})
                       </span>
                     )}
                     {searchValue.trim() && (
@@ -1641,21 +1612,21 @@ const RealTimeGrid: React.FC = () => {
                 )}
               </div>
               <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">
-                {searchValue.trim() 
+                {searchValue.trim()
                   ? "No Search Results Found"
-                  : (dateRange.start || dateRange.end) && scheduledTickers.length === 0
-                    ? "No Earnings Found"
-                    : showWatchlistOnly 
-                      ? "No Watchlist Stocks Found" 
+                  : (dateRange.start || dateRange.end) && sortedData.length === 0
+                    ? "No Data for Date Range"
+                    : showWatchlistOnly
+                      ? "No Watchlist Stocks Found"
                       : "No Metrics Available"
                 }
               </h3>
               <p className="text-neutral-500 dark:text-neutral-400 mb-4">
                 {searchValue.trim()
                   ? `No stocks match "${searchValue}" in ${searchableColumns.find(col => col.key === searchColumn)?.label || 'Ticker'}.`
-                  : (dateRange.start || dateRange.end) && scheduledTickers.length === 0
-                    ? `No earnings announcements found for the selected date range.`
-                    : showWatchlistOnly 
+                  : (dateRange.start || dateRange.end) && sortedData.length === 0
+                    ? `No metrics data available for the selected date range.`
+                    : showWatchlistOnly
                       ? `No stocks from your watchlist (${watchlist.length} symbols) are currently available in the metrics data.`
                       : "No real-time metrics data found. The API may be returning an empty dataset."
                 }
