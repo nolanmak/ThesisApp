@@ -213,14 +213,13 @@ class AudioWebSocketService {
             
             // Check watchlist filter before notifying handlers
             const ticker = audioNotification.data?.metadata?.ticker || audioNotification.data?.metadata?.company_name || 'UNKNOWN';
-            const watchlistFilter = this.getWatchlistFilter();
-            console.log(`[AUDIO WS] 🎯 Checking ticker "${ticker}" against watchlist:`, watchlistFilter);
-
             if (this.isTickerInWatchlist(ticker)) {
-              console.log(`[AUDIO WS] ✅ Ticker "${ticker}" allowed, notifying handlers`);
               this.notifyMessageHandlers(audioNotification);
             } else {
-              console.log(`[AUDIO WS] ❌ Ticker "${ticker}" blocked by watchlist filter`);
+              // Only log if there's actually a filter set (to match old behavior)
+              if (this.watchlistFilter.length > 0) {
+                console.log(`[AUDIO WS] Ticker "${ticker}" filtered out by watchlist`);
+              }
             }
           } else {
             console.warn(

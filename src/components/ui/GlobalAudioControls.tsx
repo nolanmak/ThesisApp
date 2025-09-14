@@ -18,11 +18,8 @@ const GlobalAudioControls: React.FC<GlobalAudioControlsProps> = ({
   const location = useLocation();
   const { user } = useAuth();
   
-  // Check if we're in an authenticated area
-  const isInAuthenticatedArea = location.pathname.startsWith('/dashboard') && user;
-  
-  // Don't render controls if not in authenticated area
-  if (!isInAuthenticatedArea) {
+  // Check if user is logged in (allow audio controls when authenticated)
+  if (!user) {
     return null;
   }
 
