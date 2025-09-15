@@ -204,48 +204,73 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     const minValue = Math.min(...data.filter(d => d !== null && !isNaN(d)));
     const range = maxValue - minValue || 1;
 
+    // Generate Y-axis scale labels
+    const yAxisLabels = [];
+    const numLabels = 5;
+    for (let i = 0; i < numLabels; i++) {
+      const value = maxValue - (i * range / (numLabels - 1));
+      if (value >= 1000000) {
+        yAxisLabels.push(`${(value / 1000000).toFixed(1)}M`);
+      } else if (value >= 1000) {
+        yAxisLabels.push(`${(value / 1000).toFixed(1)}K`);
+      } else {
+        yAxisLabels.push(value.toFixed(0));
+      }
+    }
+
     return (
       <div className="bg-white dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg p-3 sm:p-4 mb-4 overflow-hidden relative">
         <h3 className="text-xs sm:text-sm font-semibold mb-2 sm:mb-3 text-neutral-800 dark:text-neutral-200 truncate">{title}</h3>
-        <div className="flex items-end justify-between gap-1" style={{ height: `${height}px` }}>
-          {data.map((value, index) => {
-            const isValid = value !== null && !isNaN(value);
-            const barHeight = isValid ? Math.max(((value - minValue) / range) * height * 0.8, 2) : 0;
-            
-            return (
-              <div 
-                key={index} 
-                className="flex-1 flex flex-col items-center min-w-0 max-w-[40px] relative"
-                onMouseEnter={() => setHoveredIndex(index)}
-                onMouseLeave={() => setHoveredIndex(null)}
-              >
-                <div 
-                  className="transition-all duration-200 cursor-pointer hover:opacity-80"
-                  style={{ 
-                    height: `${barHeight}px`,
-                    backgroundColor: isValid ? color : '#e5e7eb',
-                    width: '100%',
-                    maxWidth: isMobile ? '16px' : '24px',
-                    minWidth: '8px'
-                  }}
-                />
-                {labels && labels[index] && (
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 truncate w-full text-center">
-                    {labels[index]}
-                  </span>
-                )}
-                {/* Removed value display since we now have hover tooltips */}
-                
-                {/* Hover Tooltip */}
-                {hoveredIndex === index && isValid && (
-                  <div className="absolute bottom-full mb-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 px-2 py-1 rounded text-xs whitespace-nowrap z-10 shadow-lg">
-                    {labels && labels[index] && `${labels[index]}: `}
-                    {typeof value === 'string' ? value : value.toLocaleString()}
-                  </div>
-                )}
+        <div className="flex">
+          {/* Y-axis labels */}
+          <div className="flex flex-col justify-between pr-2 text-xs text-neutral-500 dark:text-neutral-400" style={{ height: `${height}px` }}>
+            {yAxisLabels.map((label, index) => (
+              <div key={index} className="leading-none">
+                {label}
               </div>
-            );
-          })}
+            ))}
+          </div>
+
+          {/* Chart area */}
+          <div className="flex-1 flex items-end justify-between gap-1" style={{ height: `${height}px` }}>
+            {data.map((value, index) => {
+              const isValid = value !== null && !isNaN(value);
+              const barHeight = isValid ? Math.max(((value - minValue) / range) * height * 0.8, 2) : 0;
+
+              return (
+                <div
+                  key={index}
+                  className="flex-1 flex flex-col items-center min-w-0 max-w-[40px] relative"
+                  onMouseEnter={() => setHoveredIndex(index)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                >
+                  <div
+                    className="transition-all duration-200 cursor-pointer hover:opacity-80"
+                    style={{
+                      height: `${barHeight}px`,
+                      backgroundColor: isValid ? color : '#e5e7eb',
+                      width: '100%',
+                      maxWidth: isMobile ? '16px' : '24px',
+                      minWidth: '8px'
+                    }}
+                  />
+                  {labels && labels[index] && (
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 truncate w-full text-center">
+                      {labels[index]}
+                    </span>
+                  )}
+
+                  {/* Hover Tooltip */}
+                  {hoveredIndex === index && isValid && (
+                    <div className="absolute bottom-full mb-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 px-2 py-1 rounded text-xs whitespace-nowrap z-10 shadow-lg">
+                      {labels && labels[index] && `${labels[index]}: `}
+                      {typeof value === 'string' ? value : value.toLocaleString()}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     );
@@ -260,14 +285,14 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     series1Color?: string;
     series2Color?: string;
     height?: number;
-  }> = ({ 
-    series1, 
-    series2, 
-    labels, 
-    title, 
-    series1Color = '#ef4444', 
-    series2Color = '#3b82f6', 
-    height = 120 
+  }> = ({
+    series1,
+    series2,
+    labels,
+    title,
+    series1Color = '#ef4444',
+    series2Color = '#3b82f6',
+    height = 120
   }) => {
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
     const allData = [...series1.filter(d => d !== null && !isNaN(d)), ...series2.filter(d => d !== null && !isNaN(d))];
@@ -275,10 +300,35 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     const minValue = Math.min(...allData);
     const range = maxValue - minValue || 1;
 
+    // Generate Y-axis scale labels
+    const yAxisLabels = [];
+    const numLabels = 5;
+    for (let i = 0; i < numLabels; i++) {
+      const value = maxValue - (i * range / (numLabels - 1));
+      if (value >= 1000000) {
+        yAxisLabels.push(`${(value / 1000000).toFixed(1)}M`);
+      } else if (value >= 1000) {
+        yAxisLabels.push(`${(value / 1000).toFixed(1)}K`);
+      } else {
+        yAxisLabels.push(value.toFixed(0));
+      }
+    }
+
     return (
       <div className="bg-white dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg p-3 sm:p-4 mb-4 overflow-hidden relative">
         <h3 className="text-xs sm:text-sm font-semibold mb-2 sm:mb-3 text-neutral-800 dark:text-neutral-200 truncate">{title}</h3>
-        <div className="flex items-end justify-between gap-1" style={{ height: `${height}px` }}>
+        <div className="flex">
+          {/* Y-axis labels */}
+          <div className="flex flex-col justify-between pr-2 text-xs text-neutral-500 dark:text-neutral-400" style={{ height: `${height}px` }}>
+            {yAxisLabels.map((label, index) => (
+              <div key={index} className="leading-none">
+                {label}
+              </div>
+            ))}
+          </div>
+
+          {/* Chart area */}
+          <div className="flex-1 flex items-end justify-between gap-1" style={{ height: `${height}px` }}>
           {series1.map((_, index) => {
             const value1 = series1[index];
             const value2 = series2[index];
@@ -344,6 +394,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
               </div>
             );
           })}
+          </div>
         </div>
       </div>
     );
