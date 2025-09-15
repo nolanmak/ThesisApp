@@ -1267,13 +1267,20 @@ const RealTimeGrid: React.FC = () => {
 
     switch (colorCode) {
       case 'beats':
-        if (numValue > 0) return 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200';
-        if (numValue < 0) return 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200';
-        return 'bg-gray-50 dark:bg-gray-900/20 text-gray-800 dark:text-gray-200';
+        // More obvious colors for earnings beats/misses with intensity levels
+        if (numValue > 20) return 'bg-green-300 dark:bg-green-700/50 text-green-950 dark:text-green-50 font-bold border border-green-400';
+        if (numValue > 0) return 'bg-green-200 dark:bg-green-800/40 text-green-900 dark:text-green-100 font-semibold';
+        if (numValue < -20) return 'bg-red-300 dark:bg-red-700/50 text-red-950 dark:text-red-50 font-bold border border-red-400';
+        if (numValue < 0) return 'bg-red-200 dark:bg-red-800/40 text-red-900 dark:text-red-100 font-semibold';
+        return 'bg-gray-200 dark:bg-gray-700/40 text-gray-900 dark:text-gray-100 font-medium';
       case 'performance':
-        if (numValue > 50) return 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200';
-        if (numValue < 20) return 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200';
-        return 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200';
+        // More obvious colors for performance metrics with intensity levels
+        if (numValue > 100) return 'bg-green-300 dark:bg-green-700/50 text-green-950 dark:text-green-50 font-bold border border-green-400';
+        if (numValue > 50) return 'bg-green-200 dark:bg-green-800/40 text-green-900 dark:text-green-100 font-semibold';
+        if (numValue < -20) return 'bg-red-300 dark:bg-red-700/50 text-red-950 dark:text-red-50 font-bold border border-red-400';
+        if (numValue < 0) return 'bg-red-200 dark:bg-red-800/40 text-red-900 dark:text-red-100 font-semibold';
+        if (numValue < 20) return 'bg-orange-200 dark:bg-orange-700/40 text-orange-900 dark:text-orange-100 font-medium';
+        return 'bg-yellow-200 dark:bg-yellow-700/40 text-yellow-900 dark:text-yellow-100 font-medium';
       default:
         return '';
     }

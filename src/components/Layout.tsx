@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Calendar, MessageCircle, Menu, List, Settings, TrendingUp, Activity } from 'lucide-react';
+import { Calendar, MessageCircle, Menu, List, Settings, TrendingUp, Activity, Info } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import ThemeToggle from './ui/ThemeToggle';
 import SettingsModal from './ui/Settings';
@@ -13,6 +13,7 @@ const Layout: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showAlphaTooltip, setShowAlphaTooltip] = useState(false);
   
   const isAdmin = user?.email === 'nolanmak7@gmail.com';
   
@@ -74,10 +75,25 @@ const Layout: React.FC = () => {
                 </button>
               </div>
             </div>
-            
-            {/* Bottom row: Alpha banner */}
-            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-3 py-2 text-xs rounded-md border border-red-200 dark:border-red-800">
-              This is an alpha version. Please validate any data through other sources.
+
+            {/* Alpha version info icon */}
+            <div className="relative flex justify-center">
+              <button
+                onMouseEnter={() => setShowAlphaTooltip(true)}
+                onMouseLeave={() => setShowAlphaTooltip(false)}
+                className="flex items-center justify-center p-1 rounded-full transition-colors duration-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                aria-label="Alpha version info"
+              >
+                <Info size={16} />
+              </button>
+
+              {/* Tooltip */}
+              {showAlphaTooltip && (
+                <div className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 w-64 bg-red-50 dark:bg-red-900/90 text-red-600 dark:text-red-400 px-3 py-2 text-xs rounded-md border border-red-200 dark:border-red-800 shadow-lg z-50">
+                  This is an alpha version. Please validate any data through other sources.
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-red-200 dark:border-b-red-800"></div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -88,13 +104,28 @@ const Layout: React.FC = () => {
               EarningsOwl
             </h1>
             
-            {/* Center container for banner and theme toggle */}
+            {/* Right side controls */}
             <div className="flex items-center gap-4">
-              {/* Alpha version disclosure banner */}
-              <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-4 py-2 text-xs rounded-md border border-red-200 dark:border-red-800 max-w-[200px] md:max-w-[1000px]">
-                This is an alpha version. Please validate any data through other sources.
+              {/* Alpha version info icon */}
+              <div className="relative">
+                <button
+                  onMouseEnter={() => setShowAlphaTooltip(true)}
+                  onMouseLeave={() => setShowAlphaTooltip(false)}
+                  className="flex items-center justify-center p-1 rounded-full transition-colors duration-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  aria-label="Alpha version info"
+                >
+                  <Info size={16} />
+                </button>
+
+                {/* Tooltip */}
+                {showAlphaTooltip && (
+                  <div className="absolute top-full right-0 mt-2 w-80 bg-red-50 dark:bg-red-900/90 text-red-600 dark:text-red-400 px-3 py-2 text-xs rounded-md border border-red-200 dark:border-red-800 shadow-lg z-50">
+                    This is an alpha version. Please validate any data through other sources.
+                    <div className="absolute bottom-full right-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-red-200 dark:border-b-red-800"></div>
+                  </div>
+                )}
               </div>
-              
+
               {/* Theme Toggle and Settings (desktop only) */}
               <div className="flex items-center gap-2">
                 <GlobalAudioControls size="sm" />
