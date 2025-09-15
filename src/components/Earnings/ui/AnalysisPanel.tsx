@@ -626,14 +626,14 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                             parseFloat(String(tickerMetrics['curfyepsmean'] || 0)),
                             parseFloat(String(tickerMetrics['nextfyepsmean'] || 0))
                           ]}
-                          labels={['Y5', 'Y4', 'Y3', 'Y2', 'Y1', 'CY', 'NY']}
+                          labels={['EPS4', 'EPS3', 'EPS2', 'EPS1', 'EPS0', 'CY', 'NY']}
                           title="Annual EPS"
                           color={[
-                            '#10b981', // Y5 - Historical (solid green)
-                            '#10b981', // Y4 - Historical (solid green)
-                            '#10b981', // Y3 - Historical (solid green)
-                            '#10b981', // Y2 - Historical (solid green)
-                            '#10b981', // Y1 - Historical (solid green)
+                            '#10b981', // EPS4 - Historical (solid green)
+                            '#10b981', // EPS3 - Historical (solid green)
+                            '#10b981', // EPS2 - Historical (solid green)
+                            '#10b981', // EPS1 - Historical (solid green)
+                            '#10b981', // EPS0 - Historical (solid green)
                             '#6ee7b7', // CY - Current Year Estimate (lighter green)
                             '#a7f3d0'  // NY - Next Year Estimate (lightest green)
                           ]}
