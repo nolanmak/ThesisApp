@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings as SettingsIcon, X, RotateCcw, Volume2, LogOut, User, List } from 'lucide-react';
+import { Settings as SettingsIcon, X, RotateCcw, Volume2, LogOut, User, List, Palette } from 'lucide-react';
 import { useAudioSettings } from '../../contexts/AudioSettingsContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import { useWatchlistToggle } from '../../hooks/useWatchlistToggle';
 
@@ -13,10 +14,11 @@ interface SettingsProps {
 const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   const { settings, updatePlaybackSpeed, resetSettings } = useAudioSettings();
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const { watchlist, watchListOn, toggleWatchlist, loading: watchlistLoading } = useWatchlistToggle();
   const [tempSpeed, setTempSpeed] = useState(settings.playbackSpeed);
-  const [activeTab, setActiveTab] = useState<'audio' | 'account'>('audio');
+  const [activeTab, setActiveTab] = useState<'audio' | 'theme' | 'account'>('audio');
   const modalRef = useRef<HTMLDivElement>(null);
 
   // Update temp speed when settings change
@@ -125,6 +127,17 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
           >
             <Volume2 size={16} />
             Audio
+          </button>
+          <button
+            onClick={() => setActiveTab('theme')}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'theme'
+                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
+            }`}
+          >
+            <Palette size={16} />
+            Theme
           </button>
           <button
             onClick={() => setActiveTab('account')}
@@ -244,6 +257,78 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                   )}
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'theme' && (
+            <div className="space-y-6">
+              {/* Theme Selection */}
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-4">
+                  Choose Theme
+                </label>
+                <div className="grid grid-cols-1 gap-3">
+                  <button
+                    onClick={() => setTheme('light')}
+                    className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-all ${
+                      theme === 'light'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-full bg-white border-2 border-neutral-300 shadow-sm"></div>
+                    <div className="text-left">
+                      <div className="font-medium text-neutral-900 dark:text-neutral-100">Light</div>
+                      <div className="text-xs text-neutral-500 dark:text-neutral-400">Bright and clean interface</div>
+                    </div>
+                    {theme === 'light' && (
+                      <div className="ml-auto w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
+                        <div className="w-2 h-2 rounded-full bg-white"></div>
+                      </div>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => setTheme('dark')}
+                    className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-all ${
+                      theme === 'dark'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-full bg-neutral-800 border-2 border-neutral-600"></div>
+                    <div className="text-left">
+                      <div className="font-medium text-neutral-900 dark:text-neutral-100">Dark</div>
+                      <div className="text-xs text-neutral-500 dark:text-neutral-400">Easy on the eyes</div>
+                    </div>
+                    {theme === 'dark' && (
+                      <div className="ml-auto w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
+                        <div className="w-2 h-2 rounded-full bg-white"></div>
+                      </div>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => setTheme('system')}
+                    className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-all ${
+                      theme === 'system'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-white to-neutral-800 border-2 border-neutral-400"></div>
+                    <div className="text-left">
+                      <div className="font-medium text-neutral-900 dark:text-neutral-100">System</div>
+                      <div className="text-xs text-neutral-500 dark:text-neutral-400">Matches your device settings</div>
+                    </div>
+                    {theme === 'system' && (
+                      <div className="ml-auto w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
+                        <div className="w-2 h-2 rounded-full bg-white"></div>
+                      </div>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
