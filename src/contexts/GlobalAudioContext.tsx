@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, ReactNod
 import { useLocation } from 'react-router-dom';
 import { useAudioWebSocket } from '../hooks/useAudioWebSocket';
 import { AudioNotification } from '../services/audioWebsocket';
-import { useWatchlist } from '../hooks/useWatchlist';
+import { useWatchlistToggle } from '../hooks/useWatchlistToggle';
 import { useAudioSettings } from './AudioSettingsContext';
 import { useAuth } from './AuthContext';
 
@@ -40,11 +40,12 @@ export const GlobalAudioProvider: React.FC<GlobalAudioProviderProps> = ({ childr
   const { user } = useAuth();
   
   // Check if we're in an authenticated area (not landing page)
-  const isInAuthenticatedArea = location.pathname.startsWith('/dashboard') && user;
+  // Allow audio when user is logged in and not on root/landing page
+  const isInAuthenticatedArea = user && location.pathname !== '/';
   
   // Only initialize watchlist hook if we're in authenticated area
   // This prevents errors on landing page where auth context might not be available
-  const watchlistResult = useWatchlist();
+  const watchlistResult = useWatchlistToggle();
   
   // Audio settings hook
   const { settings } = useAudioSettings();
@@ -69,7 +70,7 @@ export const GlobalAudioProvider: React.FC<GlobalAudioProviderProps> = ({ childr
   } = useAudioWebSocket({
     autoConnect: false,
     persistConnection: true,
-    onAudioNotification: isInAuthenticatedArea ? (notification) => {
+    onAudioNotification: (notification) => {
       const ticker = notification.data?.metadata?.ticker || notification.data?.metadata?.company_name || 'Unknown Stock';
       console.log(`[GLOBAL AUDIO] 🎵 New audio notification for ${ticker}, currently playing: ${isPlaying}, queue length: ${audioQueue.length}`);
       
@@ -88,19 +89,14 @@ export const GlobalAudioProvider: React.FC<GlobalAudioProviderProps> = ({ childr
         console.log(`[GLOBAL AUDIO] ✅ Added to queue. New queue length: ${newQueue.length}`);
         return newQueue;
       });
-    } : undefined
+    }
   });
 
-  // Control functions - only work in authenticated areas
+  // Control functions
   const enableAudio = async () => {
-    if (!isInAuthenticatedArea) {
-      console.log('[GLOBAL AUDIO] Audio not available outside authenticated areas');
-      return;
-    }
-    
     await enable();
     setUserHasInteracted(true);
-    
+
     // If there's a current audio and it's not playing, try to play it
     if (currentAudio && !isPlaying && audioRef.current) {
       try {
@@ -113,11 +109,6 @@ export const GlobalAudioProvider: React.FC<GlobalAudioProviderProps> = ({ childr
   };
 
   const disableAudio = async () => {
-    if (!isInAuthenticatedArea) {
-      console.log('[GLOBAL AUDIO] Audio not available outside authenticated areas');
-      return;
-    }
-    
     console.log('[GLOBAL AUDIO] 🛑 Disabling audio');
     
     // Stop any currently playing audio immediately and reset all states
@@ -157,13 +148,13 @@ export const GlobalAudioProvider: React.FC<GlobalAudioProviderProps> = ({ childr
   // Handle audio playback when new notifications arrive
   useEffect(() => {
     // Only process queue when:
-    // 1. We're in an authenticated area
-    // 2. There are items in the queue
-    // 3. No audio is currently playing
-    // 4. No audio is currently loading
-    // 5. Audio is enabled and user has interacted
-    // 6. No audio lock is active
-    if (isInAuthenticatedArea && audioQueue.length > 0 && !isPlaying && !audioLoading && audioEnabled && userHasInteracted && !audioLockRef.current) {
+    // 1. There are items in the queue
+    // 2. No audio is currently playing
+    // 3. No audio is currently loading
+    // 4. Audio is enabled and user has interacted
+    // 5. No audio lock is active
+    // Simplified to match old working implementation
+    if (audioQueue.length > 0 && !isPlaying && !audioLoading && audioEnabled && userHasInteracted && !audioLockRef.current) {
       console.log(`[GLOBAL AUDIO] 🎯 Processing queue: ${audioQueue.length} items waiting`);
       
       // Play the next audio in the queue
@@ -180,16 +171,16 @@ export const GlobalAudioProvider: React.FC<GlobalAudioProviderProps> = ({ childr
     } else if (audioQueue.length > 0) {
       // Log why we're not processing the queue
       const reasons = [];
-      if (!isInAuthenticatedArea) reasons.push('not in authenticated area');
       if (isPlaying) reasons.push('already playing');
       if (audioLoading) reasons.push('loading');
       if (!audioEnabled) reasons.push('disabled');
       if (!userHasInteracted) reasons.push('no user interaction');
       if (audioLockRef.current) reasons.push('locked');
-      
+
       console.log(`[GLOBAL AUDIO] ⏸️ Queue paused (${audioQueue.length} items): ${reasons.join(', ')}`);
+      console.log(`[GLOBAL AUDIO] 🔍 Debug - audioEnabled: ${audioEnabled}, userHasInteracted: ${userHasInteracted}`);
     }
-  }, [audioQueue, isPlaying, audioLoading, userHasInteracted, audioEnabled, isInAuthenticatedArea]);
+  }, [audioQueue, isPlaying, audioLoading, userHasInteracted, audioEnabled]);
   
   // Set playback speed from settings
   useEffect(() => {
@@ -200,7 +191,7 @@ export const GlobalAudioProvider: React.FC<GlobalAudioProviderProps> = ({ childr
 
   // Set up audio source when currentAudio changes
   useEffect(() => {
-    if (isInAuthenticatedArea && currentAudio && audioRef.current && audioEnabled && userHasInteracted && !audioLockRef.current) {
+    if (currentAudio && audioRef.current && audioEnabled && userHasInteracted && !audioLockRef.current) {
       const audioElement = audioRef.current;
       const audioUrl = currentAudio.data.audio_url;
       const ticker = currentAudio.data?.metadata?.ticker || 'Unknown';
@@ -297,12 +288,12 @@ export const GlobalAudioProvider: React.FC<GlobalAudioProviderProps> = ({ childr
           }
         }
       };
-      
+
       setupAudio();
-    } else if (currentAudio && (!isInAuthenticatedArea || !audioEnabled || !userHasInteracted)) {
-      console.log(`[GLOBAL AUDIO] ⏸️ Audio ready but conditions not met - authenticated: ${isInAuthenticatedArea}, enabled: ${audioEnabled}, interacted: ${userHasInteracted}`);
+    } else if (currentAudio && (!audioEnabled || !userHasInteracted)) {
+      console.log(`[GLOBAL AUDIO] ⏸️ Audio ready but conditions not met - enabled: ${audioEnabled}, interacted: ${userHasInteracted}`);
     }
-  }, [currentAudio, settings.playbackSpeed, isInAuthenticatedArea]);
+  }, [currentAudio, settings.playbackSpeed]);
   
   // Handle audio events
   const handleAudioEnded = () => {
@@ -378,6 +369,48 @@ export const GlobalAudioProvider: React.FC<GlobalAudioProviderProps> = ({ childr
       return () => clearInterval(checkPlaybackInterval);
     }
   }, [isPlaying, audioLoading]);
+
+  // Debug helper function for testing (attach to window for console access)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).debugAudio = {
+        testNotification: (ticker = 'TEST') => {
+          const testNotification = {
+            type: 'new_audio',
+            timestamp: new Date().toISOString(),
+            data: {
+              message_id: `test-${Date.now()}`,
+              audio_url: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // Public test audio
+              bucket: 'test-bucket',
+              key: 'test-key',
+              content_type: 'audio/wav',
+              size: 12345,
+              metadata: {
+                ticker: ticker,
+                company_name: ticker
+              }
+            }
+          };
+
+          console.log('[DEBUG] Injecting test audio notification:', testNotification);
+          setAudioQueue(prev => [...prev, testNotification]);
+        },
+        getState: () => ({
+          audioEnabled,
+          userHasInteracted,
+          isPlaying,
+          audioLoading,
+          queueLength: audioQueue.length,
+          currentAudio,
+          audioConnected
+        }),
+        clearFilter: () => {
+          audioWebsocketService.setWatchlistFilter([]);
+          console.log('[DEBUG] Cleared watchlist filter - all tickers now allowed');
+        }
+      };
+    }
+  }, [audioEnabled, userHasInteracted, isPlaying, audioLoading, audioQueue, currentAudio, audioConnected]);
 
   const contextValue: GlobalAudioContextType = {
     currentAudio,

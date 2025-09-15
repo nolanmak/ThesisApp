@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter, Eye, EyeOff, Search, GripVertical, Bookmark, Edit3, Plus } from 'lucide-react';
-import { useMetricsData } from '../../hooks/useGlobalData';
+import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter, Eye, EyeOff, Search, GripVertical, Bookmark, Edit3, Plus, Trash2 } from 'lucide-react';
+// Removed useMetricsData import - now using local metrics fetching
 import { useWatchlist } from '../../hooks/useWatchlist';
 import AnalysisPanel from '../Earnings/ui/AnalysisPanel';
 import useGlobalData from '../../hooks/useGlobalData';
+import { useWebSocket } from '../../hooks/useWebSocket';
 import { Message } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { getUserProfile, updateUserProfile, UserProfile } from '../../services/api';
+import { StockMetric } from '../../providers/GlobalDataProvider';
 
 interface ColumnConfig {
   key: string;
@@ -39,35 +41,171 @@ interface GridView {
 }
 
 const RealTimeGrid: React.FC = () => {
-  // Use global metrics data instead of local fetching
-  const {
-    metricsData: stockData,
-    metricsLoading: isLoading,
-    metricsError: error,
-    metricsLastUpdated: lastUpdated,
-    refreshMetrics: handleRefresh
-  } = useMetricsData();
+  // Local metrics state instead of using GlobalDataProvider
+  const [stockData, setStockData] = useState<StockMetric[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  // API configuration for local metrics fetching
+  const API_BASE = import.meta.env.VITE_RESEARCH_API_BASE_URL;
+  const API_KEY = import.meta.env.VITE_USER_PROFILE_API_KEY;
+  const METRICS_ENDPOINT = `${API_BASE}/metrics`;
 
   // Use watchlist data for filtering
   const { watchlist } = useWatchlist();
 
   // Get messages and websocket data for the analysis panel
   const {
-    messages,
+    messages: globalMessages,
     convertToEasternTime,
-    earningsItems
+    earningsItems,
+    messagesLoading: loading
   } = useGlobalData();
+
+  // State for real-time messages from websocket
+  const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
+
+  // Refs for tracking message changes (similar to MessagesList pattern)
+  const prevMessagesRef = useRef<Message[]>([]);
+  const initialLoadCompletedRef = useRef<boolean>(false);
+
+  // Handle new real-time messages from websocket
+  const handleNewWebSocketMessage = useCallback((newMessage: Message) => {
+    console.log(`📨 RealTimeGrid: Received new websocket message for ${newMessage.ticker}:`, newMessage.message_id?.substring(0, 8) || newMessage.id?.substring(0, 8) || 'no-id');
+    
+    setRealtimeMessages(prev => {
+      // Check if message already exists
+      const exists = prev.some(msg => msg.message_id === newMessage.message_id || msg.id === newMessage.id);
+      if (exists) {
+        console.log(`⚠️ Message already exists, skipping duplicate`);
+        return prev;
+      }
+      
+      // Add new message and sort by timestamp (newest first)
+      const updated = [...prev, newMessage].sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+      
+      console.log(`✅ Added new message, total real-time messages: ${updated.length}`);
+      return updated;
+    });
+  }, []);
+
+  // Use WebSocket hook for real-time updates (status not shown in UI)
+  useWebSocket({
+    onMessage: handleNewWebSocketMessage,
+    persistConnection: true // Keep connection alive for real-time updates
+  });
+
+  // Combine global messages and real-time messages
+  const messages = useMemo(() => {
+    const combined = [...globalMessages, ...realtimeMessages];
+    
+    // Remove duplicates based on message_id or id
+    const seen = new Set();
+    const unique = combined.filter(msg => {
+      const id = msg.message_id || msg.id;
+      if (seen.has(id)) {
+        return false;
+      }
+      seen.add(id);
+      return true;
+    });
+    
+    // Sort by timestamp (newest first)
+    const sorted = unique.sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+    
+    console.log(`📊 RealTimeGrid: Combined messages - Global: ${globalMessages.length}, Realtime: ${realtimeMessages.length}, Unique: ${sorted.length}`);
+    
+    return sorted;
+  }, [globalMessages, realtimeMessages]);
 
   // User authentication for views
   const { user } = useAuth();
+
+  // Local metrics fetching function
+  const fetchMetrics = useCallback(async (startDate?: string, endDate?: string) => {
+    if (!user?.email) {
+      return;
+    }
+
+    try {
+      setError(null);
+      setIsLoading(true);
+
+      // Prepare request body with date filtering
+      const requestBody: { start_date?: string; end_date?: string } = {};
+      if (startDate) {
+        requestBody.start_date = startDate;
+        requestBody.end_date = endDate || startDate; // If single day, use same date for end
+      }
+
+      const response = await fetch(METRICS_ENDPOINT, {
+        method: Object.keys(requestBody).length > 0 ? 'POST' : 'GET',
+        headers: {
+          'X-API-Key': API_KEY,
+          'Content-Type': 'application/json',
+        },
+        ...(Object.keys(requestBody).length > 0 && { body: JSON.stringify(requestBody) })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (data.metrics && Array.isArray(data.metrics)) {
+        // Log the new response structure for debugging
+        console.log('📊 New API response structure:', {
+          count: data.count,
+          start_date: data.start_date,
+          end_date: data.end_date,
+          scheduled_tickers: data.scheduled_tickers,
+          metrics_count: data.metrics.length
+        });
+
+        // The metrics are already enriched with company_name, last_earnings_date, etc.
+        // Debug: Log first few items to see the actual data structure
+        if (data.metrics && data.metrics.length > 0) {
+          console.log('📊 Sample metrics data (first 3 items):', {
+            count: data.metrics.length,
+            sample: data.metrics.slice(0, 3).map(item => ({
+              ticker: item.ticker,
+              company_name: item.company_name,
+              last_earnings_date: item.last_earnings_date,
+              last_earnings_date_type: typeof item.last_earnings_date
+            }))
+          });
+        }
+        setStockData(data.metrics);
+        setLastUpdated(new Date());
+      } else {
+        console.warn('⚠️ Invalid API response structure:', data);
+        setStockData([]);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch metrics');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user?.email, METRICS_ENDPOINT, API_KEY]);
+
+  // Handle refresh function
+  const handleRefresh = useCallback(async (startDate?: string, endDate?: string) => {
+    await fetchMetrics(startDate, endDate);
+  }, [fetchMetrics]);
 
   const [sortColumn, setSortColumn] = useState<string>('ticker');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showWatchlistOnly, setShowWatchlistOnly] = useState(false);
   const [dateRange, setDateRange] = useState<{start: string; end: string}>({start: '', end: ''});
   const [tempDateRange, setTempDateRange] = useState<{start: string; end: string}>({start: '', end: ''});
-  const [scheduledTickers, setScheduledTickers] = useState<string[]>([]);
-  const [dateFilterLoading, setDateFilterLoading] = useState<boolean>(false);
+  // scheduledTickers state removed - backend now handles date filtering
+  // dateFilterLoading state removed - now uses metricsLoading since backend handles date filtering
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const datePickerRef = useRef<HTMLDivElement>(null);
   const [columnOrder, setColumnOrder] = useState<string[]>([]);
@@ -156,9 +294,68 @@ const RealTimeGrid: React.FC = () => {
 
   const { maxDate } = getDateRestrictions();
 
+  // Utility function to get current date in Eastern Time (EST/EDT with DST handling)
+  const getCurrentEasternDate = useCallback(() => {
+    const now = new Date();
+    // Convert to Eastern Time using Intl.DateTimeFormat
+    const easternTime = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(now);
+
+    // Convert MM/DD/YYYY to YYYY-MM-DD format
+    const [month, day, year] = easternTime.split('/');
+    return `${year}-${month}-${day}`;
+  }, []);
+
+  // Utility function to get date N days ago in Eastern Time
+  const getEasternDateDaysAgo = useCallback((daysAgo: number) => {
+    const now = new Date();
+    const pastDate = new Date(now.getTime() - (daysAgo * 24 * 60 * 60 * 1000));
+
+    // Convert to Eastern Time
+    const easternTime = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(pastDate);
+
+    // Convert MM/DD/YYYY to YYYY-MM-DD format
+    const [month, day, year] = easternTime.split('/');
+    return `${year}-${month}-${day}`;
+  }, []);
+
+  // Default 7-day date range (last 7 days to today in Eastern Time)
+  const getDefault7DayRange = useCallback(() => {
+    return {
+      start: getEasternDateDaysAgo(7),
+      end: getCurrentEasternDate()
+    };
+  }, [getCurrentEasternDate, getEasternDateDaysAgo]);
+
+  // Utility function to clean company names
+  const cleanCompanyName = useCallback((name: string | undefined): string => {
+    if (!name) return '';
+
+    let cleaned = name.trim();
+
+    // Remove "Common Stock" from the end
+    cleaned = cleaned.replace(/\s+Common\s+Stock\s*$/i, '');
+
+    // Remove everything from "American depositary" onwards (case insensitive)
+    cleaned = cleaned.replace(/\s+American\s+depositary.*$/i, '');
+
+    return cleaned.trim();
+  }, []);
+
   // Define column configuration
   const defaultColumns: ColumnConfig[] = [
     { key: 'ticker', label: 'Ticker', width: 80, sortable: true, type: 'text' },
+    { key: 'company_name', label: 'Company', width: 200, sortable: true, type: 'text' },
+    { key: 'last_earnings_date', label: 'Last Earnings', width: 120, sortable: true, type: 'text' },
     // Current Quarter Earnings
     { key: '$eps0', label: 'EPS Estimate', width: 110, sortable: true, type: 'number' },
     { key: '$qeps0', label: 'EPS Actual', width: 110, sortable: true, type: 'number', colorCode: 'beats' },
@@ -186,6 +383,7 @@ const RealTimeGrid: React.FC = () => {
   // Searchable columns (subset of default columns that make sense to search)
   const searchableColumns = useMemo(() => [
     { key: 'ticker', label: 'Ticker' },
+    { key: 'company_name', label: 'Company' },
     { key: '$eps0', label: 'EPS Estimate' },
     { key: '$qeps0', label: 'EPS Actual' },
     { key: '$salesqest', label: 'Rev Est' },
@@ -228,6 +426,36 @@ const RealTimeGrid: React.FC = () => {
     });
   }, []); // Run once on mount
 
+  // Initial metrics load when user is authenticated (with default 7-day filter)
+  useEffect(() => {
+    if (user?.email && stockData.length === 0 && !isLoading) {
+      // Apply default date filtering on initial load
+      const defaultRange = getDefault7DayRange();
+      console.log('📅 Initial load: Applying default 7-day date filter:', defaultRange);
+      setDateRange(defaultRange);
+      setTempDateRange(defaultRange);
+      // fetchMetrics will be called by the dateRange change effect
+    }
+  }, [user?.email, stockData.length, isLoading, getDefault7DayRange]);
+
+  // Apply default date filtering after views are loaded (or if no views exist)
+  useEffect(() => {
+    // Only apply default if we don't already have a date range and views are not loading
+    if (!viewsLoading && !dateRange.start && !dateRange.end && stockData.length === 0) {
+      // Check if user has views and if default view has date filtering
+      const defaultView = savedViews.find(view => view.isDefault);
+      const hasDateFiltering = defaultView?.settings?.startDate || defaultView?.settings?.endDate;
+
+      // If no views exist or default view has no date filtering, apply 7-day default
+      if (savedViews.length === 0 || !hasDateFiltering) {
+        const defaultRange = getDefault7DayRange();
+        console.log('📅 Post-views load: Applying default 7-day date filter:', defaultRange);
+        setDateRange(defaultRange);
+        setTempDateRange(defaultRange);
+      }
+    }
+  }, [viewsLoading, savedViews, dateRange.start, dateRange.end, stockData.length, getDefault7DayRange]);
+
   // Mobile detection
   useEffect(() => {
     const checkIfMobile = () => {
@@ -262,6 +490,119 @@ const RealTimeGrid: React.FC = () => {
       setInitialMessageSet(true);
     }
   }, [messages, initialMessageSet]);
+
+  // Set initial messages after first load (similar to MessagesList pattern)
+  useEffect(() => {
+    if (!loading && messages.length > 0 && !initialLoadCompletedRef.current) {
+      prevMessagesRef.current = [...messages];
+      initialLoadCompletedRef.current = true;
+      console.log(`📋 RealTimeGrid: Initial load completed with ${messages.length} messages`);
+    }
+  }, [loading, messages]);
+
+  // Detect new messages for real-time updates (similar to MessagesList pattern)
+  useEffect(() => {
+    // Skip this effect until initial load is completed
+    if (!initialLoadCompletedRef.current || !messages || messages.length === 0) return;
+    
+    // Find genuinely new messages (following MessagesList pattern)
+    const prevMessageIds = new Set(prevMessagesRef.current.map(msg => msg.message_id || msg.id));
+    
+    const genuinelyNewMessages = messages.filter(msg => {
+      const msgId = msg.message_id || msg.id;
+      const isNewToState = !prevMessageIds.has(msgId);
+      const messageTime = new Date(msg.timestamp).getTime();
+      const isRecentMessage = messageTime > (Date.now() - 2 * 60 * 1000); // Last 2 minutes
+      
+      // Only consider it truly new if it's new to our state AND is a very recent message
+      return isNewToState && isRecentMessage;
+    });
+    
+    // If we have genuinely new messages, auto-select the newest one from ANY ticker
+    if (genuinelyNewMessages.length > 0) {
+      console.log(`🆕 RealTimeGrid: Found ${genuinelyNewMessages.length} genuinely new messages`);
+      
+      // Sort all new messages by timestamp (newest first) and select the newest one
+      const newestMessage = genuinelyNewMessages.sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      )[0];
+      
+      console.log(`🎯 RealTimeGrid: Auto-selecting newest message from ANY ticker (${newestMessage.ticker}):`, newestMessage.message_id?.substring(0, 8) || newestMessage.id?.substring(0, 8));
+      
+      // Update selected message to the newest one from any ticker
+      setSelectedMessage(newestMessage);
+      
+      // Also update the selected ticker to match the new message
+      if (newestMessage.ticker) {
+        console.log(`📍 RealTimeGrid: Switching selected ticker to ${newestMessage.ticker}`);
+        setSelectedTicker(newestMessage.ticker);
+        setShowAnalysisPanel(true); // Ensure analysis panel is visible
+        
+        // Note: fetchTickerMessages will be called automatically when selectedTicker changes
+        // due to the existing useEffect that handles ticker selection
+      }
+    }
+    
+    // Update the previous messages ref
+    prevMessagesRef.current = messages;
+  }, [messages]);
+
+  // Process ticker-specific messages for AnalysisPanel
+  useEffect(() => {
+    if (!selectedTicker) {
+      setTickerMessages([]);
+      return;
+    }
+
+    console.log(`🔍 RealTimeGrid: Processing messages for ticker: ${selectedTicker}`);
+
+    // Filter messages for the selected ticker
+    const tickerSpecificMessages = messages.filter(msg => 
+      msg.ticker && msg.ticker.toUpperCase() === selectedTicker.toUpperCase()
+    );
+
+    console.log(`🎯 Found ${tickerSpecificMessages.length} messages for ${selectedTicker}`);
+
+    if (tickerSpecificMessages.length === 0) {
+      console.log(`⚠️ No messages found for ${selectedTicker}, clearing ticker messages`);
+      setTickerMessages([]);
+      return;
+    }
+
+    // Group messages by type and get the newest for each type
+    const getMessageType = (message: Message): string => {
+      if (message.link || message.report_data?.link || 
+          message.source?.toLowerCase() === 'link' || 
+          message.type?.toLowerCase() === 'link') return 'report';
+      if (message.source === 'transcript_analysis') return 'transcript';
+      if (message.source === 'sentiment_analysis' || message.sentiment_additional_metrics) return 'sentiment';
+      if (message.source === 'fundamentals_analysis') return 'fundamentals';
+      return 'earnings';
+    };
+
+    const messagesByType: Record<string, Message> = {};
+    
+    tickerSpecificMessages.forEach((message: Message) => {
+      const messageType = getMessageType(message);
+      
+      // If we don't have a message of this type yet, or this message is newer
+      if (!messagesByType[messageType] || 
+          new Date(message.timestamp) > new Date(messagesByType[messageType].timestamp)) {
+        messagesByType[messageType] = message;
+      }
+    });
+    
+    // Convert to array and sort by timestamp (newest first)
+    const newestMessages = Object.values(messagesByType).sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+    
+    console.log(`📈 Processed message types for ${selectedTicker}:`, 
+      newestMessages.map(msg => `${getMessageType(msg)}(${msg.message_id?.substring(0, 8) || msg.id?.substring(0, 8) || 'no-id'})`));
+    
+    // Update ticker messages for AnalysisPanel
+    setTickerMessages(newestMessages);
+  }, [selectedTicker, messages]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -316,24 +657,34 @@ const RealTimeGrid: React.FC = () => {
     }
   }, [user?.email]);
 
-  const saveView = useCallback(async (view: GridView, isUpdate: boolean = false) => {
+  const saveView = useCallback(async (view: GridView, isUpdate: boolean = false, setAsCurrent: boolean = true) => {
     if (!user?.email) return;
-    
+
     try {
       const profile = await getUserProfile(user.email);
       const currentViews = (profile?.settings?.gridViews as GridView[]) || [];
-      
+
+      // If this view is marked as default, unmark other default views first
+      if (view.isDefault) {
+        const previousDefaults = currentViews.filter(v => v.isDefault && v.id !== view.id);
+        if (previousDefaults.length > 0) {
+          console.log('🔄 Unmarking previous default views:', previousDefaults.map(v => v.name));
+        }
+        currentViews.forEach(v => {
+          if (v.id !== view.id) {
+            v.isDefault = false;
+          }
+        });
+        console.log('✅ Setting new default view:', view.name);
+      }
+
       let updatedViews;
       if (isUpdate) {
         updatedViews = currentViews.map(v => v.id === view.id ? view : v);
       } else {
-        // If this is marked as default, unmark other default views
-        if (view.isDefault) {
-          currentViews.forEach(v => v.isDefault = false);
-        }
         updatedViews = [...currentViews, view];
       }
-      
+
       const updatedProfile: UserProfile = {
         email: user.email,
         watchlist: profile?.watchlist,
@@ -343,10 +694,14 @@ const RealTimeGrid: React.FC = () => {
           gridViews: updatedViews
         }
       };
-      
+
       await updateUserProfile(updatedProfile);
       setSavedViews(updatedViews);
-      setCurrentViewId(view.id);
+
+      // Only set as current view if explicitly requested (not for auto-save)
+      if (setAsCurrent) {
+        setCurrentViewId(view.id);
+      }
     } catch (error) {
       console.error('Failed to save view:', error);
     }
@@ -359,7 +714,16 @@ const RealTimeGrid: React.FC = () => {
       const profile = await getUserProfile(user.email);
       const currentViews = (profile?.settings?.gridViews as GridView[]) || [];
       const updatedViews = currentViews.filter(v => v.id !== viewId);
-      
+
+      // Check if we're deleting the last manual view and auto-save exists
+      const remainingManualViews = updatedViews.filter(view => view.name !== AUTO_SAVE_VIEW_NAME);
+      const autoSaveView = updatedViews.find(view => view.name === AUTO_SAVE_VIEW_NAME);
+
+      if (remainingManualViews.length === 0 && autoSaveView && !autoSaveView.isDefault) {
+        console.log('🎯 Making auto-save view default after deleting last manual view');
+        autoSaveView.isDefault = true;
+      }
+
       const updatedProfile: UserProfile = {
         email: user.email,
         watchlist: profile?.watchlist,
@@ -386,8 +750,51 @@ const RealTimeGrid: React.FC = () => {
     
     console.log('🔄 Applying saved view:', view.name, 'with settings:', settings);
     
-    // DON'T apply old column configurations - they're outdated
-    // Only apply non-column related settings to preserve the new column structure
+    // Apply column configurations if they exist and are valid
+    console.log('🔍 View settings column data:', {
+      hasColumnOrder: !!settings.columnOrder,
+      hasVisibleColumns: !!settings.visibleColumns,
+      hasColumnWidths: !!settings.columnWidths
+    });
+
+    // Apply column order if saved and valid
+    if (settings.columnOrder && Array.isArray(settings.columnOrder)) {
+      // Filter to only columns that exist in current defaultColumns
+      const validColumnOrder = settings.columnOrder.filter(colKey =>
+        defaultColumns.some(col => col.key === colKey)
+      );
+      if (validColumnOrder.length > 0) {
+        console.log('✅ Applying saved column order:', validColumnOrder.slice(0, 5).join(', ') + '...');
+        setColumnOrder(validColumnOrder);
+      }
+    }
+
+    // Apply visible columns if saved and valid
+    if (settings.visibleColumns && Array.isArray(settings.visibleColumns)) {
+      // Filter to only columns that exist in current defaultColumns
+      const validVisibleColumns = settings.visibleColumns.filter(colKey =>
+        defaultColumns.some(col => col.key === colKey)
+      );
+      if (validVisibleColumns.length > 0) {
+        console.log('✅ Applying saved visible columns:', validVisibleColumns.length, 'columns');
+        setVisibleColumns(new Set(validVisibleColumns));
+      }
+    }
+
+    // Apply column widths if saved and valid
+    if (settings.columnWidths && typeof settings.columnWidths === 'object') {
+      // Filter to only columns that exist in current defaultColumns
+      const validColumnWidths: Record<string, number> = {};
+      Object.entries(settings.columnWidths).forEach(([colKey, width]) => {
+        if (defaultColumns.some(col => col.key === colKey) && typeof width === 'number') {
+          validColumnWidths[colKey] = width;
+        }
+      });
+      if (Object.keys(validColumnWidths).length > 0) {
+        console.log('✅ Applying saved column widths:', Object.keys(validColumnWidths).length, 'columns');
+        setColumnWidths(validColumnWidths);
+      }
+    }
     
     // Apply sorting
     if (settings.sortColumn && settings.sortDirection) {
@@ -411,25 +818,30 @@ const RealTimeGrid: React.FC = () => {
     }
     setSearchValue(settings.searchValue || '');
     
-    // Apply date range if available
+    // Apply date range if available, otherwise use default 7-day range
     if (settings.startDate || settings.endDate) {
       const newRange = {
         start: settings.startDate || '',
         end: settings.endDate || ''
       };
-      // Show loading immediately when applying view with date range
-      setDateFilterLoading(true);
+      // Loading will be handled by handleRefresh/refreshMetrics when date range changes
       setDateRange(newRange);
       setTempDateRange(newRange);
+    } else {
+      // If view has no date filtering, apply default 7-day range
+      const defaultRange = getDefault7DayRange();
+      console.log('📅 View has no date filtering, applying default 7-day range:', defaultRange);
+      setDateRange(defaultRange);
+      setTempDateRange(defaultRange);
     }
     
     setCurrentViewId(view.id);
     
     console.log('✅ View applied with new column structure preserved');
-  }, []);
+  }, [getDefault7DayRange]);
 
   const getCurrentViewSettings = useCallback(() => {
-    return {
+    const settings = {
       columnOrder,
       visibleColumns: Array.from(visibleColumns),
       columnWidths,
@@ -441,6 +853,18 @@ const RealTimeGrid: React.FC = () => {
       startDate: dateRange.start,
       endDate: dateRange.end
     };
+    console.log('🔍 getCurrentViewSettings called, returning:', {
+      startDate: settings.startDate,
+      endDate: settings.endDate,
+      showWatchlistOnly: settings.showWatchlistOnly,
+      searchValue: settings.searchValue,
+      sortColumn: settings.sortColumn,
+      sortDirection: settings.sortDirection,
+      columnOrder: settings.columnOrder.slice(0, 5).join(', ') + '...',
+      visibleColumnsCount: settings.visibleColumns.length,
+      columnWidthsCount: Object.keys(settings.columnWidths).length
+    });
+    return settings;
   }, [columnOrder, visibleColumns, columnWidths, sortColumn, sortDirection, showWatchlistOnly, searchValue, searchColumn, dateRange.start, dateRange.end]);
 
   const createNewView = useCallback(async (name: string, description?: string, isDefault?: boolean) => {
@@ -458,21 +882,136 @@ const RealTimeGrid: React.FC = () => {
   }, [getCurrentViewSettings, saveView]);
 
   const updateExistingView = useCallback(async (viewId: string, updates: Partial<GridView>) => {
+    console.log('🔧 updateExistingView called with:', { viewId, updates });
     const existingView = savedViews.find(v => v.id === viewId);
-    if (!existingView) return;
-    
+    if (!existingView) {
+      console.error('❌ View not found with ID:', viewId);
+      return;
+    }
+
+    console.log('🔍 Found existing view:', existingView.name);
+
     const updatedView: GridView = {
       ...existingView,
       ...updates,
       updatedAt: new Date().toISOString()
     };
-    
-    await saveView(updatedView, true);
-  }, [savedViews, saveView]);
+
+    console.log('📝 Updating view:', updatedView.name, 'with ID:', updatedView.id);
+    console.log('🔍 Current view ID before update:', currentViewId);
+    await saveView(updatedView, true, false); // isUpdate=true, setAsCurrent=false
+    console.log('🔍 Current view ID after update:', currentViewId);
+    console.log('✅ View update completed');
+  }, [savedViews, saveView, currentViewId]);
 
   const saveCurrentAsView = useCallback(async (name: string, description?: string, isDefault?: boolean) => {
     await createNewView(name, description, isDefault);
   }, [createNewView]);
+
+  // Auto-save functionality
+  const AUTO_SAVE_VIEW_NAME = '🔄 Auto-saved';
+
+  // Auto-save specific function that doesn't interfere with current view state
+  const autoSaveView = useCallback(async (view: GridView, isUpdate: boolean = false) => {
+    if (!user?.email) return;
+
+    try {
+      console.log('🔄 Auto-saving view to backend:', view.name);
+      const profile = await getUserProfile(user.email);
+      const currentViews = (profile?.settings?.gridViews as GridView[]) || [];
+
+      let updatedViews;
+      if (isUpdate) {
+        updatedViews = currentViews.map(v => v.id === view.id ? view : v);
+      } else {
+        updatedViews = [...currentViews, view];
+      }
+
+      const updatedProfile: UserProfile = {
+        email: user.email,
+        watchlist: profile?.watchlist,
+        watchListOn: profile?.watchListOn,
+        settings: {
+          ...profile?.settings,
+          gridViews: updatedViews
+        }
+      };
+
+      await updateUserProfile(updatedProfile);
+      setSavedViews(updatedViews);
+      console.log('✅ Auto-save API call completed successfully');
+    } catch (error) {
+      console.error('❌ Failed to auto-save view:', error);
+    }
+  }, [user?.email]);
+
+  const autoSaveCurrentView = useCallback(async () => {
+    if (!user?.email) {
+      console.log('⚠️ Auto-save skipped: no user email');
+      return;
+    }
+
+    if (savedViews.length === 0) {
+      console.log('⚠️ Auto-save skipped: views not loaded yet');
+      return;
+    }
+
+    try {
+      const currentSettings = getCurrentViewSettings();
+      console.log('🔄 Auto-saving current view state:', currentSettings);
+
+      // Find existing auto-save view or create new one
+      const existingAutoSave = savedViews.find(view => view.name === AUTO_SAVE_VIEW_NAME);
+
+      if (existingAutoSave) {
+        // Check if there are any manual views (non-auto-save views)
+        const manualViews = savedViews.filter(view => view.name !== AUTO_SAVE_VIEW_NAME);
+        const shouldBeDefault = manualViews.length === 0;
+
+        if (shouldBeDefault && !existingAutoSave.isDefault) {
+          console.log('🎯 Making auto-save view default since no other views exist');
+        }
+
+        // Update existing auto-save view
+        console.log('📝 Updating existing auto-save view:', existingAutoSave.id);
+        const updatedView: GridView = {
+          ...existingAutoSave,
+          settings: currentSettings,
+          isDefault: shouldBeDefault,
+          updatedAt: new Date().toISOString()
+        };
+        await autoSaveView(updatedView, true);
+        console.log('✅ Auto-saved current view state successfully');
+      } else {
+        // Check if there are any manual views (non-auto-save views)
+        const manualViews = savedViews.filter(view => view.name !== AUTO_SAVE_VIEW_NAME);
+        const shouldBeDefault = manualViews.length === 0;
+
+        if (shouldBeDefault) {
+          console.log('🎯 Making auto-save view default since no other views exist');
+        }
+
+        // Create new auto-save view
+        const newAutoSaveView: GridView = {
+          id: `auto-save-${Date.now()}`,
+          name: AUTO_SAVE_VIEW_NAME,
+          description: 'Automatically saved view with your latest settings',
+          isDefault: shouldBeDefault,
+          settings: currentSettings,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        console.log('➕ Creating new auto-save view:', newAutoSaveView);
+        await autoSaveView(newAutoSaveView, false);
+        console.log('✅ Created auto-save view successfully');
+      }
+    } catch (error) {
+      console.error('❌ Failed to auto-save view:', error);
+    }
+  }, [user?.email, savedViews, getCurrentViewSettings, autoSaveView]);
+
+  // Removed triggerAutoSave - now using direct useEffect approach
 
   // Load user views on mount (placed after function definitions)
   useEffect(() => {
@@ -481,46 +1020,116 @@ const RealTimeGrid: React.FC = () => {
     }
   }, [user?.email, loadUserViews]);
 
-  // Start date filtering loading when date range changes
+  // Refresh metrics data when date range changes (backend date filtering)
   useEffect(() => {
     if (dateRange.start || dateRange.end) {
-      // Date fetching starts - turn loading to true
-      setDateFilterLoading(true);
+      // Call backend with date filtering - handleRefresh manages metricsLoading state
+      console.log('🔄 Fetching metrics with date filter:', dateRange.start, 'to', dateRange.end);
+      handleRefresh(dateRange.start, dateRange.end);
     } else {
-      // No date range - turn loading to false immediately
-      setDateFilterLoading(false);
-      setScheduledTickers([]);
+      // Don't fetch all data when date range is empty - user should always have a date filter
+      console.log('⚠️ No date range set - skipping metrics fetch to prevent loading all data');
     }
+  }, [dateRange.start, dateRange.end, handleRefresh]);
+
+  // Debug state changes
+  useEffect(() => {
+    console.log('🔄 State changed - Date range:', { start: dateRange.start, end: dateRange.end });
   }, [dateRange.start, dateRange.end]);
 
-  // Perform actual filtering and stop loading when data is available
   useEffect(() => {
-    if ((dateRange.start || dateRange.end) && earningsItems.length > 0) {
-      // Filter earnings data that's already loaded in memory
-      const filteredEarnings = earningsItems.filter(earning => {
-        const earningDate = earning.date;
-        
-        // Check start date
-        if (dateRange.start && earningDate < dateRange.start) {
-          return false;
-        }
-        
-        // Check end date (or use start date as end if only start is provided)
-        const endDate = dateRange.end || dateRange.start;
-        if (endDate && earningDate > endDate) {
-          return false;
-        }
-        
-        return true;
-      });
-      
-      const tickers = filteredEarnings.map(earning => earning.ticker.toUpperCase());
-      setScheduledTickers(tickers);
-      
-      // Filtering stops - turn loading to false
-      setDateFilterLoading(false);
+    console.log('🔄 State changed - Watchlist filter:', showWatchlistOnly);
+  }, [showWatchlistOnly]);
+
+  useEffect(() => {
+    console.log('🔄 State changed - Search:', { value: searchValue, column: searchColumn });
+  }, [searchValue, searchColumn]);
+
+  useEffect(() => {
+    console.log('🔄 State changed - Sort:', { column: sortColumn, direction: sortDirection });
+  }, [sortColumn, sortDirection]);
+
+  useEffect(() => {
+    console.log('🔄 State changed - Column order:', columnOrder.slice(0, 5).join(', ') + '...');
+  }, [columnOrder]);
+
+  useEffect(() => {
+    console.log('🔄 State changed - Visible columns:', Array.from(visibleColumns).slice(0, 5).join(', ') + '...');
+  }, [visibleColumns]);
+
+  useEffect(() => {
+    console.log('🔄 State changed - Column widths:', Object.keys(columnWidths).length, 'columns');
+  }, [columnWidths]);
+
+  // Simple auto-save that reacts to changes (debounced)
+  useEffect(() => {
+    // Don't auto-save during initial load or if no user
+    if (!user?.email || savedViews.length === 0) return;
+
+    console.log('🔄 Auto-save useEffect triggered with values:', {
+      dateStart: dateRange.start,
+      dateEnd: dateRange.end,
+      watchlist: showWatchlistOnly,
+      search: searchValue,
+      columnOrder: columnOrder.slice(0, 3).join(',') + '...', // Show first 3 columns
+      visibleColumnsCount: visibleColumns.size,
+      columnWidthsCount: Object.keys(columnWidths).length
+    });
+
+    // Debounce the auto-save
+    const timeoutId = setTimeout(() => {
+      console.log('🔄 Auto-save timeout executing...');
+      autoSaveCurrentView();
+    }, 2000);
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    // Only the actual values that should trigger auto-save
+    dateRange.start,
+    dateRange.end,
+    sortColumn,
+    sortDirection,
+    showWatchlistOnly,
+    searchValue,
+    searchColumn,
+    columnOrder,
+    visibleColumns,
+    columnWidths
+    // Note: user.email and savedViews.length removed to prevent infinite loops
+    // columnOrder, visibleColumns, columnWidths added back - should be stable now
+  ]);
+
+  // Auto-restore functionality - apply auto-saved view on initial load
+  useEffect(() => {
+    console.log('🔍 Auto-restore check:', {
+      userEmail: user?.email,
+      savedViewsLength: savedViews.length,
+      currentViewId,
+      stockDataLength: stockData.length,
+      hasAutoSave: savedViews.find(view => view.name === AUTO_SAVE_VIEW_NAME) ? true : false
+    });
+
+    if (!user?.email || savedViews.length === 0) {
+      console.log('⚠️ Auto-restore skipped: no user or no saved views');
+      return;
     }
-  }, [dateRange.start, dateRange.end, earningsItems]);
+
+    // Only auto-restore if no view is currently applied and we haven't loaded data yet
+    if (!currentViewId && stockData.length === 0) {
+      const autoSaveView = savedViews.find(view => view.name === AUTO_SAVE_VIEW_NAME);
+
+      if (autoSaveView && autoSaveView.settings) {
+        console.log('🔄 Auto-restoring saved view state:', autoSaveView.settings);
+        applyView(autoSaveView);
+      } else {
+        console.log('⚠️ No auto-save view found or no settings');
+      }
+    } else {
+      console.log('⚠️ Auto-restore skipped: view already applied or data loaded');
+    }
+  }, [user?.email, savedViews, currentViewId, stockData.length, AUTO_SAVE_VIEW_NAME, applyView]);
+
+  // Auto-save cleanup is handled by the useEffect return function above
 
   // No need for local API fetching - data comes from GlobalDataProvider
 
@@ -583,6 +1192,15 @@ const RealTimeGrid: React.FC = () => {
         return stock.curfyeps13wkago; // Use 13-week-ago current FY EPS as guidance baseline
       case 'cy_rev_guide':
         return stock.curfysales13wkago; // Use 13-week-ago current FY sales as guidance baseline
+      case 'company_name':
+        return cleanCompanyName(stock.company_name);
+      case 'last_earnings_date':
+        // Handle last earnings date - if it's a valid date string, return it; otherwise return null for N/A display
+        const dateValue = stock.last_earnings_date;
+        if (!dateValue || dateValue === '' || dateValue === 'null' || dateValue === 'undefined') {
+          return null; // This will be formatted as N/A
+        }
+        return dateValue; // Return the date string as-is (2025-06-16 format)
       default:
         return stock[columnKey];
     }
@@ -694,51 +1312,46 @@ const RealTimeGrid: React.FC = () => {
 
   const sortedData = useMemo(() => {
     if (!stockData.length) return [];
-    
+
     let filteredData = stockData;
-    
-    // Filter by date range (scheduled earnings) if dates are selected
-    if ((dateRange.start || dateRange.end) && scheduledTickers.length > 0) {
-      filteredData = filteredData.filter(stock => 
-        scheduledTickers.includes(stock.ticker.toUpperCase())
-      );
-    }
-    
+
+    // Backend now handles date filtering, so we don't need frontend scheduledTickers filtering
+
     // Filter by watchlist if enabled
     if (showWatchlistOnly && watchlist.length > 0) {
-      filteredData = filteredData.filter(stock => 
+      filteredData = filteredData.filter(stock =>
         watchlist.includes(stock.ticker.toUpperCase())
       );
     }
-    
+
     // Filter by search
     if (searchValue.trim()) {
-      filteredData = filteredData.filter(stock => 
+      filteredData = filteredData.filter(stock =>
         matchesSearch(stock, searchValue, searchColumn)
       );
     }
-    
+
     return [...filteredData].sort((a, b) => {
       const aValue = getValue(a, sortColumn);
       const bValue = getValue(b, sortColumn);
-      
+
       // Handle null/undefined/N/A values
       if (aValue === 'N/A' || aValue === null || aValue === undefined) return 1;
       if (bValue === 'N/A' || bValue === null || bValue === undefined) return -1;
-      
+
       const aNum = parseFloat(String(aValue));
       const bNum = parseFloat(String(bValue));
-      
+
       let comparison = 0;
       if (!isNaN(aNum) && !isNaN(bNum)) {
         comparison = aNum - bNum;
       } else {
         comparison = String(aValue).localeCompare(String(bValue));
       }
-      
+
       return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [stockData, sortColumn, sortDirection, showWatchlistOnly, watchlist, searchValue, searchColumn, matchesSearch, dateRange.start, dateRange.end, scheduledTickers]);
+  }, [stockData, sortColumn, sortDirection, showWatchlistOnly, watchlist, searchValue, searchColumn, matchesSearch]);
 
   // Toggle column visibility
   const toggleColumnVisibility = useCallback((columnKey: string) => {
@@ -862,8 +1475,9 @@ const RealTimeGrid: React.FC = () => {
     setDragOverColumn(null);
   };
 
-  // Fetch ticker-specific messages
+  // Fetch ticker-specific messages (now supplementary to real-time websocket data)
   const fetchTickerMessages = useCallback(async (ticker: string) => {
+    console.log(`🔍 Fetching API messages for ticker: ${ticker}`);
     setTickerMessagesLoading(true);
     try {
       // Import the API function from your existing services
@@ -872,54 +1486,23 @@ const RealTimeGrid: React.FC = () => {
       // Use the existing getMessages function with ticker search
       const data = await getMessages(50, undefined, ticker.toUpperCase());
       
-      // Use the same message type logic as AnalysisPanel
-      const getMessageType = (message: Message): string => {
-        if (message.link || message.report_data?.link || 
-            message.source?.toLowerCase() === 'link' || 
-            message.type?.toLowerCase() === 'link') return 'report';
-        if (message.source === 'transcript_analysis') return 'transcript';
-        if (message.source === 'sentiment_analysis' || message.sentiment_additional_metrics) return 'sentiment';
-        if (message.source === 'fundamentals_analysis') return 'fundamentals';
-        return 'earnings';
-      };
-
-      // Group by message type and get the newest for each type
-      const messagesByType: Record<string, Message> = {};
+      console.log(`📡 API returned ${data.messages?.length || 0} messages for ${ticker}`);
       
-      if (data.messages && Array.isArray(data.messages)) {
-        data.messages.forEach((message: Message) => {
-          const messageType = getMessageType(message);
-          
-          // If we don't have a message of this type yet, or this message is newer
-          if (!messagesByType[messageType] || 
-              new Date(message.timestamp) > new Date(messagesByType[messageType].timestamp)) {
-            messagesByType[messageType] = message;
-          }
-        });
-      }
+      // Note: Don't set ticker messages directly here anymore since real-time websocket
+      // handling will take care of processing and filtering messages
+      // This is just to ensure we have the latest data from API to supplement websocket
       
-      // Convert to array and sort by timestamp (newest first)
-      const newestMessages = Object.values(messagesByType).sort(
-        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      );
-      
-      setTickerMessages(newestMessages);
-      
-      // Set the first (newest) message as selected for the analysis panel
-      if (newestMessages.length > 0) {
-        setSelectedMessage(newestMessages[0]);
+      if (data.messages && data.messages.length > 0) {
+        console.log(`✅ API fetch complete for ${ticker}, websocket will process messages`);
       } else {
-        // No messages found - set to null so fundamentals tab will show by default
+        console.log(`⚠️ No messages found via API for ${ticker}`);
+        // If no API messages found, clear the selected message
         setSelectedMessage(null);
       }
       
-      console.log(`✅ Found ${newestMessages.length} unique message types for ${ticker}:`, 
-        newestMessages.map(m => `${getMessageType(m)} (${m.timestamp})`));
-      
     } catch (error) {
-      console.error('Error fetching ticker messages:', error);
-      setTickerMessages([]);
-      setSelectedMessage(null);
+      console.error('Error fetching ticker messages via API:', error);
+      // Don't clear ticker messages here - let the websocket handling manage the state
     } finally {
       setTickerMessagesLoading(false);
     }
@@ -1020,24 +1603,17 @@ const RealTimeGrid: React.FC = () => {
             }}
             className="bg-white dark:bg-neutral-900"
           >
-            {/* Header */}
-            <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-4 sm:px-6 py-3 sm:py-4">
+            {/* Compact Controls Header */}
+            <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-3 sm:px-4 py-2">
               <div className="flex items-center justify-between max-w-full mx-auto">
-                <div className="flex items-center gap-3">
-                  <Activity className="text-blue-500" size={24} />
-                  <h1 className="text-lg sm:text-xl font-medium text-neutral-900 dark:text-neutral-100">
-                    Real Time Grid
-                  </h1>
-                </div>
-                
                 <div className="flex items-center gap-2">
                   <div className="relative" ref={columnToggleRef}>
                     <button
                       onClick={() => setShowColumnToggle(!showColumnToggle)}
-                      className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+                      className="flex items-center gap-1 px-2 py-1 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
                       title="Toggle columns"
                     >
-                      <Settings size={16} />
+                      <Settings size={14} />
                       Columns
                     </button>
                     
@@ -1116,6 +1692,11 @@ const RealTimeGrid: React.FC = () => {
                           <div className="mb-1">
                             {visibleColumns.size} of {defaultColumns.length} columns visible
                           </div>
+                          {savedViews.find(view => view.name === AUTO_SAVE_VIEW_NAME) && (
+                            <div className="text-xs text-green-600 dark:text-green-400 opacity-75 mb-1">
+                              🔄 Auto-saved
+                            </div>
+                          )}
                           {!isMobile && (
                             <div className="text-xs text-neutral-400 dark:text-neutral-500 space-y-0.5">
                               <div>💡 Drag column headers to reorder</div>
@@ -1131,10 +1712,10 @@ const RealTimeGrid: React.FC = () => {
                   <div className="relative" ref={viewsDropdownRef}>
                     <button
                       onClick={() => setShowViewsDropdown(!showViewsDropdown)}
-                      className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+                      className="flex items-center gap-1 px-2 py-1 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
                       title="Manage views"
                     >
-                      <Bookmark size={16} />
+                      <Bookmark size={14} />
                       Views
                       {currentViewId && (
                         <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-1.5 py-0.5 rounded">
@@ -1235,17 +1816,18 @@ const RealTimeGrid: React.FC = () => {
                                   >
                                     <Edit3 size={12} />
                                   </button>
-                                  {!view.isDefault && (
+                                  {!view.isDefault && view.name !== AUTO_SAVE_VIEW_NAME && (
                                     <button
                                       onClick={() => {
-                                        if (confirm(`Are you sure you want to delete the view "${view.name}"?`)) {
+                                        if (confirm(`Are you sure you want to delete the view "${view.name}"?\n\nThis action cannot be undone.`)) {
                                           deleteView(view.id);
+                                          setShowViewsDropdown(false);
                                         }
                                       }}
-                                      className="p-1 text-neutral-400 hover:text-red-600 dark:hover:text-red-400"
+                                      className="p-1 text-neutral-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                                       title="Delete view"
                                     >
-                                      ×
+                                      <Trash2 size={12} />
                                     </button>
                                   )}
                                 </div>
@@ -1256,18 +1838,24 @@ const RealTimeGrid: React.FC = () => {
                         
                         {savedViews.length > 0 && (
                           <div className="p-2 border-t border-neutral-200 dark:border-neutral-700 text-xs text-neutral-500 dark:text-neutral-400">
-                            {savedViews.length} saved view{savedViews.length !== 1 ? 's' : ''}
+                            <div>{savedViews.length} saved view{savedViews.length !== 1 ? 's' : ''}</div>
+                            {savedViews.find(view => view.name === AUTO_SAVE_VIEW_NAME) && (
+                              <div className="text-green-600 dark:text-green-400 opacity-75 mt-1">
+                                Auto-save enabled
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
                     )}
                   </div>
                 </div>
+                
               </div>
             </div>
 
             {/* Filters */}
-            <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-4 sm:px-6 py-2">
+            <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-3 sm:px-4 py-1">
               <div className="flex items-center justify-between max-w-full mx-auto">
                 <div className="flex items-center gap-4 flex-wrap">
                   <div className="flex items-center gap-3">
@@ -1296,7 +1884,7 @@ const RealTimeGrid: React.FC = () => {
                     <button
                       onClick={handleDatePickerOpen}
                       className="text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-3 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 hover:border-neutral-400 dark:hover:border-neutral-500 flex items-center gap-2 min-w-[200px] justify-between"
-                      disabled={dateFilterLoading}
+                      disabled={isLoading}
                     >
                       <span className="text-left">
                         {dateRange.start && dateRange.end && dateRange.start !== dateRange.end
@@ -1308,11 +1896,11 @@ const RealTimeGrid: React.FC = () => {
                       <ChevronDown size={14} className={`transition-transform ${showDatePicker ? 'rotate-180' : ''}`} />
                     </button>
                     
-                    {dateFilterLoading && (
+                    {isLoading && (
                       <RefreshCw size={14} className="animate-spin text-neutral-500" />
                     )}
                     
-                    {(dateRange.start || dateRange.end) && !dateFilterLoading && (
+                    {(dateRange.start || dateRange.end) && !isLoading && (
                       <button
                         onClick={handleDatePickerClear}
                         className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 px-2 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
@@ -1422,43 +2010,28 @@ const RealTimeGrid: React.FC = () => {
                   </div>
                 </div>
                 
-                <div className="text-sm text-neutral-500 dark:text-neutral-400">
-                  {sortedData.length} stocks
-                  {showWatchlistOnly && (
-                    <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
-                      Watchlist ({watchlist.length})
-                    </span>
-                  )}
-                  {(dateRange.start || dateRange.end) && scheduledTickers.length > 0 && (
-                    <span className="ml-2 text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded">
-                      Earnings ({scheduledTickers.length})
-                    </span>
-                  )}
-                  {searchValue.trim() && (
-                    <span className="ml-2 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">
-                      Filtered
-                    </span>
-                  )}
-                  {selectedTicker && (
-                    <span className={`ml-2 text-xs px-2 py-1 rounded flex items-center gap-1 ${
-                      tickerMessages.length === 0 && !tickerMessagesLoading
-                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-                        : 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200'
-                    }`}>
-                      {tickerMessagesLoading && <RefreshCw size={12} className="animate-spin" />}
-                      Selected: {selectedTicker}
-                      {tickerMessages.length === 0 && !tickerMessagesLoading && (
-                        <span className="text-xs opacity-75">(Fundamentals)</span>
-                      )}
-                    </span>
-                  )}
+                <div className="text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    {/* WebSocket connection status removed - still using WebSocket but not showing UI status */}
+                    
+                    {showWatchlistOnly && (
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
+                        Watchlist ({watchlist.length})
+                      </span>
+                    )}
+                    {searchValue.trim() && (
+                      <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">
+                        Filtered
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Grid Content */}
             <div className="flex-1 overflow-hidden">
-              {dateFilterLoading ? (
+              {isLoading && stockData.length === 0 ? (
                 <div className="flex items-center justify-center h-full py-20">
                   <RefreshCw size={40} className="animate-spin text-blue-500" />
                 </div>
@@ -1497,21 +2070,21 @@ const RealTimeGrid: React.FC = () => {
                 )}
               </div>
               <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">
-                {searchValue.trim() 
+                {searchValue.trim()
                   ? "No Search Results Found"
-                  : (dateRange.start || dateRange.end) && scheduledTickers.length === 0
-                    ? "No Earnings Found"
-                    : showWatchlistOnly 
-                      ? "No Watchlist Stocks Found" 
+                  : (dateRange.start || dateRange.end) && sortedData.length === 0
+                    ? "No Data for Date Range"
+                    : showWatchlistOnly
+                      ? "No Watchlist Stocks Found"
                       : "No Metrics Available"
                 }
               </h3>
               <p className="text-neutral-500 dark:text-neutral-400 mb-4">
                 {searchValue.trim()
                   ? `No stocks match "${searchValue}" in ${searchableColumns.find(col => col.key === searchColumn)?.label || 'Ticker'}.`
-                  : (dateRange.start || dateRange.end) && scheduledTickers.length === 0
-                    ? `No earnings announcements found for the selected date range.`
-                    : showWatchlistOnly 
+                  : (dateRange.start || dateRange.end) && sortedData.length === 0
+                    ? `No metrics data available for the selected date range.`
+                    : showWatchlistOnly
                       ? `No stocks from your watchlist (${watchlist.length} symbols) are currently available in the metrics data.`
                       : "No real-time metrics data found. The API may be returning an empty dataset."
                 }

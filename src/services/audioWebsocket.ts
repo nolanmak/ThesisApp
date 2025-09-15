@@ -170,10 +170,34 @@ class AudioWebSocketService {
           // Handle any message that has audio_url, regardless of type
           if (data.type === "new_audio" || data.audio_url || (data.data && data.data.audio_url)) {
             
+            // Helper function to extract ticker from S3 filename
+            const extractTickerFromUrl = (url: string): string => {
+              try {
+                // Extract filename from S3 URL
+                const urlParts = url.split('/');
+                const filename = urlParts[urlParts.length - 1].split('?')[0]; // Remove query params
+
+                // Look for ticker pattern in filename (e.g., "A_earnings_2025-09-13_earnings_comparison_1.mp3")
+                const tickerMatch = filename.match(/^([A-Z]+)_/);
+                if (tickerMatch) {
+                  return tickerMatch[1];
+                }
+
+                // Fallback: try to find any uppercase letters at start
+                const fallbackMatch = filename.match(/^([A-Z]{1,5})/);
+                return fallbackMatch ? fallbackMatch[1] : 'UNKNOWN';
+              } catch (error) {
+                console.warn('[AUDIO WS] Failed to extract ticker from URL:', url, error);
+                return 'UNKNOWN';
+              }
+            };
+
             // Transform if needed
             let audioNotification = data;
             if (data.audio_url && !data.type) {
               // Transform direct audio message to proper format
+              const ticker = data.company_name || data.ticker || extractTickerFromUrl(data.audio_url);
+
               audioNotification = {
                 type: "new_audio",
                 timestamp: data.timestamp || new Date().toISOString(),
@@ -185,24 +209,43 @@ class AudioWebSocketService {
                   content_type: data.content_type || 'audio/mp3',
                   size: data.size || 0,
                   metadata: {
-                    ticker: data.company_name || data.ticker || 'UNKNOWN',
+                    ticker: ticker,
+                    company_name: ticker,
                     ...data.metadata
                   }
                 }
               };
+            } else if (audioNotification.data && audioNotification.data.audio_url) {
+              // For messages that already have proper structure but might need ticker extraction
+              const currentTicker = audioNotification.data?.metadata?.ticker || audioNotification.data?.metadata?.company_name;
+              if (!currentTicker || currentTicker === 'UNKNOWN') {
+                const extractedTicker = extractTickerFromUrl(audioNotification.data.audio_url);
+                // Update the metadata with extracted ticker
+                audioNotification = {
+                  ...audioNotification,
+                  data: {
+                    ...audioNotification.data,
+                    metadata: {
+                      ...audioNotification.data.metadata,
+                      ticker: extractedTicker,
+                      company_name: extractedTicker
+                    }
+                  }
+                };
+              }
             }
-            
+
             // Check for duplicate messages using message_id
             const messageId = audioNotification.data?.message_id;
             if (messageId && this.processedMessageIds.has(messageId)) {
               console.debug("[AUDIO WS] 🔁 Ignoring duplicate message:", messageId);
               return;
             }
-            
+
             // Mark message as processed
             if (messageId) {
               this.processedMessageIds.add(messageId);
-              
+
               // Clean up old message IDs to prevent memory leaks (keep last 1000)
               if (this.processedMessageIds.size > 1000) {
                 const ids = Array.from(this.processedMessageIds);
@@ -210,12 +253,18 @@ class AudioWebSocketService {
                 toRemove.forEach(id => this.processedMessageIds.delete(id));
               }
             }
-            
+
             // Check watchlist filter before notifying handlers
+            // Use the ticker from the transformed audioNotification which includes S3 filename extraction
             const ticker = audioNotification.data?.metadata?.ticker || audioNotification.data?.metadata?.company_name || 'UNKNOWN';
+            console.log(`[AUDIO WS] 🎯 Processing ticker "${ticker}" from audio notification:`, audioNotification.data?.audio_url);
             if (this.isTickerInWatchlist(ticker)) {
               this.notifyMessageHandlers(audioNotification);
             } else {
+              // Only log if there's actually a filter set (to match old behavior)
+              if (this.watchlistFilter.length > 0) {
+                console.log(`[AUDIO WS] Ticker "${ticker}" filtered out by watchlist`);
+              }
             }
           } else {
             console.warn(

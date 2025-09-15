@@ -48,22 +48,23 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
 
   // Find related messages for the same ticker, quarter, and year
   const relatedMessages = useMemo(() => {
-    if (!selectedMessage) return {};
+
+    if (!selectedMessage && !selectedTicker) {
+      return {};
+    }
     
+    // If we have a selectedTicker but no selectedMessage, group all messages for that ticker
+    const targetTicker = selectedTicker || selectedMessage?.ticker;
+    if (!targetTicker) {
+      return {};
+    }
+
+    // Filter messages by ticker
     const related = messages.filter(msg => {
-      if (msg.ticker !== selectedMessage.ticker) return false;
-      
-      // Convert to strings for comparison to handle type mismatches
-      const msgQuarter = String(msg.quarter);
-      const selectedQuarter = String(selectedMessage.quarter);
-      const msgYear = String(msg.year);
-      const selectedYear = String(selectedMessage.year);
-      
-      if (msgQuarter !== selectedQuarter) return false;
-      if (msgYear !== selectedYear) return false;
-      
-      return true;
+      if (!msg.ticker) return false;
+      return msg.ticker.toUpperCase() === targetTicker.toUpperCase();
     });
+    
     
     // Group by message type
     const grouped: Record<string, Message> = {};
@@ -76,7 +77,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     
     
     return grouped;
-  }, [selectedMessage, messages]);
+  }, [selectedMessage, messages, selectedTicker]);
 
   // Available tabs based on related messages
   const availableTabs = useMemo(() => {

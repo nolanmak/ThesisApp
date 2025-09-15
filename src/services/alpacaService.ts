@@ -374,7 +374,6 @@ class AlpacaService {
           this.socket.close(1000, 'Reconnecting'); // Proper close code
         }
       } catch (e) {
-        console.error('Error closing existing Alpaca socket:', e);
       }
       this.socket = null;
 
@@ -407,7 +406,6 @@ class AlpacaService {
       
       // Add connection timeout
       const connectionTimeout = setTimeout(() => {
-        console.error('🚨 Alpaca WebSocket connection timeout - connection never opened');
         if (this.socket && this.socket.readyState === WebSocket.CONNECTING) {
             this.socket.close();
           this.isConnecting = false;
@@ -459,25 +457,10 @@ class AlpacaService {
             this.handleMessage(data);
           }
         } catch (error) {
-          console.error('Error parsing Alpaca proxy WebSocket message:', error);
-          console.error('Raw message data:', event.data);
         }
       };
 
       this.socket.onerror = (error) => {
-        console.error('🚨 Alpaca WebSocket error:', error);
-        console.error('🚨 Error event details:', {
-          type: error.type,
-          target: error.target,
-          currentTarget: error.currentTarget
-        });
-        console.error('🚨 WebSocket state at error:', {
-          readyState: this.socket?.readyState,
-          readyStateText: this.getReadyStateText(this.socket?.readyState),
-          url: this.socket?.url,
-          isConnecting: this.isConnecting,
-          reconnectAttempts: this.reconnectAttempts
-        });
         this.isConnecting = false;
         this.isAuthenticated = false;
         
@@ -498,7 +481,6 @@ class AlpacaService {
         }
       };
     } catch (error) {
-      console.error('Failed to create Alpaca WebSocket connection:', error);
       this.isConnecting = false;
       this.isAuthenticated = false;
       this.attemptReconnect();
@@ -532,7 +514,6 @@ class AlpacaService {
           break;
 
         case 'error':
-          console.error('Alpaca proxy WebSocket error:', message.message);
           break;
 
         default:
@@ -546,7 +527,6 @@ class AlpacaService {
         break;
 
       case 'error':
-        console.error('Alpaca WebSocket error:', message.code, message.msg);
         break;
 
       case 'subscription':
@@ -840,7 +820,6 @@ class AlpacaService {
         });
       }, 2000);
     } catch (error) {
-      console.error('Error fetching initial data:', error);
     }
   }
 
@@ -923,7 +902,6 @@ class AlpacaService {
           this.socket.close();
         }
       } catch (e) {
-        console.error('Error closing Alpaca socket:', e);
       }
       this.socket = null;
     }

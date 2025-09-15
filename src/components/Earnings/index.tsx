@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import MessagesList from './ui/MessagesList';
 import WebSocketStatus from './ui/WebSocketStatus';
 import WatchlistToggle from './ui/WatchlistToggle';
@@ -6,6 +6,7 @@ import AnalysisPanel from './ui/AnalysisPanel';
 import FeedbackModal from './ui/FeedbackModal';
 import { Message } from '../../types';
 import useGlobalData from '../../hooks/useGlobalData';
+import { useWebSocket } from '../../hooks/useWebSocket';
 
 const Messages: React.FC = () => {
   const [searchMessageTicker, setSearchMessageTicker] = useState<string>('');
@@ -14,6 +15,13 @@ const Messages: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [showAnalysisPanel, setShowAnalysisPanel] = useState(false);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+
+  // State for real-time messages from websocket (similar to RealTimeGrid pattern)
+  const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
+
+  // Refs for tracking message changes (similar to RealTimeGrid pattern)
+  const prevMessagesRef = useRef<Message[]>([]);
+  const initialLoadCompletedRef = useRef<boolean>(false);
   
   useEffect(() => {
     const checkIfMobile = () => {
@@ -28,7 +36,7 @@ const Messages: React.FC = () => {
   }, []);
 
   const {
-    messages,
+    messages: globalMessages,
     messagesLoading,
     messagesRefreshing: refreshing,
     messagesHasMore,
@@ -43,7 +51,59 @@ const Messages: React.FC = () => {
     convertToEasternTime
   } = useGlobalData();
 
+  // Handle new real-time messages from websocket (replicating RealTimeGrid pattern)
+  const handleNewWebSocketMessage = useCallback((newMessage: Message) => {
 
+    setRealtimeMessages(prev => {
+      // Check if message already exists
+      const exists = prev.some(msg => msg.message_id === newMessage.message_id || msg.id === newMessage.id);
+      if (exists) {
+        return prev;
+      }
+
+      // Add new message and sort by timestamp (newest first)
+      const updated = [...prev, newMessage].sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+
+      return updated;
+    });
+  }, []);
+
+  // Use WebSocket hook for real-time updates (replicating RealTimeGrid pattern)
+  useWebSocket({
+    onMessage: handleNewWebSocketMessage,
+    persistConnection: true // Keep connection alive for real-time updates
+  });
+
+  // Combine global messages and real-time messages (replicating RealTimeGrid pattern)
+  const messages = useMemo(() => {
+    const combined = [...globalMessages, ...realtimeMessages];
+
+    // Remove duplicates based on message_id or id
+    const seen = new Set();
+    const unique = combined.filter(msg => {
+      const id = msg.message_id || msg.id;
+      if (seen.has(id)) {
+        return false;
+      }
+      seen.add(id);
+      return true;
+    });
+
+    // Sort by timestamp (newest first)
+    const sorted = unique.sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+
+
+
+    return sorted;
+  }, [globalMessages, realtimeMessages]);
+
+
+
+  // Set initial message after first load
   useEffect(() => {
     if (!initialMessageSet && messages.length > 0 && !messagesLoading) {
       const analysisMessages = messages.filter(msg => !msg.link);
@@ -65,6 +125,54 @@ const Messages: React.FC = () => {
       setInitialMessageSet(true);
     }
   }, [messages, messagesLoading, initialMessageSet]);
+
+  // Set initial messages after first load (similar to RealTimeGrid pattern)
+  useEffect(() => {
+    if (!messagesLoading && messages.length > 0 && !initialLoadCompletedRef.current) {
+      prevMessagesRef.current = [...messages];
+      initialLoadCompletedRef.current = true;
+    }
+  }, [messagesLoading, messages]);
+
+  // Detect new messages for real-time auto-selection (similar to RealTimeGrid pattern)
+  useEffect(() => {
+    // Skip this effect until initial load is completed
+    if (!initialLoadCompletedRef.current || !messages || messages.length === 0) return;
+    
+    // Find genuinely new messages (following MessagesList pattern)
+    const prevMessageIds = new Set(prevMessagesRef.current.map(msg => msg.message_id || msg.id));
+    
+    const genuinelyNewMessages = messages.filter(msg => {
+      const msgId = msg.message_id || msg.id;
+      const isNewToState = !prevMessageIds.has(msgId);
+      const messageTime = new Date(msg.timestamp).getTime();
+      const isRecentMessage = messageTime > (Date.now() - 2 * 60 * 1000); // Last 2 minutes
+      
+      // Only consider it truly new if it's new to our state AND is a very recent message
+      return isNewToState && isRecentMessage;
+    });
+    
+    // If we have genuinely new messages, auto-select the newest one from ANY ticker
+    if (genuinelyNewMessages.length > 0) {
+      
+      // Sort all new messages by timestamp (newest first) and select the newest one
+      const newestMessage = genuinelyNewMessages.sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      )[0];
+      
+      
+      // Update selected message to the newest one from any ticker
+      setSelectedMessage(newestMessage);
+      
+      // Show analysis panel on mobile if a new message is selected
+      if (isMobile) {
+        setShowAnalysisPanel(true);
+      }
+    }
+    
+    // Update the previous messages ref
+    prevMessagesRef.current = messages;
+  }, [messages, isMobile]);
 
   const handleMessageSearchChange = (value: string) => {
     setSearchMessageTicker(value);
@@ -127,6 +235,7 @@ const Messages: React.FC = () => {
             <WatchlistToggle />
             
             <MessagesList
+              key={`messages-${messages.length}-${messages[0]?.message_id || messages[0]?.id || 'empty'}`}
               messages={messages}
               loading={messagesLoading}
               convertToEasternTime={convertToEasternTime}
@@ -140,6 +249,7 @@ const Messages: React.FC = () => {
           
           {/* Analysis panel */}
           <AnalysisPanel
+            key={`analysis-${messages.length}-${selectedMessage?.message_id || selectedMessage?.id || 'no-msg'}`}
             selectedMessage={selectedMessage}
             isMobile={isMobile}
             showAnalysisPanel={showAnalysisPanel}

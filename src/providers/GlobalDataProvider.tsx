@@ -46,6 +46,10 @@ export interface StockMetric {
   $salesa3?: number | string; // 3 quarters ago revenue actual
   $salesa4?: number | string; // 4 quarters ago revenue actual
   $salesa5?: number | string; // 5 quarters ago revenue actual
+  // New enriched fields from scheduling data
+  company_name?: string; // Company name from scheduling data
+  last_earnings_date?: string; // Last earnings date from scheduling data
+  scheduled_dates?: string[]; // Array of scheduled dates in range
   [key: string]: any;
 }
 
@@ -87,7 +91,7 @@ interface GlobalDataContextType {
   metricsLoading: boolean;
   metricsError: string | null;
   metricsLastUpdated: Date | null;
-  refreshMetrics: () => Promise<void>;
+  refreshMetrics: (startDate?: string, endDate?: string) => Promise<void>;
   
   // Company names data
   companyNames: Record<string, CompanyNameData>;
@@ -163,22 +167,29 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return map;
   }, [earningsItems]);
 
-  // Function to fetch metrics data
-  const fetchMetrics = useCallback(async () => {
+  // Function to fetch metrics data with optional date filtering
+  const fetchMetrics = useCallback(async (startDate?: string, endDate?: string) => {
     if (!user?.email) {
-      console.log('User not authenticated, skipping metrics fetch');
       return;
     }
 
     try {
       setMetricsError(null);
-      
+
+      // Prepare request body with date filtering
+      const requestBody: { start_date?: string; end_date?: string } = {};
+      if (startDate) {
+        requestBody.start_date = startDate;
+        requestBody.end_date = endDate || startDate; // If single day, use same date for end
+      }
+
       const response = await fetch(METRICS_ENDPOINT, {
-        method: 'GET',
+        method: Object.keys(requestBody).length > 0 ? 'POST' : 'GET',
         headers: {
           'X-API-Key': API_KEY,
           'Content-Type': 'application/json',
         },
+        ...(Object.keys(requestBody).length > 0 && { body: JSON.stringify(requestBody) })
       });
 
       if (!response.ok) {
@@ -186,25 +197,21 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
 
       const data = await response.json();
-      console.log('📊 Global metrics API response:', data);
 
       if (data.metrics && Array.isArray(data.metrics)) {
         setMetricsData(data.metrics);
         setMetricsLastUpdated(new Date());
-        console.log(`✅ Loaded ${data.metrics.length} stock metrics globally`);
       } else {
-        console.log('⚠️ Unexpected metrics API response format');
         setMetricsData([]);
       }
     } catch (err) {
-      console.error('❌ Error fetching metrics globally:', err);
       setMetricsError(err instanceof Error ? err.message : 'Failed to fetch metrics');
     }
   }, [user?.email, METRICS_ENDPOINT, API_KEY]);
 
-  const refreshMetrics = useCallback(async () => {
+  const refreshMetrics = useCallback(async (startDate?: string, endDate?: string) => {
     setMetricsLoading(true);
-    await fetchMetrics();
+    await fetchMetrics(startDate, endDate);
     setMetricsLoading(false);
   }, [fetchMetrics]);
 
@@ -243,7 +250,6 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         return updated;
       });
     } catch (error) {
-      console.error('❌ Error fetching company names for date:', error);
     } finally {
       setCompanyNamesLoading(false);
     }
@@ -256,18 +262,16 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   // Initial metrics load when user is authenticated
   useEffect(() => {
     if (user?.email) {
-      console.log('🚀 Loading metrics data globally on app startup');
       refreshMetrics();
     }
   }, [user?.email, refreshMetrics]);
 
-  // Auto-refresh metrics every 2 minutes
+  // Auto-refresh metrics every 2 minutes (without date filtering for background refresh)
   useEffect(() => {
     if (!user?.email) return;
-    
+
     const interval = setInterval(() => {
-      console.log('🔄 Auto-refreshing metrics data globally');
-      fetchMetrics();
+      fetchMetrics(); // No date params for background refresh - gets all data
     }, 120000); // 2 minutes
 
     return () => clearInterval(interval);
@@ -295,7 +299,7 @@ export const GlobalDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     webSocketEnabled,
     refreshMessages: async (bypassCache?: boolean) => {
       // Call the fetchMessages function from the hook
-      fetchMessagesFromHook(bypassCache);
+      fetchMessagesFromHook();
       return Promise.resolve();
     },
     loadMoreMessages: async () => {

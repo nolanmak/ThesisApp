@@ -175,6 +175,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
   }, []);
   
   useEffect(() => {
+
     if (!messages || messages.length === 0) {
       setDeduplicatedMessages([]);
       return;
@@ -381,8 +382,6 @@ const MessagesList: React.FC<MessagesListProps> = ({
       return acc;
     }, {} as Record<string, number>);
     
-    // Log source counts if needed for debugging
-    console.log('Message counts by source:', sourceTypeCounts);
   }, [deduplicatedMessages]);
 
   if (loading && (!messages || messages.length === 0)) {

@@ -138,11 +138,9 @@ export const getMessages = async (
     if (searchTerm) {
       queryParams.append('ticker', searchTerm);
       queryParams.append('company_name', searchTerm);
-      console.log(`🔍 API: Hybrid search for: "${searchTerm}" (both ticker and company name)`);
     }
 
     const finalUrl = `/messages?${queryParams.toString()}`;
-    console.log(`🔍 API: Making request to: ${finalUrl}`);
     const response = await fetchWithAuth<PaginatedMessageResponse>(finalUrl);
     
     return response;
