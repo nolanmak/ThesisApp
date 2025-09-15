@@ -715,10 +715,27 @@ const RealTimeGrid: React.FC = () => {
       const currentViews = (profile?.settings?.gridViews as GridView[]) || [];
       const updatedViews = currentViews.filter(v => v.id !== viewId);
 
-      // Check if we're deleting the last manual view and auto-save exists
+      // Handle default view management after deletion
+      const deletedView = currentViews.find(v => v.id === viewId);
       const remainingManualViews = updatedViews.filter(view => view.name !== AUTO_SAVE_VIEW_NAME);
       const autoSaveView = updatedViews.find(view => view.name === AUTO_SAVE_VIEW_NAME);
 
+      // If we deleted a default view, we need to assign a new default
+      if (deletedView?.isDefault) {
+        console.log('🔄 Deleted view was default, reassigning default status');
+
+        if (remainingManualViews.length > 0) {
+          // Make the first remaining manual view the default
+          remainingManualViews[0].isDefault = true;
+          console.log('🎯 Making first remaining manual view default:', remainingManualViews[0].name);
+        } else if (autoSaveView) {
+          // No manual views left, make auto-save default
+          autoSaveView.isDefault = true;
+          console.log('🎯 Making auto-save view default (no manual views remain)');
+        }
+      }
+
+      // If we're deleting the last manual view and auto-save exists but isn't default yet
       if (remainingManualViews.length === 0 && autoSaveView && !autoSaveView.isDefault) {
         console.log('🎯 Making auto-save view default after deleting last manual view');
         autoSaveView.isDefault = true;
@@ -1106,7 +1123,9 @@ const RealTimeGrid: React.FC = () => {
       savedViewsLength: savedViews.length,
       currentViewId,
       stockDataLength: stockData.length,
-      hasAutoSave: savedViews.find(view => view.name === AUTO_SAVE_VIEW_NAME) ? true : false
+      hasDefaultView: savedViews.some(view => view.isDefault === true),
+      hasAutoSave: savedViews.find(view => view.name === AUTO_SAVE_VIEW_NAME) ? true : false,
+      defaultViewName: savedViews.find(view => view.isDefault === true)?.name || 'none'
     });
 
     if (!user?.email || savedViews.length === 0) {
@@ -1116,14 +1135,24 @@ const RealTimeGrid: React.FC = () => {
 
     // Only auto-restore if no view is currently applied and we haven't loaded data yet
     if (!currentViewId && stockData.length === 0) {
-      const autoSaveView = savedViews.find(view => view.name === AUTO_SAVE_VIEW_NAME);
+      // Priority 1: Look for default view first
+      const defaultView = savedViews.find(view => view.isDefault === true);
 
-      if (autoSaveView && autoSaveView.settings) {
-        console.log('🔄 Auto-restoring saved view state:', autoSaveView.settings);
-        applyView(autoSaveView);
-      } else {
-        console.log('⚠️ No auto-save view found or no settings');
+      if (defaultView && defaultView.settings) {
+        console.log('🎯 Auto-restoring default view:', defaultView.name, defaultView.settings);
+        applyView(defaultView);
+        return;
       }
+
+      // Priority 2: Fall back to auto-save view if no default view
+      const autoSaveView = savedViews.find(view => view.name === AUTO_SAVE_VIEW_NAME);
+      if (autoSaveView && autoSaveView.settings) {
+        console.log('🔄 Auto-restoring auto-save view (no default found):', autoSaveView.settings);
+        applyView(autoSaveView);
+        return;
+      }
+
+      console.log('⚠️ No default or auto-save view found with settings');
     } else {
       console.log('⚠️ Auto-restore skipped: view already applied or data loaded');
     }
@@ -1816,7 +1845,7 @@ const RealTimeGrid: React.FC = () => {
                                   >
                                     <Edit3 size={12} />
                                   </button>
-                                  {!view.isDefault && view.name !== AUTO_SAVE_VIEW_NAME && (
+                                  {view.name !== AUTO_SAVE_VIEW_NAME && (
                                     <button
                                       onClick={() => {
                                         if (confirm(`Are you sure you want to delete the view "${view.name}"?\n\nThis action cannot be undone.`)) {
