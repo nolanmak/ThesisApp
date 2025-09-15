@@ -30,13 +30,17 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   
   // Get message type for tab identification
   const getMessageType = (message: Message): string => {
-    if (message.link || message.report_data?.link || 
-        message.source?.toLowerCase() === 'link' || 
-        message.type?.toLowerCase() === 'link') return 'report';
     if (message.source === 'transcript_analysis') return 'transcript';
     if (message.source === 'sentiment_analysis' || message.sentiment_additional_metrics) return 'sentiment';
     if (message.source === 'fundamentals_analysis') return 'fundamentals';
-    return 'earnings';
+    return 'earnings'; // Reports now go to earnings tab
+  };
+
+  // Helper to identify if a message is a report
+  const isReportMessage = (message: Message): boolean => {
+    return !!(message.link || message.report_data?.link ||
+             message.source?.toLowerCase() === 'link' ||
+             message.type?.toLowerCase() === 'link');
   };
 
   // Get metrics for the selected ticker (prioritize selectedTicker from RealTimeGrid)
@@ -68,14 +72,37 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     
     // Group by message type
     const grouped: Record<string, Message> = {};
+    let earningsReportMessage: Message | null = null;
+
     related.forEach(msg => {
       const type = getMessageType(msg);
-      if (!grouped[type] || new Date(msg.timestamp) > new Date(grouped[type].timestamp)) {
-        grouped[type] = msg; // Keep the most recent message of each type
+
+      // Special handling for earnings tab - separate reports from earnings analysis
+      if (type === 'earnings') {
+        if (isReportMessage(msg)) {
+          // Track the most recent report message separately
+          if (!earningsReportMessage || new Date(msg.timestamp) > new Date(earningsReportMessage.timestamp)) {
+            earningsReportMessage = msg;
+          }
+        } else {
+          // Regular earnings analysis message
+          if (!grouped[type] || new Date(msg.timestamp) > new Date(grouped[type].timestamp)) {
+            grouped[type] = msg;
+          }
+        }
+      } else {
+        // Other message types (transcript, sentiment, fundamentals)
+        if (!grouped[type] || new Date(msg.timestamp) > new Date(grouped[type].timestamp)) {
+          grouped[type] = msg;
+        }
       }
     });
-    
-    
+
+    // Add the report message to the grouped object for access in rendering
+    if (earningsReportMessage) {
+      grouped['earningsReport'] = earningsReportMessage;
+    }
+
     return grouped;
   }, [selectedMessage, messages, selectedTicker]);
 
@@ -132,16 +159,6 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
         }
       });
     }
-    // Add Report tab last (far right position)
-    if (relatedMessages.report) tabs.push({ 
-      id: 'report', 
-      label: 'Report', 
-      message: relatedMessages.report,
-      colors: {
-        active: 'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200',
-        inactive: 'text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 hover:bg-amber-50 dark:hover:bg-amber-900/30'
-      }
-    });
     return tabs;
   }, [relatedMessages, selectedMessage, tickerMetrics, currentTicker]);
 
@@ -742,63 +759,93 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                       </div>
                     )}
                   </div>
-                ) : activeTab === 'report' ? (
-                  // Display report/link content
-                  <div className="space-y-4">
-                    {/* Show message content for link messages */}
-                    {(currentMessage?.title || currentMessage?.subject || currentMessage?.message) && (
-                      <div className="text-amber-700 dark:text-amber-400 font-semibold mb-3">
-                        {currentMessage.title || currentMessage.subject || currentMessage.message}
-                      </div>
-                    )}
-                    
-                    {/* Always show the link button */}
-                    <div className="text-center">
-                      <a 
-                        href={currentMessage?.link || currentMessage?.report_data?.link || selectedMessage?.link || selectedMessage?.report_data?.link || '#'} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium transition-colors shadow-sm"
-                      >
-                        <span>View Full Report</span>
-                        <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                      </a>
-                    </div>
-                  </div>
-                ) : parsedMessage && Object.keys(parsedMessage).length > 0 ? (
-                  <div className="space-y-4">
-                    {Object.entries(parsedMessage).map(([section, items]) => (
-                      <div key={section}>
-                        <div className="text-primary-700 dark:text-primary-400 font-semibold mb-2">{section}</div>
-                        { ['Additional Metrics', 'Company Highlights'].includes(section) ? (
-                          <ul className="space-y-1 list-disc pl-5">
-                            {items.map((item, idx) => (
-                              <li key={idx} className="text-neutral-600 dark:text-neutral-300">
-                                {typeof item === 'string' ? item : item.text || item.label}
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <div className="space-y-1">
-                          {items.map((item, idx: number) => (
-                            <div key={idx} className="flex flex-wrap gap-2 items-center">
-                              <span className="text-neutral-600 dark:text-neutral-300">
-                                {typeof item === 'string' ? item : item.text || item.label}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                        )
-                        }
-                      </div>
-                    ))}
-                  </div>
                 ) : (
-                  <div className="text-neutral-500 dark:text-neutral-400 text-center p-4">
-                    No structured metrics available
-                  </div>
+                  // Enhanced Earnings tab with flexible report display
+                  (() => {
+                    const earningsMessage = relatedMessages.earnings;
+                    const reportMessage = relatedMessages.earningsReport;
+                    const hasEarningsData = earningsMessage && parsedMessage && Object.keys(parsedMessage).length > 0;
+                    const hasReportData = reportMessage;
+
+                    return (
+                      <div className="space-y-4">
+                        {hasEarningsData ? (
+                          // Show earnings analysis
+                          <div className="space-y-4">
+                            {Object.entries(parsedMessage).map(([section, items]) => (
+                              <div key={section}>
+                                <div className="text-primary-700 dark:text-primary-400 font-semibold mb-2">{section}</div>
+                                { ['Additional Metrics', 'Company Highlights'].includes(section) ? (
+                                  <ul className="space-y-1 list-disc pl-5">
+                                    {items.map((item, idx) => (
+                                      <li key={idx} className="text-neutral-600 dark:text-neutral-300">
+                                        {typeof item === 'string' ? item : item.text || item.label}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  <div className="space-y-1">
+                                  {items.map((item, idx: number) => (
+                                    <div key={idx} className="flex flex-wrap gap-2 items-center">
+                                      <span className="text-neutral-600 dark:text-neutral-300">
+                                        {typeof item === 'string' ? item : item.text || item.label}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                                )
+                                }
+                              </div>
+                            ))}
+                          </div>
+                        ) : hasReportData ? (
+                          // Show report-only content with pending message
+                          <div className="space-y-4">
+                            {/* Show report content */}
+                            {(reportMessage?.title || reportMessage?.subject || reportMessage?.message) && (
+                              <div className="text-sky-700 dark:text-sky-400 font-semibold mb-3">
+                                {reportMessage.title || reportMessage.subject || reportMessage.message}
+                              </div>
+                            )}
+
+                            {/* Pending earnings message */}
+                            <div className="bg-sky-50 dark:bg-sky-900/30 border border-sky-200 dark:border-sky-800 rounded-lg p-3 mb-4">
+                              <div className="text-sky-800 dark:text-sky-300 text-sm">
+                                📊 Earnings analysis pending... Report available below.
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          // No data available
+                          <div className="text-neutral-500 dark:text-neutral-400 text-center p-4">
+                            No earnings data available
+                          </div>
+                        )}
+
+                        {/* Always show report link if available */}
+                        {hasReportData && (
+                          <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4">
+                            <div className="text-sky-700 dark:text-sky-400 font-medium mb-3 text-sm">
+                              📄 Related Report
+                            </div>
+                            <div className="text-center">
+                              <a
+                                href={reportMessage?.link || reportMessage?.report_data?.link || '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center px-6 py-3 bg-sky-500 hover:bg-sky-600 text-white rounded-lg font-medium transition-colors shadow-sm"
+                              >
+                                <span>View Full Report</span>
+                                <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()
                 )}
               </div>
           </div>
