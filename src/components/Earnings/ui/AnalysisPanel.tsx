@@ -196,7 +196,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     data: number[];
     labels?: string[];
     title: string;
-    color?: string;
+    color?: string | string[];
     height?: number;
   }> = ({ data, labels, title, color = '#3b82f6', height = 120 }) => {
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -237,6 +237,11 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
               const isValid = value !== null && !isNaN(value);
               const barHeight = isValid ? Math.max(((value - minValue) / range) * height * 0.8, 2) : 0;
 
+              // Get color for this bar - support both single color and array of colors
+              const barColor = isValid
+                ? (Array.isArray(color) ? (color[index] || color[0]) : color)
+                : '#e5e7eb';
+
               return (
                 <div
                   key={index}
@@ -248,7 +253,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                     className="transition-all duration-200 cursor-pointer hover:opacity-80"
                     style={{
                       height: `${barHeight}px`,
-                      backgroundColor: isValid ? color : '#e5e7eb',
+                      backgroundColor: barColor,
                       width: '100%',
                       maxWidth: isMobile ? '16px' : '24px',
                       minWidth: '8px'
@@ -592,21 +597,21 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                         {/* Q/Q Sales Comparison Chart */}
                         <DualSeriesChart
                           series1={[
-                            parseFloat(String(tickerMetrics['$s3'] || 0).replace(/,/g, '')),
-                            parseFloat(String(tickerMetrics['$s2'] || 0).replace(/,/g, '')),
-                            parseFloat(String(tickerMetrics['$s1'] || 0).replace(/,/g, '')),
-                            parseFloat(String(tickerMetrics['$s0'] || 0).replace(/,/g, ''))
-                          ].reverse()}
-                          series2={[
                             parseFloat(String(tickerMetrics['$s7'] || 0).replace(/,/g, '')),
                             parseFloat(String(tickerMetrics['$s6'] || 0).replace(/,/g, '')),
                             parseFloat(String(tickerMetrics['$s5'] || 0).replace(/,/g, '')),
                             parseFloat(String(tickerMetrics['$s4'] || 0).replace(/,/g, ''))
-                          ].reverse()}
-                          labels={['S3', 'S2', 'S1', 'S0'].reverse()}
-                          title="Q/Q Sales"
-                          series1Color="#10b981" // green for recent quarters (S0-S3)
-                          series2Color="#3b82f6" // blue for older quarters (S4-S7)
+                          ]}
+                          series2={[
+                            parseFloat(String(tickerMetrics['$s3'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s2'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s1'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s0'] || 0).replace(/,/g, ''))
+                          ]}
+                          labels={['Q1', 'Q2', 'Q3', 'Q4']}
+                          title="Q/Q Sales Comparison"
+                          series1Color="#3b82f6" // blue for prior year quarters
+                          series2Color="#10b981" // green for current year quarters (right side)
                           height={140}
                         />
 
@@ -617,11 +622,21 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                             parseFloat(String(tickerMetrics['$eps3'] || 0)),
                             parseFloat(String(tickerMetrics['$eps2'] || 0)),
                             parseFloat(String(tickerMetrics['$eps1'] || 0)),
-                            parseFloat(String(tickerMetrics['$eps0'] || 0))
+                            parseFloat(String(tickerMetrics['$eps0'] || 0)),
+                            parseFloat(String(tickerMetrics['curfyepsmean'] || 0)),
+                            parseFloat(String(tickerMetrics['nextfyepsmean'] || 0))
                           ]}
-                          labels={['EPS4', 'EPS3', 'EPS2', 'EPS1', 'EPS0']}
+                          labels={['EPS4', 'EPS3', 'EPS2', 'EPS1', 'EPS0', 'CY', 'NY']}
                           title="Annual EPS"
-                          color="#10b981"
+                          color={[
+                            '#10b981', // EPS4 - Historical (solid green)
+                            '#10b981', // EPS3 - Historical (solid green)
+                            '#10b981', // EPS2 - Historical (solid green)
+                            '#10b981', // EPS1 - Historical (solid green)
+                            '#10b981', // EPS0 - Historical (solid green)
+                            '#6ee7b7', // CY - Current Year Estimate (lighter green)
+                            '#a7f3d0'  // NY - Next Year Estimate (lightest green)
+                          ]}
                           height={120}
                         />
 
@@ -633,9 +648,10 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                             parseFloat(String(tickerMetrics['$salesa3'] || 0).replace(/,/g, '')),
                             parseFloat(String(tickerMetrics['$salesa2'] || 0).replace(/,/g, '')),
                             parseFloat(String(tickerMetrics['$salesa1'] || 0).replace(/,/g, '')),
-                            parseFloat(String(tickerMetrics['salesa'] || 0).replace(/,/g, ''))
+                            parseFloat(String(tickerMetrics['curfysalesmean'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['nextfysalesmean'] || 0).replace(/,/g, ''))
                           ]}
-                          labels={['A5', 'A4', 'A3', 'A2', 'A1', 'A0']}
+                          labels={['Y5', 'Y4', 'Y3', 'Y2', 'Y1', 'CY', 'NY']}
                           title="Annual Sales"
                           color="#f59e0b"
                           height={120}
