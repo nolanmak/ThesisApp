@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Message } from '../../../types';
 import { ThumbsDown, X } from 'lucide-react';
-import { ParseMessagePayload, ParseTranscriptMessage, ParseTranscriptData, ParseSentimentMessage, ParseSentimentData, ParseSwingAnalysisData } from '../utils/messageUtils';
+import { ParseMessagePayload, ParseTranscriptData, ParseSentimentData, ParseSwingAnalysisData } from '../utils/messageUtils';
 import useGlobalData from '../../../hooks/useGlobalData';
 
 interface AnalysisPanelProps {
@@ -106,41 +106,51 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     return grouped;
   }, [selectedMessage, messages, selectedTicker]);
 
-  // Available tabs based on related messages
+  // Available tabs - always show all tabs in consistent order
   const availableTabs = useMemo(() => {
     const tabs = [];
-    if (relatedMessages.earnings) tabs.push({ 
-      id: 'earnings', 
-      label: 'Earnings', 
+
+    // Always show Earnings tab (first)
+    tabs.push({
+      id: 'earnings',
+      label: 'Earnings',
       message: relatedMessages.earnings,
+      hasData: !!(relatedMessages.earnings || relatedMessages.earningsReport),
       colors: {
         active: 'bg-sky-100 dark:bg-sky-900/50 text-sky-800 dark:text-sky-200',
         inactive: 'text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-200 hover:bg-sky-50 dark:hover:bg-sky-900/30'
       }
     });
-    if (relatedMessages.sentiment) tabs.push({ 
-      id: 'sentiment', 
-      label: 'Sentiment', 
+
+    // Always show Sentiment tab (second)
+    tabs.push({
+      id: 'sentiment',
+      label: 'Sentiment',
       message: relatedMessages.sentiment,
+      hasData: !!relatedMessages.sentiment,
       colors: {
         active: 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200',
         inactive: 'text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 hover:bg-green-50 dark:hover:bg-green-900/30'
       }
     });
-    if (relatedMessages.transcript) tabs.push({ 
-      id: 'transcript', 
-      label: 'Transcript', 
+
+    // Always show Transcript tab (third)
+    tabs.push({
+      id: 'transcript',
+      label: 'Transcript',
       message: relatedMessages.transcript,
+      hasData: !!relatedMessages.transcript,
       colors: {
         active: 'bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200',
         inactive: 'text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 hover:bg-purple-50 dark:hover:bg-purple-900/30'
       }
     });
-    // Always show fundamentals tab if we have a ticker and metrics data
-    if (currentTicker && tickerMetrics) {
-      tabs.push({ 
-        id: 'fundamentals', 
-        label: 'Fundamentals', 
+
+    // Always show Fundamentals tab if we have a ticker (fourth)
+    if (currentTicker) {
+      tabs.push({
+        id: 'fundamentals',
+        label: 'Fundamentals',
         message: relatedMessages.fundamentals || selectedMessage || {
           // Create a minimal message for fundamentals display when no selectedMessage
           id: `fundamentals-${currentTicker}`,
@@ -152,13 +162,15 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
           link: null,
           year: undefined,
           quarter: undefined
-        } as Message, 
+        } as Message,
+        hasData: !!tickerMetrics,
         colors: {
           active: 'bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-200',
           inactive: 'text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-200 hover:bg-orange-50 dark:hover:bg-orange-900/30'
         }
       });
     }
+
     return tabs;
   }, [relatedMessages, selectedMessage, tickerMetrics, currentTicker]);
 
@@ -167,6 +179,11 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     const tabMessage = availableTabs.find(tab => tab.id === activeTab)?.message;
     return tabMessage || selectedMessage;
   }, [activeTab, availableTabs, selectedMessage]);
+
+  // Current tab info including hasData property
+  const currentTab = useMemo(() => {
+    return availableTabs.find(tab => tab.id === activeTab);
+  }, [activeTab, availableTabs]);
 
   // Reset active tab when selected message or ticker changes
   const [lastMessageId, setLastMessageId] = useState<string | null>(null);
@@ -557,28 +574,34 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                   <div className="space-y-4">
                     {/* Show just the preview text */}
                     <div className="text-purple-700 dark:text-purple-400 font-semibold mb-3">
-                      {currentMessage && ParseTranscriptMessage(currentMessage) || '📊 Earnings Call Transcript Analysis'}
+                      📊 Earnings Call Transcript Analysis
                     </div>
-                    
-                    {/* Display structured transcript data in human-readable format */}
-                    {parsedTranscriptData && Object.keys(parsedTranscriptData).length > 0 ? (
-                      <div className="space-y-4">
-                        {Object.entries(parsedTranscriptData).map(([section, items]) => (
-                          <div key={section}>
-                            <div className="text-purple-700 dark:text-purple-400 font-semibold mb-2">{section}</div>
-                            <ul className="space-y-1 list-disc pl-5">
-                              {items.map((item, idx) => (
-                                <li key={idx} className="text-neutral-600 dark:text-neutral-300">
-                                  {typeof item === 'string' ? item : item.text || item.label}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ))}
-                      </div>
+
+                    {currentTab?.hasData ? (
+                      /* Display structured transcript data in human-readable format */
+                      parsedTranscriptData && Object.keys(parsedTranscriptData).length > 0 ? (
+                        <div className="space-y-4">
+                          {Object.entries(parsedTranscriptData).map(([section, items]) => (
+                            <div key={section}>
+                              <div className="text-purple-700 dark:text-purple-400 font-semibold mb-2">{section}</div>
+                              <ul className="space-y-1 list-disc pl-5">
+                                {items.map((item, idx) => (
+                                  <li key={idx} className="text-neutral-600 dark:text-neutral-300">
+                                    {typeof item === 'string' ? item : item.text || item.label}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-neutral-500 dark:text-neutral-400 text-center p-4">
+                          No transcript analysis data available
+                        </div>
+                      )
                     ) : (
                       <div className="text-neutral-500 dark:text-neutral-400 text-center p-4">
-                        No transcript analysis data available
+                        No data available
                       </div>
                     )}
                   </div>
@@ -589,8 +612,8 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                     <div className="text-orange-700 dark:text-orange-400 font-semibold mb-3">
                       📊 Fundamentals Analysis - {currentTicker}
                     </div>
-                    
-                    {tickerMetrics ? (
+
+                    {currentTab?.hasData ? (
                       <div className="space-y-4">
                         {/* Quarterly Sales Chart (Q0-Q8) */}
                         <SimpleBarChart
@@ -695,7 +718,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                       </div>
                     ) : (
                       <div className="text-neutral-500 dark:text-neutral-400 text-center p-4">
-                        No metrics data available for {currentTicker}
+                        No data available
                       </div>
                     )}
                   </div>
@@ -704,11 +727,12 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                   <div className="space-y-4">
                     {/* Show the preview text */}
                     <div className="text-green-700 dark:text-green-400 font-medium mb-3" style={{ fontSize: isMobile ? '0.875rem' : '0.75rem' }}>
-                      {currentMessage && ParseSentimentMessage(currentMessage) || '📈 Sentiment Analysis'}
+                      📈 Sentiment Analysis
                     </div>
-                    
-                    {/* Display structured sentiment data in human-readable format */}
-                    {parsedSentimentData && Object.keys(parsedSentimentData).length > 0 ? (
+
+                    {currentTab?.hasData ? (
+                      /* Display structured sentiment data in human-readable format */
+                      parsedSentimentData && Object.keys(parsedSentimentData).length > 0 ? (
                       <div className="space-y-4">
                         {Object.entries(parsedSentimentData).map(([section, items]) => (
                           <div key={section}>
@@ -753,9 +777,14 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                           </div>
                         ))}
                       </div>
+                      ) : (
+                        <div className="text-neutral-500 dark:text-neutral-400 text-center p-4">
+                          No sentiment analysis data available
+                        </div>
+                      )
                     ) : (
                       <div className="text-neutral-500 dark:text-neutral-400 text-center p-4">
-                        No sentiment analysis data available
+                        No data available
                       </div>
                     )}
                   </div>
@@ -769,7 +798,14 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
 
                     return (
                       <div className="space-y-4">
-                        {hasEarningsData ? (
+                        {/* Show earnings header */}
+                        <div className="text-sky-700 dark:text-sky-400 font-semibold mb-3">
+                          📊 Earnings Analysis
+                        </div>
+
+                        {currentTab?.hasData ? (
+                          <>
+                            {hasEarningsData ? (
                           // Show earnings analysis
                           <div className="space-y-4">
                             {Object.entries(parsedMessage).map(([section, items]) => (
@@ -815,32 +851,39 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                               </div>
                             </div>
                           </div>
-                        ) : (
-                          // No data available
-                          <div className="text-neutral-500 dark:text-neutral-400 text-center p-4">
-                            No earnings data available
-                          </div>
-                        )}
+                            ) : (
+                              // No data available when has data but no actual content
+                              <div className="text-neutral-500 dark:text-neutral-400 text-center p-4">
+                                No earnings data available
+                              </div>
+                            )}
 
-                        {/* Always show report link if available */}
-                        {hasReportData && (
-                          <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4">
-                            <div className="text-sky-700 dark:text-sky-400 font-medium mb-3 text-sm">
-                              📄 Related Report
-                            </div>
-                            <div className="text-center">
-                              <a
-                                href={reportMessage?.link || reportMessage?.report_data?.link || '#'}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center px-6 py-3 bg-sky-500 hover:bg-sky-600 text-white rounded-lg font-medium transition-colors shadow-sm"
-                              >
-                                <span>View Full Report</span>
-                                <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                </svg>
-                              </a>
-                            </div>
+                            {/* Always show report link if available */}
+                            {hasReportData && (
+                              <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4">
+                                <div className="text-sky-700 dark:text-sky-400 font-medium mb-3 text-sm">
+                                  📄 Related Report
+                                </div>
+                                <div className="text-center">
+                                  <a
+                                    href={reportMessage?.link || reportMessage?.report_data?.link || '#'}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center px-6 py-3 bg-sky-500 hover:bg-sky-600 text-white rounded-lg font-medium transition-colors shadow-sm"
+                                  >
+                                    <span>View Full Report</span>
+                                    <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          // No data available for earnings tab
+                          <div className="text-neutral-500 dark:text-neutral-400 text-center p-4">
+                            No data available
                           </div>
                         )}
                       </div>
