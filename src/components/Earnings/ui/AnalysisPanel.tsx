@@ -634,8 +634,8 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                             '#10b981', // EPS2 - Historical (solid green)
                             '#10b981', // EPS1 - Historical (solid green)
                             '#10b981', // EPS0 - Historical (solid green)
-                            '#6ee7b7', // CY - Current Year Estimate (lighter green)
-                            '#a7f3d0'  // NY - Next Year Estimate (lightest green)
+                            '#fbbf24', // CY - Current Year Estimate (amber/yellow)
+                            '#f59e0b'  // NY - Next Year Estimate (darker amber/orange)
                           ]}
                           height={120}
                         />
