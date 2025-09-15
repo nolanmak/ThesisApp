@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Calendar, MessageCircle, Menu, List, Settings, TrendingUp, Activity, Info } from 'lucide-react';
+import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Calendar, MessageCircle, Menu, List, Settings, Activity, Info } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import ThemeToggle from './ui/ThemeToggle';
 import SettingsModal from './ui/Settings';
@@ -9,7 +9,6 @@ import GlobalAudioControls from './ui/GlobalAudioControls';
 const Layout: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -58,6 +57,18 @@ const Layout: React.FC = () => {
               
               <div className="flex items-center gap-2">
                 <GlobalAudioControls size="sm" />
+                <Link
+                  to="/dashboard/watchlist"
+                  className={`flex items-center justify-center p-2 rounded-md transition-colors duration-200 ease-in-out ${
+                    location.pathname === '/dashboard/watchlist'
+                      ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300'
+                      : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                  }`}
+                  aria-label="Watch List"
+                  title="Watch List"
+                >
+                  <List size={18} />
+                </Link>
                 <button
                   onClick={() => setSettingsOpen(true)}
                   className="flex items-center justify-center p-2 rounded-md transition-colors duration-200 ease-in-out text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
@@ -129,6 +140,18 @@ const Layout: React.FC = () => {
               {/* Theme Toggle and Settings (desktop only) */}
               <div className="flex items-center gap-2">
                 <GlobalAudioControls size="sm" />
+                <Link
+                  to="/dashboard/watchlist"
+                  className={`flex items-center justify-center p-2 rounded-md transition-colors duration-200 ease-in-out ${
+                    location.pathname === '/dashboard/watchlist'
+                      ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300'
+                      : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                  }`}
+                  aria-label="Watch List"
+                  title="Watch List"
+                >
+                  <List size={18} />
+                </Link>
                 <button
                   onClick={() => setSettingsOpen(true)}
                   className="flex items-center justify-center p-2 rounded-md transition-colors duration-200 ease-in-out text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
@@ -174,15 +197,6 @@ const Layout: React.FC = () => {
                     </Link>
                   </li>
                 )}
-                <li>
-                  <Link
-                    to="/dashboard/watchlist"
-                    className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/watchlist')}`}
-                  >
-                    <List className="mr-1" size={14} />
-                    <span>Watch List</span>
-                  </Link>
-                </li>
               </ul>
             </nav>
           )}
@@ -226,16 +240,6 @@ const Layout: React.FC = () => {
                       </Link>
                     </li>
                   )}
-                  <li>
-                    <Link
-                      to="/dashboard/watchlist"
-                      className={`flex items-center px-3 py-2 text-base rounded-md transition-colors duration-150 ease-in-out ${isActive('/dashboard/watchlist')}`}
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      <List className="mr-2" size={18} />
-                      <span>Watch List</span>
-                    </Link>
-                  </li>
                 </ul>
               </nav>
             </div>
