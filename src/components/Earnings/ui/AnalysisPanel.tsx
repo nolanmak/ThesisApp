@@ -615,20 +615,20 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
 
                     {currentTab?.hasData ? (
                       <div className="space-y-4">
-                        {/* Quarterly Sales Chart (Q0-Q8) */}
+                        {/* Quarterly Sales Chart (Q8-Q0) */}
                         <SimpleBarChart
                           data={[
-                            parseFloat(String(tickerMetrics['$s0'] || 0).replace(/,/g, '')),
-                            parseFloat(String(tickerMetrics['$s1'] || 0).replace(/,/g, '')),
-                            parseFloat(String(tickerMetrics['$s2'] || 0).replace(/,/g, '')),
-                            parseFloat(String(tickerMetrics['$s3'] || 0).replace(/,/g, '')),
-                            parseFloat(String(tickerMetrics['$s4'] || 0).replace(/,/g, '')),
-                            parseFloat(String(tickerMetrics['$s5'] || 0).replace(/,/g, '')),
-                            parseFloat(String(tickerMetrics['$s6'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s8'] || 0).replace(/,/g, '')),
                             parseFloat(String(tickerMetrics['$s7'] || 0).replace(/,/g, '')),
-                            parseFloat(String(tickerMetrics['$s8'] || 0).replace(/,/g, ''))
+                            parseFloat(String(tickerMetrics['$s6'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s5'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s4'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s3'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s2'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s1'] || 0).replace(/,/g, '')),
+                            parseFloat(String(tickerMetrics['$s0'] || 0).replace(/,/g, ''))
                           ]}
-                          labels={['Q0', 'Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6', 'Q7', 'Q8']}
+                          labels={['Q8', 'Q7', 'Q6', 'Q5', 'Q4', 'Q3', 'Q2', 'Q1', 'Q0']}
                           title="Quarterly Sales"
                           color="#3b82f6"
                           height={140}
