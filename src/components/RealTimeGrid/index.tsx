@@ -1309,19 +1309,19 @@ const RealTimeGrid: React.FC = () => {
     switch (colorCode) {
       case 'beats':
         // More obvious colors for earnings beats/misses with intensity levels
-        if (numValue > 20) return 'bg-green-300 dark:bg-green-700/50 text-green-950 dark:text-green-50 font-bold border border-green-400';
-        if (numValue > 0) return 'bg-green-200 dark:bg-green-800/40 text-green-900 dark:text-green-100 font-semibold';
-        if (numValue < -20) return 'bg-red-300 dark:bg-red-700/50 text-red-950 dark:text-red-50 font-bold border border-red-400';
-        if (numValue < 0) return 'bg-red-200 dark:bg-red-800/40 text-red-900 dark:text-red-100 font-semibold';
-        return 'bg-gray-200 dark:bg-gray-700/40 text-gray-900 dark:text-gray-100 font-medium';
+        if (numValue > 20) return 'bg-green-300 dark:bg-green-700/50 text-green-950 dark:text-green-50 border border-green-400';
+        if (numValue > 0) return 'bg-green-200 dark:bg-green-800/40 text-green-900 dark:text-green-100';
+        if (numValue < -20) return 'bg-red-300 dark:bg-red-700/50 text-red-950 dark:text-red-50 border border-red-400';
+        if (numValue < 0) return 'bg-red-200 dark:bg-red-800/40 text-red-900 dark:text-red-100';
+        return 'bg-gray-200 dark:bg-gray-700/40 text-gray-900 dark:text-gray-100';
       case 'performance':
         // More obvious colors for performance metrics with intensity levels
-        if (numValue > 100) return 'bg-green-300 dark:bg-green-700/50 text-green-950 dark:text-green-50 font-bold border border-green-400';
-        if (numValue > 50) return 'bg-green-200 dark:bg-green-800/40 text-green-900 dark:text-green-100 font-semibold';
-        if (numValue < -20) return 'bg-red-300 dark:bg-red-700/50 text-red-950 dark:text-red-50 font-bold border border-red-400';
-        if (numValue < 0) return 'bg-red-200 dark:bg-red-800/40 text-red-900 dark:text-red-100 font-semibold';
-        if (numValue < 20) return 'bg-orange-200 dark:bg-orange-700/40 text-orange-900 dark:text-orange-100 font-medium';
-        return 'bg-yellow-200 dark:bg-yellow-700/40 text-yellow-900 dark:text-yellow-100 font-medium';
+        if (numValue > 100) return 'bg-green-300 dark:bg-green-700/50 text-green-950 dark:text-green-50 border border-green-400';
+        if (numValue > 50) return 'bg-green-200 dark:bg-green-800/40 text-green-900 dark:text-green-100';
+        if (numValue < -20) return 'bg-red-300 dark:bg-red-700/50 text-red-950 dark:text-red-50 border border-red-400';
+        if (numValue < 0) return 'bg-red-200 dark:bg-red-800/40 text-red-900 dark:text-red-100';
+        if (numValue < 20) return 'bg-orange-200 dark:bg-orange-700/40 text-orange-900 dark:text-orange-100';
+        return 'bg-yellow-200 dark:bg-yellow-700/40 text-yellow-900 dark:text-yellow-100';
       default:
         return '';
     }
@@ -2210,7 +2210,7 @@ const RealTimeGrid: React.FC = () => {
                         column.type === 'number' || column.type === 'currency' || column.type === 'percentage'
                           ? 'text-right'
                           : 'text-left'
-                      } text-xs font-medium text-neutral-500 dark:text-neutral-400 border-r border-neutral-200 dark:border-neutral-700 select-none transition-colors group ${
+                      } text-xs text-neutral-500 dark:text-neutral-400 border-r border-neutral-200 dark:border-neutral-700 select-none transition-colors group ${
                         index === 0 ? 'sticky left-0 bg-neutral-50 dark:bg-neutral-800 z-20' : ''
                       } ${
                         draggedColumn === column.key
@@ -2249,8 +2249,8 @@ const RealTimeGrid: React.FC = () => {
                               className="flex items-center gap-1 hover:text-neutral-700 dark:hover:text-neutral-200 min-w-0 flex-1 overflow-hidden"
                               style={{ justifyContent: 'flex-start' }}
                             >
-                              <span 
-                                className="text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis"
+                              <span
+                                className="text-xs whitespace-nowrap overflow-hidden text-ellipsis"
                                 style={{ 
                                   fontSize: 'clamp(9px, 0.8vw, 12px)',
                                   maxWidth: '100%',
@@ -2267,8 +2267,8 @@ const RealTimeGrid: React.FC = () => {
                               )}
                             </button>
                           ) : (
-                            <span 
-                              className="text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis"
+                            <span
+                              className="text-xs whitespace-nowrap overflow-hidden text-ellipsis"
                               style={{ 
                                 fontSize: 'clamp(9px, 0.8vw, 12px)',
                                 maxWidth: '100%',
@@ -2326,7 +2326,7 @@ const RealTimeGrid: React.FC = () => {
                         <td
                           key={column.key}
                           className={`px-3 py-2 whitespace-nowrap text-sm border-r border-neutral-200 dark:border-neutral-700 ${cellColor} ${
-                            colIndex === 0 ? 'sticky left-0 bg-white dark:bg-neutral-900 z-10 font-medium' : ''
+                            colIndex === 0 ? 'sticky left-0 bg-white dark:bg-neutral-900 z-10' : ''
                           } ${
                             column.type === 'number' || column.type === 'currency' || column.type === 'percentage'
                               ? 'text-right'
