@@ -1682,7 +1682,60 @@ const RealTimeGrid: React.FC = () => {
           >
             {/* Compact Controls Header */}
             <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-3 sm:px-4 py-2">
+                            {/* Search */}
+                  <div className="flex items-center gap-2">
+                    <div className="relative" ref={searchDropdownRef}>
+                      <button
+                        onClick={() => setShowSearchDropdown(!showSearchDropdown)}
+                        className="flex items-center gap-1 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded border border-neutral-300 dark:border-neutral-600"
+                      >
+                        {searchableColumns.find(col => col.key === searchColumn)?.label || 'Ticker'}
+                        <ChevronDown size={12} />
+                      </button>
+                      
+                      {showSearchDropdown && (
+                        <div className="absolute left-0 top-full mt-1 w-40 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                          {searchableColumns.map((column) => (
+                            <button
+                              key={column.key}
+                              onClick={() => {
+                                setSearchColumn(column.key);
+                                setShowSearchDropdown(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 ${
+                                searchColumn === column.key 
+                                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' 
+                                  : 'text-neutral-900 dark:text-neutral-100'
+                              }`}
+                            >
+                              {column.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="relative">
+                      <Search size={16} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-neutral-500" />
+                      <input
+                        type="text"
+                        placeholder={`Search in ${searchableColumns.find(col => col.key === searchColumn)?.label || 'Ticker'}...`}
+                        value={searchValue}
+                        onChange={(e) => setSearchValue(e.target.value)}
+                        className="text-sm border border-neutral-300 dark:border-neutral-600 rounded-md pl-8 pr-3 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 w-48"
+                      />
+                    </div>
+                  </div>
+
+
+            </div>
+
+            {/* Filters */}
+            <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-3 sm:px-4 py-1">
               <div className="flex items-center justify-between max-w-full mx-auto">
+                <div className="flex items-center gap-4 flex-wrap">
+                 
+                  <div className="flex items-center justify-between max-w-full mx-auto">
                 <div className="flex items-center gap-2">
                   <div className="relative" ref={columnToggleRef}>
                     <button
@@ -1929,12 +1982,6 @@ const RealTimeGrid: React.FC = () => {
                 </div>
                 
               </div>
-            </div>
-
-            {/* Filters */}
-            <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-3 sm:px-4 py-1">
-              <div className="flex items-center justify-between max-w-full mx-auto">
-                <div className="flex items-center gap-4 flex-wrap">
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-neutral-600 dark:text-neutral-400">Watchlist Only</span>
                     <button
@@ -2041,66 +2088,14 @@ const RealTimeGrid: React.FC = () => {
                     )}
                   </div>
                   
-                  {/* Search */}
-                  <div className="flex items-center gap-2">
-                    <div className="relative" ref={searchDropdownRef}>
-                      <button
-                        onClick={() => setShowSearchDropdown(!showSearchDropdown)}
-                        className="flex items-center gap-1 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded border border-neutral-300 dark:border-neutral-600"
-                      >
-                        {searchableColumns.find(col => col.key === searchColumn)?.label || 'Ticker'}
-                        <ChevronDown size={12} />
-                      </button>
-                      
-                      {showSearchDropdown && (
-                        <div className="absolute left-0 top-full mt-1 w-40 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
-                          {searchableColumns.map((column) => (
-                            <button
-                              key={column.key}
-                              onClick={() => {
-                                setSearchColumn(column.key);
-                                setShowSearchDropdown(false);
-                              }}
-                              className={`w-full text-left px-3 py-2 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 ${
-                                searchColumn === column.key 
-                                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' 
-                                  : 'text-neutral-900 dark:text-neutral-100'
-                              }`}
-                            >
-                              {column.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="relative">
-                      <Search size={16} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-neutral-500" />
-                      <input
-                        type="text"
-                        placeholder={`Search in ${searchableColumns.find(col => col.key === searchColumn)?.label || 'Ticker'}...`}
-                        value={searchValue}
-                        onChange={(e) => setSearchValue(e.target.value)}
-                        className="text-sm border border-neutral-300 dark:border-neutral-600 rounded-md pl-8 pr-3 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 w-48"
-                      />
-                    </div>
-                  </div>
+   
                 </div>
                 
                 <div className="text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-2">
                   <div className="flex items-center gap-2">
-                    {/* WebSocket connection status removed - still using WebSocket but not showing UI status */}
                     
-                    {showWatchlistOnly && (
-                      <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
-                        Watchlist ({watchlist.length})
-                      </span>
-                    )}
-                    {searchValue.trim() && (
-                      <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">
-                        Filtered
-                      </span>
-                    )}
+           
+              
                   </div>
                 </div>
               </div>
