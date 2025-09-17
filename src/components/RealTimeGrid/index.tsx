@@ -2206,13 +2206,17 @@ const RealTimeGrid: React.FC = () => {
                   {orderedColumns.map((column, index) => (
                     <th
                       key={column.key}
-                      className={`px-2 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 border-r border-neutral-200 dark:border-neutral-700 select-none transition-colors group ${
+                      className={`px-2 py-2 ${
+                        column.type === 'number' || column.type === 'currency' || column.type === 'percentage'
+                          ? 'text-right'
+                          : 'text-left'
+                      } text-xs font-medium text-neutral-500 dark:text-neutral-400 border-r border-neutral-200 dark:border-neutral-700 select-none transition-colors group ${
                         index === 0 ? 'sticky left-0 bg-neutral-50 dark:bg-neutral-800 z-20' : ''
                       } ${
-                        draggedColumn === column.key 
-                          ? 'opacity-50' 
-                          : dragOverColumn === column.key 
-                            ? 'bg-blue-100 dark:bg-blue-900/30' 
+                        draggedColumn === column.key
+                          ? 'opacity-50'
+                          : dragOverColumn === column.key
+                            ? 'bg-blue-100 dark:bg-blue-900/30'
                             : ''
                       } relative`}
                       style={{ 
@@ -2323,6 +2327,10 @@ const RealTimeGrid: React.FC = () => {
                           key={column.key}
                           className={`px-3 py-2 whitespace-nowrap text-sm border-r border-neutral-200 dark:border-neutral-700 ${cellColor} ${
                             colIndex === 0 ? 'sticky left-0 bg-white dark:bg-neutral-900 z-10 font-medium' : ''
+                          } ${
+                            column.type === 'number' || column.type === 'currency' || column.type === 'percentage'
+                              ? 'text-right'
+                              : 'text-left'
                           } overflow-hidden text-ellipsis`}
                           style={{ 
                             width: getColumnWidth(column.key, column.width),
