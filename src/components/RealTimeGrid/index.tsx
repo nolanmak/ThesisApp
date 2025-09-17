@@ -377,7 +377,7 @@ const RealTimeGrid: React.FC = () => {
     { key: 'ticker', label: 'Ticker', width: 80, sortable: true, type: 'text' },
     { key: 'company_name', label: 'Company', width: 200, sortable: true, type: 'text' },
     { key: 'last_earnings_date', label: 'Last Earnings', width: 120, sortable: true, type: 'text' },
-    { key: 'link_timestamp', label: 'Time Released', width: 150, sortable: true, type: 'text' },
+    { key: 'release_time', label: 'Release Time', width: 120, sortable: true, type: 'text' },
     // Current Quarter Earnings
     { key: '$eps0', label: 'EPS Estimate', width: 110, sortable: true, type: 'number' },
     { key: '$qeps0', label: 'EPS Actual', width: 110, sortable: true, type: 'number', colorCode: 'beats' },
@@ -407,7 +407,7 @@ const RealTimeGrid: React.FC = () => {
     { key: 'ticker', label: 'Ticker' },
     { key: 'company_name', label: 'Company' },
     { key: 'last_earnings_date', label: 'Last Earnings' },
-    { key: 'link_timestamp', label: 'Time Released' },
+    { key: 'release_time', label: 'Release Time' },
     { key: '$eps0', label: 'EPS Estimate' },
     { key: '$qeps0', label: 'EPS Actual' },
     { key: '$salesqest', label: 'Rev Est' },
@@ -1255,35 +1255,21 @@ const RealTimeGrid: React.FC = () => {
         }
         return dateValue; // Return the date string as-is (2025-06-16 format)
 
-      case 'link_timestamp':
-        // Debug: Log complete ADBE response to see API structure
-        if (stock.ticker === 'ADBE') {
-          console.log('🔍 COMPLETE ADBE API RESPONSE:', JSON.stringify(stock, null, 2));
-        }
-
-        // Handle link timestamp - convert to user's local timezone and round to minute
-        const timestampValue = stock.link_timestamp;
-        if (!timestampValue || timestampValue === '' || timestampValue === 'null' || timestampValue === 'undefined') {
+      case 'release_time':
+        // Handle release time - convert to readable format
+        const releaseTimeValue = stock.release_time;
+        if (!releaseTimeValue || releaseTimeValue === '' || releaseTimeValue === 'null' || releaseTimeValue === 'undefined') {
           return null; // This will be formatted as N/A
         }
-        try {
-          const date = new Date(timestampValue);
-          if (isNaN(date.getTime())) {
-            return null; // Invalid date
-          }
-          // Format to user's local timezone, rounded to minute
-          const formatted = date.toLocaleString(undefined, {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true // Use 12-hour format with AM/PM
-          });
-          return formatted;
-        } catch (error) {
-          console.warn('Error parsing link_timestamp:', timestampValue, error);
-          return null;
+
+        // Convert release_time values to readable format
+        switch (releaseTimeValue.toLowerCase()) {
+          case 'before_market':
+            return 'Before Market';
+          case 'after_market':
+            return 'After Market';
+          default:
+            return releaseTimeValue; // Return as-is for any other values
         }
       default:
         return stock[columnKey];
