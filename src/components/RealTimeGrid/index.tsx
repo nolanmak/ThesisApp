@@ -1280,7 +1280,6 @@ const RealTimeGrid: React.FC = () => {
             minute: '2-digit',
             hour12: true // Use 12-hour format with AM/PM
           });
-          console.log('🕐 Formatted timestamp:', timestampValue, '→', formatted);
           return formatted;
         } catch (error) {
           console.warn('Error parsing link_timestamp:', timestampValue, error);
