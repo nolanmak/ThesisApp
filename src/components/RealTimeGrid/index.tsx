@@ -143,8 +143,16 @@ const RealTimeGrid: React.FC = () => {
         requestBody.end_date = endDate || startDate; // If single day, use same date for end
       }
 
+      // Debug: Log our request details
+      const method = Object.keys(requestBody).length > 0 ? 'POST' : 'GET';
+      console.log('📡 API REQUEST:', {
+        method,
+        url: METRICS_ENDPOINT,
+        body: Object.keys(requestBody).length > 0 ? requestBody : 'none'
+      });
+
       const response = await fetch(METRICS_ENDPOINT, {
-        method: Object.keys(requestBody).length > 0 ? 'POST' : 'GET',
+        method,
         headers: {
           'X-API-Key': API_KEY,
           'Content-Type': 'application/json',
@@ -157,6 +165,19 @@ const RealTimeGrid: React.FC = () => {
       }
 
       const data = await response.json();
+
+      // Debug: Log API response structure (first item only)
+      console.log('📥 API RESPONSE STRUCTURE:', {
+        totalMetrics: data.metrics?.length || 0,
+        responseKeys: Object.keys(data),
+        firstItemKeys: data.metrics?.[0] ? Object.keys(data.metrics[0]) : 'no metrics',
+        firstItemSample: data.metrics?.[0] ? {
+          ticker: data.metrics[0].ticker || data.metrics[0].id,
+          link_timestamp: data.metrics[0].link_timestamp,
+          linkTimestamp: data.metrics[0].linkTimestamp,
+          timestamp: data.metrics[0].timestamp
+        } : 'no first item'
+      });
 
       if (data.metrics && Array.isArray(data.metrics)) {
         // Log the new response structure for debugging
@@ -356,6 +377,7 @@ const RealTimeGrid: React.FC = () => {
     { key: 'ticker', label: 'Ticker', width: 80, sortable: true, type: 'text' },
     { key: 'company_name', label: 'Company', width: 200, sortable: true, type: 'text' },
     { key: 'last_earnings_date', label: 'Last Earnings', width: 120, sortable: true, type: 'text' },
+    { key: 'link_timestamp', label: 'Time Released', width: 150, sortable: true, type: 'text' },
     // Current Quarter Earnings
     { key: '$eps0', label: 'EPS Estimate', width: 110, sortable: true, type: 'number' },
     { key: '$qeps0', label: 'EPS Actual', width: 110, sortable: true, type: 'number', colorCode: 'beats' },
@@ -384,6 +406,8 @@ const RealTimeGrid: React.FC = () => {
   const searchableColumns = useMemo(() => [
     { key: 'ticker', label: 'Ticker' },
     { key: 'company_name', label: 'Company' },
+    { key: 'last_earnings_date', label: 'Last Earnings' },
+    { key: 'link_timestamp', label: 'Time Released' },
     { key: '$eps0', label: 'EPS Estimate' },
     { key: '$qeps0', label: 'EPS Actual' },
     { key: '$salesqest', label: 'Rev Est' },
@@ -1230,6 +1254,38 @@ const RealTimeGrid: React.FC = () => {
           return null; // This will be formatted as N/A
         }
         return dateValue; // Return the date string as-is (2025-06-16 format)
+
+      case 'link_timestamp':
+        // Debug: Log complete ADBE response to see API structure
+        if (stock.ticker === 'ADBE') {
+          console.log('🔍 COMPLETE ADBE API RESPONSE:', JSON.stringify(stock, null, 2));
+        }
+
+        // Handle link timestamp - convert to user's local timezone and round to minute
+        const timestampValue = stock.link_timestamp;
+        if (!timestampValue || timestampValue === '' || timestampValue === 'null' || timestampValue === 'undefined') {
+          return null; // This will be formatted as N/A
+        }
+        try {
+          const date = new Date(timestampValue);
+          if (isNaN(date.getTime())) {
+            return null; // Invalid date
+          }
+          // Format to user's local timezone, rounded to minute
+          const formatted = date.toLocaleString(undefined, {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true // Use 12-hour format with AM/PM
+          });
+          console.log('🕐 Formatted timestamp:', timestampValue, '→', formatted);
+          return formatted;
+        } catch (error) {
+          console.warn('Error parsing link_timestamp:', timestampValue, error);
+          return null;
+        }
       default:
         return stock[columnKey];
     }
