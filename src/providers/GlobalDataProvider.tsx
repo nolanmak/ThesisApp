@@ -49,6 +49,7 @@ export interface StockMetric {
   // New enriched fields from scheduling data
   company_name?: string; // Company name from scheduling data
   last_earnings_date?: string; // Last earnings date from scheduling data
+  link_timestamp?: string; // Timestamp when earnings link was released (ISO format)
   scheduled_dates?: string[]; // Array of scheduled dates in range
   [key: string]: any;
 }
