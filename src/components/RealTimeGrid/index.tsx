@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter, Eye, EyeOff, Search, GripVertical, Bookmark, Edit3, Plus, Trash2 } from 'lucide-react';
 // Removed useMetricsData import - now using local metrics fetching
 import { useWatchlist } from '../../hooks/useWatchlist';
-import AnalysisPanel from '../Earnings/ui/AnalysisPanel';
+import AnalysisPanelGrid from './componets/AnalysisPanelGrid';
 import useGlobalData from '../../hooks/useGlobalData';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { Message } from '../../types';
@@ -2355,7 +2355,7 @@ const RealTimeGrid: React.FC = () => {
           </div>
           
           {/* Analysis panel */}
-          <AnalysisPanel
+          <AnalysisPanelGrid
             selectedMessage={selectedMessage}
             isMobile={isMobile}
             showAnalysisPanel={showAnalysisPanel}
