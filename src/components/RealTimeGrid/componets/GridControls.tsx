@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, Calendar, Filter, Eye, EyeOff, Settings, Plus, Edit3, Trash2, GripVertical } from 'lucide-react';
+import { ChevronDown, Calendar, Filter, Eye, EyeOff, Settings, Plus, Edit3, Trash2, GripVertical, Bookmark } from 'lucide-react';
 
 interface GridControlsProps {
   // Search props
@@ -12,6 +12,10 @@ interface GridControlsProps {
   setShowSearchDropdown: (show: boolean) => void;
   searchDropdownRef: React.RefObject<HTMLDivElement>;
 
+  // Watchlist props
+  showWatchlistOnly: boolean;
+  setShowWatchlistOnly: (show: boolean) => void;
+
   // Filter props
   showDatePicker: boolean;
   setShowDatePicker: (show: boolean) => void;
@@ -20,7 +24,9 @@ interface GridControlsProps {
   endDate: string;
   setEndDate: (date: string) => void;
   datePickerRef: React.RefObject<HTMLDivElement>;
+  handleDatePickerOpen: () => void;
   handleDatePickerCancel: () => void;
+  handleDatePickerApply: () => void;
 
   // Column visibility props
   visibleColumns: Set<string>;
@@ -55,6 +61,8 @@ const GridControls: React.FC<GridControlsProps> = ({
   showSearchDropdown,
   setShowSearchDropdown,
   searchDropdownRef,
+  showWatchlistOnly,
+  setShowWatchlistOnly,
   showDatePicker,
   setShowDatePicker,
   startDate,
@@ -62,7 +70,9 @@ const GridControls: React.FC<GridControlsProps> = ({
   endDate,
   setEndDate,
   datePickerRef,
+  handleDatePickerOpen,
   handleDatePickerCancel,
+  handleDatePickerApply,
   visibleColumns,
   showColumnToggle,
   setShowColumnToggle,
@@ -85,8 +95,8 @@ const GridControls: React.FC<GridControlsProps> = ({
 }) => {
   return (
     <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-3 sm:px-4 py-2 bg-white dark:bg-neutral-900">
-      <div className="flex items-center gap-2">
-        {/* Search */}
+      {/* Row 1: Search */}
+      <div className="flex items-center gap-2 mb-2">
         <div className="flex items-center gap-2">
           <div className="relative" ref={searchDropdownRef}>
             <button
@@ -126,11 +136,27 @@ const GridControls: React.FC<GridControlsProps> = ({
             className="text-xs border border-neutral-300 dark:border-neutral-600 rounded px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 w-32"
           />
         </div>
+      </div>
+
+      {/* Row 2: All other controls */}
+      <div className="flex items-center gap-2">
+        {/* Watchlist Toggle */}
+        <button
+          onClick={() => setShowWatchlistOnly(!showWatchlistOnly)}
+          className={`flex items-center gap-1 px-2 py-1 text-xs rounded border transition-colors ${
+            showWatchlistOnly
+              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-600'
+              : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 border-neutral-300 dark:border-neutral-600'
+          }`}
+        >
+          <Bookmark size={12} className={showWatchlistOnly ? 'fill-current' : ''} />
+          Watchlist
+        </button>
 
         {/* Date Filter */}
         <div className="relative" ref={datePickerRef}>
           <button
-            onClick={() => setShowDatePicker(!showDatePicker)}
+            onClick={() => showDatePicker ? handleDatePickerCancel() : handleDatePickerOpen()}
             className="flex items-center gap-1 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded border border-neutral-300 dark:border-neutral-600"
           >
             <Calendar size={12} />
@@ -170,7 +196,7 @@ const GridControls: React.FC<GridControlsProps> = ({
                     Cancel
                   </button>
                   <button
-                    onClick={() => setShowDatePicker(false)}
+                    onClick={handleDatePickerApply}
                     className="text-xs px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                   >
                     Apply

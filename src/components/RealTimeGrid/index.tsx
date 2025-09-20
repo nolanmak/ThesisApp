@@ -3,6 +3,7 @@ import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Cal
 // Removed useMetricsData import - now using local metrics fetching
 import { useWatchlist } from '../../hooks/useWatchlist';
 import PanelHeader from './componets/PanelHeader';
+import GridControls from './componets/GridControls';
 import useGlobalData from '../../hooks/useGlobalData';
 import useMessagesData from '../Earnings/hooks/useMessagesData';
 import { useWebSocket } from '../../hooks/useWebSocket';
@@ -1654,6 +1655,49 @@ const RealTimeGrid: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full">
+      {/* Grid Controls Header - spans full width, separate from grid data */}
+      <GridControls
+        searchableColumns={searchableColumns}
+        searchColumn={searchColumn}
+        setSearchColumn={setSearchColumn}
+        searchValue={searchValue}
+        setSearchValue={setSearchValue}
+        showSearchDropdown={showSearchDropdown}
+        setShowSearchDropdown={setShowSearchDropdown}
+        searchDropdownRef={searchDropdownRef}
+        showWatchlistOnly={showWatchlistOnly}
+        setShowWatchlistOnly={setShowWatchlistOnly}
+        showDatePicker={showDatePicker}
+        setShowDatePicker={setShowDatePicker}
+        startDate={tempDateRange.start}
+        setStartDate={(date) => setTempDateRange(prev => ({...prev, start: date}))}
+        endDate={tempDateRange.end}
+        setEndDate={(date) => setTempDateRange(prev => ({...prev, end: date}))}
+        datePickerRef={datePickerRef}
+        handleDatePickerOpen={handleDatePickerOpen}
+        handleDatePickerCancel={handleDatePickerCancel}
+        handleDatePickerApply={handleDatePickerApply}
+        visibleColumns={visibleColumns}
+        showColumnToggle={showColumnToggle}
+        setShowColumnToggle={setShowColumnToggle}
+        columnToggleRef={columnToggleRef}
+        toggleColumnVisibility={toggleColumnVisibility}
+        allColumns={defaultColumns}
+        resetColumnOrder={resetColumnOrder}
+        resetColumnWidths={resetColumnWidths}
+        showViewsDropdown={showViewsDropdown}
+        setShowViewsDropdown={setShowViewsDropdown}
+        viewsDropdownRef={viewsDropdownRef}
+        savedViews={savedViews}
+        currentViewId={currentViewId}
+        applyView={applyView}
+        showSaveViewModal={showSaveViewModal}
+        setShowSaveViewModal={setShowSaveViewModal}
+        showEditViewModal={showEditViewModal}
+        setShowEditViewModal={setShowEditViewModal}
+        deleteView={deleteView}
+      />
+
       {/* Main content with two-column layout */}
       <div className="flex-1 min-h-0">
         <div 
@@ -1674,426 +1718,6 @@ const RealTimeGrid: React.FC = () => {
             }}
             className="bg-white dark:bg-neutral-900"
           >
-            {/* Compact Controls Header */}
-            <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-3 sm:px-4 py-2">
-                            {/* Search */}
-                  <div className="flex items-center gap-2">
-                    <div className="relative" ref={searchDropdownRef}>
-                      <button
-                        onClick={() => setShowSearchDropdown(!showSearchDropdown)}
-                        className="flex items-center gap-1 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded border border-neutral-300 dark:border-neutral-600"
-                      >
-                        {searchableColumns.find(col => col.key === searchColumn)?.label || 'Ticker'}
-                        <ChevronDown size={12} />
-                      </button>
-                      
-                      {showSearchDropdown && (
-                        <div className="absolute left-0 top-full mt-1 w-40 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
-                          {searchableColumns.map((column) => (
-                            <button
-                              key={column.key}
-                              onClick={() => {
-                                setSearchColumn(column.key);
-                                setShowSearchDropdown(false);
-                              }}
-                              className={`w-full text-left px-3 py-2 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 ${
-                                searchColumn === column.key 
-                                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' 
-                                  : 'text-neutral-900 dark:text-neutral-100'
-                              }`}
-                            >
-                              {column.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="relative">
-                      <Search size={16} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-neutral-500" />
-                      <input
-                        type="text"
-                        placeholder={`Search in ${searchableColumns.find(col => col.key === searchColumn)?.label || 'Ticker'}...`}
-                        value={searchValue}
-                        onChange={(e) => setSearchValue(e.target.value)}
-                        className="text-sm border border-neutral-300 dark:border-neutral-600 rounded-md pl-8 pr-3 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 w-48"
-                      />
-                    </div>
-                  </div>
-
-
-            </div>
-
-            {/* Filters */}
-            <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-3 sm:px-4 py-1">
-              <div className="flex items-center justify-between max-w-full mx-auto">
-                <div className="flex items-center gap-4 flex-wrap">
-                 
-                  <div className="flex items-center justify-between max-w-full mx-auto">
-                <div className="flex items-center gap-2">
-                  <div className="relative" ref={columnToggleRef}>
-                    <button
-                      onClick={() => setShowColumnToggle(!showColumnToggle)}
-                      className="flex items-center gap-1 px-2 py-1 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
-                      title="Toggle columns"
-                    >
-                      <Settings size={14} />
-                      Columns
-                    </button>
-                    
-                    {showColumnToggle && (
-                      <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
-                        <div className="p-3 border-b border-neutral-200 dark:border-neutral-700">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                              Column Settings
-                            </span>
-                            <button
-                              onClick={() => setShowColumnToggle(false)}
-                              className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
-                            >
-                              ×
-                            </button>
-                          </div>
-                          <div className="flex gap-2 mb-3">
-                            <button
-                              onClick={() => toggleAllColumns(true)}
-                              className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded hover:bg-blue-200 dark:hover:bg-blue-800"
-                            >
-                              Show All
-                            </button>
-                            <button
-                              onClick={() => toggleAllColumns(false)}
-                              className="text-xs px-2 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200 rounded hover:bg-neutral-200 dark:hover:bg-neutral-600"
-                            >
-                              Hide All
-                            </button>
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={resetColumnOrder}
-                              className="flex-1 text-xs px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded hover:bg-orange-200 dark:hover:bg-orange-800"
-                            >
-                              Reset Order
-                            </button>
-                            <button
-                              onClick={resetColumnWidths}
-                              className="flex-1 text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded hover:bg-purple-200 dark:hover:bg-purple-800"
-                            >
-                              Reset Widths
-                            </button>
-                          </div>
-                        </div>
-                        
-                        <div className="p-2">
-                          {defaultColumns.map((column) => (
-                            <label
-                              key={column.key}
-                              className="flex items-center gap-3 px-2 py-2 hover:bg-neutral-50 dark:hover:bg-neutral-700 rounded cursor-pointer"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={visibleColumns.has(column.key)}
-                                onChange={() => toggleColumnVisibility(column.key)}
-                                disabled={column.key === 'ticker'} // Always keep ticker visible
-                                className="rounded border-neutral-300 dark:border-neutral-600 text-blue-500 focus:ring-blue-500 disabled:opacity-50"
-                              />
-                              <div className="flex items-center gap-2 flex-1">
-                                {visibleColumns.has(column.key) ? (
-                                  <Eye size={14} className="text-blue-500" />
-                                ) : (
-                                  <EyeOff size={14} className="text-neutral-400" />
-                                )}
-                                <span className="text-sm text-neutral-900 dark:text-neutral-100">
-                                  {column.label}
-                                </span>
-                              </div>
-                            </label>
-                          ))}
-                        </div>
-                        
-                        <div className="p-2 border-t border-neutral-200 dark:border-neutral-700 text-xs text-neutral-500 dark:text-neutral-400">
-                          <div className="mb-1">
-                            {visibleColumns.size} of {defaultColumns.length} columns visible
-                          </div>
-                          {savedViews.find(view => view.name === AUTO_SAVE_VIEW_NAME) && (
-                            <div className="text-xs text-green-600 dark:text-green-400 opacity-75 mb-1">
-                              🔄 Auto-saved
-                            </div>
-                          )}
-                          {!isMobile && (
-                            <div className="text-xs text-neutral-400 dark:text-neutral-500 space-y-0.5">
-                              <div>💡 Drag column headers to reorder</div>
-                              <div>🔄 Drag right edge of headers to resize</div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Views Dropdown */}
-                  <div className="relative" ref={viewsDropdownRef}>
-                    <button
-                      onClick={() => setShowViewsDropdown(!showViewsDropdown)}
-                      className="flex items-center gap-1 px-2 py-1 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
-                      title="Manage views"
-                    >
-                      <Bookmark size={14} />
-                      Views
-                      {currentViewId && (
-                        <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-1.5 py-0.5 rounded">
-                          {savedViews.find(v => v.id === currentViewId)?.name}
-                        </span>
-                      )}
-                    </button>
-                    
-                    {showViewsDropdown && (
-                      <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
-                        <div className="p-3 border-b border-neutral-200 dark:border-neutral-700">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                              Saved Views
-                            </span>
-                            <button
-                              onClick={() => setShowViewsDropdown(false)}
-                              className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
-                            >
-                              ×
-                            </button>
-                          </div>
-                          <button
-                            onClick={() => {
-                              setShowSaveViewModal(true);
-                              setShowViewsDropdown(false);
-                            }}
-                            className="w-full flex items-center gap-2 px-3 py-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
-                          >
-                            <Plus size={14} />
-                            Save Current View
-                          </button>
-                        </div>
-                        
-                        <div className="p-2">
-                          {viewsLoading ? (
-                            <div className="flex items-center justify-center py-4">
-                              <RefreshCw size={16} className="animate-spin text-neutral-500" />
-                              <span className="ml-2 text-sm text-neutral-500">Loading views...</span>
-                            </div>
-                          ) : savedViews.length === 0 ? (
-                            <div className="text-center py-4">
-                              <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-2">
-                                No saved views yet
-                              </p>
-                              <p className="text-xs text-neutral-400 dark:text-neutral-500">
-                                Create your first view by clicking "Save Current View"
-                              </p>
-                            </div>
-                          ) : (
-                            savedViews.map((view) => (
-                              <div
-                                key={view.id}
-                                className={`flex items-center justify-between p-2 rounded hover:bg-neutral-50 dark:hover:bg-neutral-700 ${
-                                  currentViewId === view.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                                }`}
-                              >
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <button
-                                      onClick={() => {
-                                        applyView(view);
-                                        setShowViewsDropdown(false);
-                                      }}
-                                      className="text-left flex-1"
-                                    >
-                                      <div className="flex items-center gap-2">
-                                        <span className={`text-sm font-medium ${
-                                          currentViewId === view.id 
-                                            ? 'text-blue-700 dark:text-blue-300' 
-                                            : 'text-neutral-900 dark:text-neutral-100'
-                                        }`}>
-                                          {view.name}
-                                        </span>
-                                        {view.isDefault && (
-                                          <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-1.5 py-0.5 rounded">
-                                            Default
-                                          </span>
-                                        )}
-                                      </div>
-                                      {view.description && (
-                                        <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-                                          {view.description}
-                                        </p>
-                                      )}
-                                    </button>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1 ml-2">
-                                  <button
-                                    onClick={() => {
-                                      setEditingView(view);
-                                      setShowEditViewModal(true);
-                                      setShowViewsDropdown(false);
-                                    }}
-                                    className="p-1 text-neutral-400 hover:text-blue-600 dark:hover:text-blue-400"
-                                    title="Edit view"
-                                  >
-                                    <Edit3 size={12} />
-                                  </button>
-                                  {view.name !== AUTO_SAVE_VIEW_NAME && (
-                                    <button
-                                      onClick={() => {
-                                        if (confirm(`Are you sure you want to delete the view "${view.name}"?\n\nThis action cannot be undone.`)) {
-                                          deleteView(view.id);
-                                          setShowViewsDropdown(false);
-                                        }
-                                      }}
-                                      className="p-1 text-neutral-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                                      title="Delete view"
-                                    >
-                                      <Trash2 size={12} />
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                        
-                        {savedViews.length > 0 && (
-                          <div className="p-2 border-t border-neutral-200 dark:border-neutral-700 text-xs text-neutral-500 dark:text-neutral-400">
-                            <div>{savedViews.length} saved view{savedViews.length !== 1 ? 's' : ''}</div>
-                            {savedViews.find(view => view.name === AUTO_SAVE_VIEW_NAME) && (
-                              <div className="text-green-600 dark:text-green-400 opacity-75 mt-1">
-                                Auto-save enabled
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-              </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-neutral-600 dark:text-neutral-400">Watchlist Only</span>
-                    <button
-                      onClick={() => setShowWatchlistOnly(!showWatchlistOnly)}
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                        showWatchlistOnly 
-                          ? 'bg-blue-500 dark:bg-blue-600' 
-                          : 'bg-neutral-300 dark:bg-neutral-600'
-                      }`}
-                      role="switch"
-                      aria-checked={showWatchlistOnly}
-                      aria-label="Toggle watchlist only filter"
-                    >
-                      <span
-                        className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-sm transition-transform ${
-                          showWatchlistOnly ? 'translate-x-5' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 relative" ref={datePickerRef}>
-                    <Calendar size={16} className="text-neutral-500" />
-                    <button
-                      onClick={handleDatePickerOpen}
-                      className="text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-3 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 hover:border-neutral-400 dark:hover:border-neutral-500 flex items-center gap-2 min-w-[200px] justify-between"
-                      disabled={isLoading}
-                    >
-                      <span className="text-left">
-                        {dateRange.start && dateRange.end && dateRange.start !== dateRange.end
-                          ? `${dateRange.start} to ${dateRange.end}`
-                          : dateRange.start
-                          ? dateRange.start
-                          : 'Select earnings date'}
-                      </span>
-                      <ChevronDown size={14} className={`transition-transform ${showDatePicker ? 'rotate-180' : ''}`} />
-                    </button>
-                    
-                    {isLoading && (
-                      <RefreshCw size={14} className="animate-spin text-neutral-500" />
-                    )}
-                    
-                    {(dateRange.start || dateRange.end) && !isLoading && (
-                      <button
-                        onClick={handleDatePickerClear}
-                        className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 px-2 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
-                        title="Clear earnings date filter"
-                      >
-                        Clear
-                      </button>
-                    )}
-
-                    {/* Date Range Picker Dropdown */}
-                    {showDatePicker && (
-                      <div className="absolute top-full left-0 mt-1 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-lg p-4 z-50 min-w-[320px]">
-                        <div className="space-y-3">
-                          <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
-                            Filter by earnings announcement date
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 w-16">From:</label>
-                            <input
-                              type="date"
-                              value={tempDateRange.start}
-                              onChange={(e) => setTempDateRange(prev => ({...prev, start: e.target.value}))}
-                              max={maxDate}
-                              className="text-sm border border-neutral-300 dark:border-neutral-600 rounded px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 flex-1"
-                            />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 w-16">To:</label>
-                            <input
-                              type="date"
-                              value={tempDateRange.end}
-                              onChange={(e) => setTempDateRange(prev => ({...prev, end: e.target.value}))}
-                              max={maxDate}
-                              className="text-sm border border-neutral-300 dark:border-neutral-600 rounded px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 flex-1"
-                            />
-                          </div>
-                          <div className="flex justify-between pt-2 border-t border-neutral-200 dark:border-neutral-700">
-                            <div className="flex gap-2">
-                              <button
-                                onClick={handleDatePickerClear}
-                                className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 px-3 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
-                              >
-                                Clear All
-                              </button>
-                              <button
-                                onClick={handleDatePickerCancel}
-                                className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 px-3 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                            <button
-                              onClick={handleDatePickerApply}
-                              className="text-xs bg-primary-500 hover:bg-primary-600 text-white px-3 py-1 rounded"
-                            >
-                              Apply
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-   
-                </div>
-                
-                <div className="text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-2">
-                  <div className="flex items-center gap-2">
-                    
-           
-              
-                  </div>
-                </div>
-              </div>
-            </div>
 
             {/* Grid Content */}
             <div className="flex-1 overflow-hidden">
