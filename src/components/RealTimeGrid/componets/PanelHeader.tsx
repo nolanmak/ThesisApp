@@ -53,7 +53,7 @@ const PanelHeader: React.FC<PanelHeaderProps> = ({
           <div className={`
             ${isCollapsed
               ? 'bg-white dark:bg-neutral-800 px-3 py-2 border-b border-neutral-200 dark:border-neutral-800'
-              : 'bg-white dark:bg-neutral-800 p-6 rounded-md shadow border border-[#f1f1f1] dark:border-neutral-700 pb-4 border-b border-neutral-200 dark:border-neutral-700 mb-4'
+              : 'bg-white dark:bg-neutral-800 p-6 rounded-t-md shadow border border-[#f1f1f1] dark:border-neutral-700 border-b-0'
             }
           `}>
             {/* Title row */}
@@ -161,7 +161,7 @@ const PanelHeader: React.FC<PanelHeaderProps> = ({
 
           {/* Collapsible content - AnalysisPanelGrid */}
           {!isCollapsed && (
-            <div className="bg-white dark:bg-neutral-800 p-6 rounded-md shadow border border-[#f1f1f1] dark:border-neutral-700 mt-2">
+            <div className="bg-white dark:bg-neutral-800 p-6 rounded-b-md shadow border border-[#f1f1f1] dark:border-neutral-700 border-t-0">
               <AnalysisPanelGrid
                 selectedMessage={selectedMessage}
                 isMobile={isMobile}

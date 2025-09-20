@@ -251,6 +251,7 @@ const RealTimeGrid: React.FC = () => {
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [tickerMessages, setTickerMessages] = useState<Message[]>([]);
   const [tickerMessagesLoading, setTickerMessagesLoading] = useState<boolean>(false);
+  const [initialTickerSet, setInitialTickerSet] = useState<boolean>(false);
   
   // Search state
   const [searchValue, setSearchValue] = useState<string>('');
@@ -635,6 +636,75 @@ const RealTimeGrid: React.FC = () => {
     // Update ticker messages for AnalysisPanel
     setTickerMessages(newestMessages);
   }, [selectedTicker, messages]);
+
+  // Fetch ticker-specific messages (now supplementary to real-time websocket data)
+  const fetchTickerMessages = useCallback(async (ticker: string) => {
+    console.log(`🔍 Fetching API messages for ticker: ${ticker}`);
+    setTickerMessagesLoading(true);
+    try {
+      // Import the API function from your existing services
+      const { getMessages } = await import('../../services/api');
+
+      // Use the existing getMessages function with ticker search
+      const data = await getMessages(50, undefined, ticker.toUpperCase());
+
+      console.log(`📡 API returned ${data.messages?.length || 0} messages for ${ticker}`);
+
+      // Note: Don't set ticker messages directly here anymore since real-time websocket
+      // handling will take care of processing and filtering messages
+      // This is just to ensure we have the latest data from API to supplement websocket
+
+      if (data.messages && data.messages.length > 0) {
+        console.log(`✅ API fetch complete for ${ticker}, websocket will process messages`);
+      } else {
+        console.log(`⚠️ No messages found via API for ${ticker}`);
+        // If no API messages found, clear the selected message
+        setSelectedMessage(null);
+      }
+
+    } catch (error) {
+      console.error('Error fetching ticker messages via API:', error);
+      // Don't clear ticker messages here - let the websocket handling manage the state
+    } finally {
+      setTickerMessagesLoading(false);
+    }
+  }, []);
+
+  // Auto-select ticker based on newest message on initial load (similar to Earnings page)
+  useEffect(() => {
+    if (!initialTickerSet && (globalMessages.length > 0 || messages.length > 0) && !loading) {
+      // Use globalMessages first for faster loading, fallback to combined messages
+      const messagesToCheck = globalMessages.length > 0 ? globalMessages : messages;
+
+      // Filter messages that are not just links (prefer analysis messages)
+      const analysisMessages = messagesToCheck.filter(msg => !msg.link);
+
+      let selectedMessage;
+      if (analysisMessages.length > 0) {
+        // Sort analysis messages by timestamp (newest first) and select the newest one
+        const sortedAnalysisMessages = [...analysisMessages].sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+        selectedMessage = sortedAnalysisMessages[0];
+      } else if (messagesToCheck.length > 0) {
+        // Fallback to newest message overall if no analysis messages
+        const sortedMessages = [...messagesToCheck].sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+        selectedMessage = sortedMessages[0];
+      }
+
+      if (selectedMessage && selectedMessage.ticker) {
+        console.log(`🎯 Auto-selecting ticker from newest message: ${selectedMessage.ticker}`);
+        setSelectedTicker(selectedMessage.ticker);
+        setSelectedMessage(selectedMessage);
+        setShowAnalysisPanel(true);
+        fetchTickerMessages(selectedMessage.ticker);
+      }
+
+      setInitialTickerSet(true);
+    }
+  }, [globalMessages, messages, loading, initialTickerSet, fetchTickerMessages]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -1560,38 +1630,6 @@ const RealTimeGrid: React.FC = () => {
     setDragOverColumn(null);
   };
 
-  // Fetch ticker-specific messages (now supplementary to real-time websocket data)
-  const fetchTickerMessages = useCallback(async (ticker: string) => {
-    console.log(`🔍 Fetching API messages for ticker: ${ticker}`);
-    setTickerMessagesLoading(true);
-    try {
-      // Import the API function from your existing services
-      const { getMessages } = await import('../../services/api');
-      
-      // Use the existing getMessages function with ticker search
-      const data = await getMessages(50, undefined, ticker.toUpperCase());
-      
-      console.log(`📡 API returned ${data.messages?.length || 0} messages for ${ticker}`);
-      
-      // Note: Don't set ticker messages directly here anymore since real-time websocket
-      // handling will take care of processing and filtering messages
-      // This is just to ensure we have the latest data from API to supplement websocket
-      
-      if (data.messages && data.messages.length > 0) {
-        console.log(`✅ API fetch complete for ${ticker}, websocket will process messages`);
-      } else {
-        console.log(`⚠️ No messages found via API for ${ticker}`);
-        // If no API messages found, clear the selected message
-        setSelectedMessage(null);
-      }
-      
-    } catch (error) {
-      console.error('Error fetching ticker messages via API:', error);
-      // Don't clear ticker messages here - let the websocket handling manage the state
-    } finally {
-      setTickerMessagesLoading(false);
-    }
-  }, []);
 
   // Handle row click to select ticker and fetch messages
   const handleTickerRowClick = useCallback(async (ticker: string) => {
