@@ -240,6 +240,7 @@ const RealTimeGrid: React.FC = () => {
   const [initialMessageSet, setInitialMessageSet] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showAnalysisPanel, setShowAnalysisPanel] = useState(false);
+  const [isAnalysisPanelCollapsed, setIsAnalysisPanelCollapsed] = useState(false);
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [tickerMessages, setTickerMessages] = useState<Message[]>([]);
   const [tickerMessagesLoading, setTickerMessagesLoading] = useState<boolean>(false);
@@ -1671,10 +1672,10 @@ const RealTimeGrid: React.FC = () => {
           {/* Grid panel */}
           <div 
             style={{
-              width: isMobile ? '100%' : '65%',
+              width: isMobile ? '100%' : showAnalysisPanel ? '45%' : '100%',
               display: isMobile && showAnalysisPanel ? 'none' : 'flex',
               flexDirection: 'column',
-              marginRight: isMobile ? 0 : '1rem',
+              marginRight: isMobile ? 0 : showAnalysisPanel ? '1rem' : 0,
               height: '100%',
               minHeight: 0
             }}
@@ -2364,6 +2365,8 @@ const RealTimeGrid: React.FC = () => {
             setFeedbackModalOpen={setFeedbackModalOpen}
             messages={selectedTicker ? tickerMessages : messages}
             selectedTicker={selectedTicker}
+            isCollapsed={isAnalysisPanelCollapsed}
+            onCollapseToggle={setIsAnalysisPanelCollapsed}
           />
         </div>
       </div>

@@ -561,6 +561,8 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
             </div>
 
             {/* Collapsible content area */}
+            {!isCollapsed && (
+            <>
             {/* Tabs row - show if any tabs available */}
             {availableTabs.length > 0 && (
               <div className="flex bg-neutral-100 dark:bg-neutral-700 rounded-lg p-1">
@@ -922,13 +924,14 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                 )}
               </div>
             </div>
+            </>
+            )}
           </div>
-        </div>
-      ) : (
-        <div className="h-full flex items-center justify-center text-neutral-500 dark:text-neutral-400">
-          <p>Select a message to view analysis</p>
-        </div>
-      )}
+        ) : (
+          <div className="h-full flex items-center justify-center text-neutral-500 dark:text-neutral-400">
+            <p>Select a message to view analysis</p>
+          </div>
+        )}
     </div>
   );
 };
