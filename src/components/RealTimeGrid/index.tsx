@@ -553,33 +553,38 @@ const RealTimeGrid: React.FC = () => {
     // If we have genuinely new messages, auto-select the newest one from ANY ticker
     if (genuinelyNewMessages.length > 0) {
       console.log(`🆕 RealTimeGrid: Found ${genuinelyNewMessages.length} genuinely new messages`);
-      
+
+      // Check if any new messages are for the currently selected ticker
+      const newMessagesForSelectedTicker = genuinelyNewMessages.filter(msg =>
+        selectedTicker && msg.ticker && msg.ticker.toUpperCase() === selectedTicker.toUpperCase()
+      );
+
+      if (newMessagesForSelectedTicker.length > 0) {
+        console.log(`🔄 RealTimeGrid: Found ${newMessagesForSelectedTicker.length} new messages for current ticker ${selectedTicker}, analysis panel will update automatically`);
+        // The analysis panel will automatically update since it receives the updated messages array
+      }
+
       // Sort all new messages by timestamp (newest first) and select the newest one
       const newestMessage = genuinelyNewMessages.sort(
         (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       )[0];
-      
+
       console.log(`🎯 RealTimeGrid: Auto-selecting newest message from ANY ticker (${newestMessage.ticker}):`, newestMessage.message_id?.substring(0, 8) || newestMessage.id?.substring(0, 8));
-      
+
       // Update selected message to the newest one from any ticker
       setSelectedMessage(newestMessage);
-      
+
       // Also update the selected ticker to match the new message
       if (newestMessage.ticker) {
         console.log(`📍 RealTimeGrid: Switching selected ticker to ${newestMessage.ticker}`);
         setSelectedTicker(newestMessage.ticker);
         setShowAnalysisPanel(true); // Ensure analysis panel is visible
-        
-        // Note: fetchTickerMessages will be called automatically when selectedTicker changes
-        // due to the existing useEffect that handles ticker selection
       }
     }
     
     // Update the previous messages ref
     prevMessagesRef.current = messages;
   }, [messages]);
-
-  // The AnalysisPanel component handles message filtering internally, so no need for complex processing here
 
   // Fetch ticker-specific messages (now supplementary to real-time websocket data)
   const fetchTickerMessages = useCallback(async (ticker: string) => {
@@ -604,6 +609,14 @@ const RealTimeGrid: React.FC = () => {
       console.error('Error fetching ticker messages via API:', error);
     }
   }, []);
+
+  // Ensure we have the latest messages when ticker selection changes
+  useEffect(() => {
+    if (selectedTicker) {
+      console.log(`🔄 RealTimeGrid: Selected ticker changed to ${selectedTicker}, ensuring latest messages`);
+      fetchTickerMessages(selectedTicker);
+    }
+  }, [selectedTicker, fetchTickerMessages]);
 
   // Auto-select ticker based on newest message on initial load (similar to Earnings page)
   useEffect(() => {
