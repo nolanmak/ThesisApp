@@ -105,9 +105,10 @@ const RealTimeGrid: React.FC = () => {
     persistConnection: true // Keep connection alive for real-time updates
   });
 
-  // Combine comprehensive messages and real-time messages (like Earnings page)
+  // Combine all message sources (optimized for faster loading)
   const messages = useMemo(() => {
-    const combined = [...comprehensiveMessages, ...realtimeMessages];
+    // Prioritize globalMessages for faster initial load, then add comprehensive and realtime
+    const combined = [...globalMessages, ...comprehensiveMessages, ...realtimeMessages];
 
     // Remove duplicates based on message_id or id
     const seen = new Set();
@@ -125,10 +126,10 @@ const RealTimeGrid: React.FC = () => {
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
 
-    console.log(`📊 RealTimeGrid: Combined messages - Comprehensive: ${comprehensiveMessages.length}, Realtime: ${realtimeMessages.length}, Unique: ${sorted.length}`);
+    console.log(`📊 RealTimeGrid: Combined messages - Global: ${globalMessages.length}, Comprehensive: ${comprehensiveMessages.length}, Realtime: ${realtimeMessages.length}, Unique: ${sorted.length}`);
 
     return sorted;
-  }, [comprehensiveMessages, realtimeMessages]);
+  }, [globalMessages, comprehensiveMessages, realtimeMessages]);
 
   // User authentication for views
   const { user } = useAuth();
@@ -249,8 +250,6 @@ const RealTimeGrid: React.FC = () => {
   const [showAnalysisPanel, setShowAnalysisPanel] = useState(false);
   const [isAnalysisPanelCollapsed, setIsAnalysisPanelCollapsed] = useState(false);
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
-  const [tickerMessages, setTickerMessages] = useState<Message[]>([]);
-  const [tickerMessagesLoading, setTickerMessagesLoading] = useState<boolean>(false);
   const [initialTickerSet, setInitialTickerSet] = useState<boolean>(false);
   
   // Search state
@@ -580,67 +579,11 @@ const RealTimeGrid: React.FC = () => {
     prevMessagesRef.current = messages;
   }, [messages]);
 
-  // Process ticker-specific messages for AnalysisPanel
-  useEffect(() => {
-    if (!selectedTicker) {
-      setTickerMessages([]);
-      return;
-    }
-
-    console.log(`🔍 RealTimeGrid: Processing messages for ticker: ${selectedTicker}`);
-
-    // Filter messages for the selected ticker
-    const tickerSpecificMessages = messages.filter(msg => 
-      msg.ticker && msg.ticker.toUpperCase() === selectedTicker.toUpperCase()
-    );
-
-    console.log(`🎯 Found ${tickerSpecificMessages.length} messages for ${selectedTicker}`);
-
-    if (tickerSpecificMessages.length === 0) {
-      console.log(`⚠️ No messages found for ${selectedTicker}, clearing ticker messages`);
-      setTickerMessages([]);
-      return;
-    }
-
-    // Group messages by type and get the newest for each type
-    const getMessageType = (message: Message): string => {
-      if (message.link || message.report_data?.link || 
-          message.source?.toLowerCase() === 'link' || 
-          message.type?.toLowerCase() === 'link') return 'report';
-      if (message.source === 'transcript_analysis') return 'transcript';
-      if (message.source === 'sentiment_analysis' || message.sentiment_additional_metrics) return 'sentiment';
-      if (message.source === 'fundamentals_analysis') return 'fundamentals';
-      return 'earnings';
-    };
-
-    const messagesByType: Record<string, Message> = {};
-    
-    tickerSpecificMessages.forEach((message: Message) => {
-      const messageType = getMessageType(message);
-      
-      // If we don't have a message of this type yet, or this message is newer
-      if (!messagesByType[messageType] || 
-          new Date(message.timestamp) > new Date(messagesByType[messageType].timestamp)) {
-        messagesByType[messageType] = message;
-      }
-    });
-    
-    // Convert to array and sort by timestamp (newest first)
-    const newestMessages = Object.values(messagesByType).sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
-    
-    console.log(`📈 Processed message types for ${selectedTicker}:`, 
-      newestMessages.map(msg => `${getMessageType(msg)}(${msg.message_id?.substring(0, 8) || msg.id?.substring(0, 8) || 'no-id'})`));
-    
-    // Update ticker messages for AnalysisPanel
-    setTickerMessages(newestMessages);
-  }, [selectedTicker, messages]);
+  // The AnalysisPanel component handles message filtering internally, so no need for complex processing here
 
   // Fetch ticker-specific messages (now supplementary to real-time websocket data)
   const fetchTickerMessages = useCallback(async (ticker: string) => {
     console.log(`🔍 Fetching API messages for ticker: ${ticker}`);
-    setTickerMessagesLoading(true);
     try {
       // Import the API function from your existing services
       const { getMessages } = await import('../../services/api');
@@ -650,23 +593,15 @@ const RealTimeGrid: React.FC = () => {
 
       console.log(`📡 API returned ${data.messages?.length || 0} messages for ${ticker}`);
 
-      // Note: Don't set ticker messages directly here anymore since real-time websocket
-      // handling will take care of processing and filtering messages
-      // This is just to ensure we have the latest data from API to supplement websocket
-
+      // This ensures we have the latest data from API to supplement websocket and global messages
       if (data.messages && data.messages.length > 0) {
-        console.log(`✅ API fetch complete for ${ticker}, websocket will process messages`);
+        console.log(`✅ API fetch complete for ${ticker}, messages will be available through global data`);
       } else {
         console.log(`⚠️ No messages found via API for ${ticker}`);
-        // If no API messages found, clear the selected message
-        setSelectedMessage(null);
       }
 
     } catch (error) {
       console.error('Error fetching ticker messages via API:', error);
-      // Don't clear ticker messages here - let the websocket handling manage the state
-    } finally {
-      setTickerMessagesLoading(false);
     }
   }, []);
 
@@ -2411,7 +2346,7 @@ const RealTimeGrid: React.FC = () => {
             setFeedbackModalOpen={setFeedbackModalOpen}
             isCollapsed={isAnalysisPanelCollapsed}
             onCollapseToggle={setIsAnalysisPanelCollapsed}
-            messages={selectedTicker ? tickerMessages : messages}
+            messages={messages}
           />
         </div>
       </div>
