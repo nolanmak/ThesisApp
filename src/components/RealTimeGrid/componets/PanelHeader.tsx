@@ -49,16 +49,17 @@ const PanelHeader: React.FC<PanelHeaderProps> = ({
     >
       {selectedMessage || currentTicker ? (
         <div className="flex flex-col">
-          {/* Header - Always visible */}
+          {/* Header - Always visible with consistent size */}
           <div className={`
+            bg-white dark:bg-neutral-800 px-6 py-4
             ${isCollapsed
-              ? 'bg-white dark:bg-neutral-800 px-3 py-2 border-b border-neutral-200 dark:border-neutral-800'
-              : 'bg-white dark:bg-neutral-800 p-6 rounded-t-md shadow border border-[#f1f1f1] dark:border-neutral-700 border-b-0'
+              ? 'border-b border-neutral-200 dark:border-neutral-800'
+              : 'rounded-t-md shadow border border-[#f1f1f1] dark:border-neutral-700 border-b-0'
             }
           `}>
             {/* Title row */}
             <div
-              className={`flex items-center justify-between ${isCollapsed ? 'mb-0' : 'mb-3'}`}
+              className="flex items-center justify-between"
               style={{
                 flexWrap: isMobile ? 'wrap' : 'nowrap',
                 gap: isMobile ? '8px' : undefined
