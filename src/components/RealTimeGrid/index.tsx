@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter, Eye, EyeOff, Search, GripVertical, Bookmark, Edit3, Plus, Trash2 } from 'lucide-react';
 // Removed useMetricsData import - now using local metrics fetching
 import { useWatchlist } from '../../hooks/useWatchlist';
-import AnalysisPanelGrid from './componets/AnalysisPanelGrid';
+import PanelHeader from './componets/PanelHeader';
 import useGlobalData from '../../hooks/useGlobalData';
+import useMessagesData from '../Earnings/hooks/useMessagesData';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { Message } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
@@ -63,6 +64,12 @@ const RealTimeGrid: React.FC = () => {
     messagesLoading: loading
   } = useGlobalData();
 
+  // Get comprehensive messages data (like Earnings page)
+  const {
+    messages: comprehensiveMessages,
+    loading: messagesLoading
+  } = useMessagesData();
+
   // State for real-time messages from websocket
   const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
 
@@ -98,10 +105,10 @@ const RealTimeGrid: React.FC = () => {
     persistConnection: true // Keep connection alive for real-time updates
   });
 
-  // Combine global messages and real-time messages
+  // Combine comprehensive messages and real-time messages (like Earnings page)
   const messages = useMemo(() => {
-    const combined = [...globalMessages, ...realtimeMessages];
-    
+    const combined = [...comprehensiveMessages, ...realtimeMessages];
+
     // Remove duplicates based on message_id or id
     const seen = new Set();
     const unique = combined.filter(msg => {
@@ -112,16 +119,16 @@ const RealTimeGrid: React.FC = () => {
       seen.add(id);
       return true;
     });
-    
+
     // Sort by timestamp (newest first)
     const sorted = unique.sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
-    
-    console.log(`📊 RealTimeGrid: Combined messages - Global: ${globalMessages.length}, Realtime: ${realtimeMessages.length}, Unique: ${sorted.length}`);
-    
+
+    console.log(`📊 RealTimeGrid: Combined messages - Comprehensive: ${comprehensiveMessages.length}, Realtime: ${realtimeMessages.length}, Unique: ${sorted.length}`);
+
     return sorted;
-  }, [globalMessages, realtimeMessages]);
+  }, [comprehensiveMessages, realtimeMessages]);
 
   // User authentication for views
   const { user } = useAuth();
@@ -1670,9 +1677,9 @@ const RealTimeGrid: React.FC = () => {
           }}
         >
           {/* Grid panel */}
-          <div 
+          <div
             style={{
-              width: isMobile ? '100%' : showAnalysisPanel ? '45%' : '100%',
+              width: isMobile ? '100%' : (showAnalysisPanel && !isAnalysisPanelCollapsed) ? '72.5%' : '100%',
               display: isMobile && showAnalysisPanel ? 'none' : 'flex',
               flexDirection: 'column',
               marginRight: isMobile ? 0 : showAnalysisPanel ? '1rem' : 0,
@@ -2355,18 +2362,18 @@ const RealTimeGrid: React.FC = () => {
             </div>
           </div>
           
-          {/* Analysis panel */}
-          <AnalysisPanelGrid
+          {/* Analysis panel header - always visible when showAnalysisPanel is true */}
+          <PanelHeader
             selectedMessage={selectedMessage}
+            selectedTicker={selectedTicker}
             isMobile={isMobile}
             showAnalysisPanel={showAnalysisPanel}
             convertToEasternTime={convertToEasternTime}
             handleCloseAnalysisPanel={handleCloseAnalysisPanel}
             setFeedbackModalOpen={setFeedbackModalOpen}
-            messages={selectedTicker ? tickerMessages : messages}
-            selectedTicker={selectedTicker}
             isCollapsed={isAnalysisPanelCollapsed}
             onCollapseToggle={setIsAnalysisPanelCollapsed}
+            messages={selectedTicker ? tickerMessages : messages}
           />
         </div>
       </div>

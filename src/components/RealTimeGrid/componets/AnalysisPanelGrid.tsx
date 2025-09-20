@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Message } from '../../../types';
-import { ThumbsDown, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { ParseMessagePayload, ParseTranscriptData, ParseSentimentData, ParseSwingAnalysisData } from '../../Earnings/utils/messageUtils';
 import useGlobalData from '../../../hooks/useGlobalData';
 
@@ -8,40 +7,21 @@ interface AnalysisPanelProps {
   selectedMessage: Message | null;
   isMobile: boolean;
   showAnalysisPanel: boolean;
-  convertToEasternTime: (utcTimestamp: string) => string;
-  handleCloseAnalysisPanel: () => void;
-  setFeedbackModalOpen: (open: boolean) => void;
   messages?: Message[]; // Add messages prop to access all messages for tab filtering
   selectedTicker?: string | null; // Add selected ticker from RealTimeGrid
   isCollapsed?: boolean;
-  onCollapseToggle?: (collapsed: boolean) => void;
 }
 
 const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   selectedMessage,
   isMobile,
   showAnalysisPanel,
-  convertToEasternTime,
-  handleCloseAnalysisPanel,
-  setFeedbackModalOpen,
   messages = [],
   selectedTicker = null,
-  isCollapsed: propsIsCollapsed,
-  onCollapseToggle
+  isCollapsed = false
 }) => {
   const [activeTab, setActiveTab] = useState<string>('earnings');
-  const [internalIsCollapsed, setInternalIsCollapsed] = useState(false);
   const { metricsData } = useGlobalData();
-
-  // Use props if provided, otherwise use internal state
-  const isCollapsed = propsIsCollapsed !== undefined ? propsIsCollapsed : internalIsCollapsed;
-  const handleCollapseToggle = () => {
-    if (onCollapseToggle) {
-      onCollapseToggle(!isCollapsed);
-    } else {
-      setInternalIsCollapsed(!isCollapsed);
-    }
-  };
   
   // Get message type for tab identification
   const getMessageType = (message: Message): string => {
@@ -454,144 +434,47 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     );
   };
 
+  // Don't render if collapsed or no panel should be shown
+  if (isCollapsed || !showAnalysisPanel) {
+    return null;
+  }
+
   return (
-    <div
-    className={`
-      ${isMobile
-        ? showAnalysisPanel
-          ? 'flex w-full h-full absolute inset-0 z-10'
-          : 'hidden'
-        : 'flex w-[55%] relative'}
-      flex-col bg-white dark:bg-neutral-800 p-6 rounded-md shadow border border-[#f1f1f1] dark:border-neutral-700 transition-all duration-300
-      ${isCollapsed ? 'h-auto' : 'h-full'}
-    `}
+    <div className="flex-1 flex flex-col overflow-hidden"
     >
       {selectedMessage || currentTicker ? (
-        <div className={`${isCollapsed ? 'h-auto' : 'h-full'} flex flex-col`}>
-          {/* Header - Always visible */}
-          <div className="pb-4 border-b border-neutral-200 dark:border-neutral-700 mb-4">
-            {/* Title row */}
-            <div 
-              className="flex items-center justify-between mb-3"
-              style={{
-                flexWrap: isMobile ? 'wrap' : 'nowrap',
-                gap: isMobile ? '8px' : undefined
-              }}
-            >
-              <div 
-                className="flex items-center space-x-2"
-                style={{
-                  flexWrap: isMobile ? 'wrap' : 'nowrap',
-                  gap: isMobile ? '8px' : undefined,
-                  width: isMobile ? 'calc(100% - 30px)' : undefined
-                }}
-              >
-                <div 
-                  className="flex items-center bg-primary-50 dark:bg-primary-900/30 px-3 py-1 rounded-md"
+        <div className="h-full flex flex-col">
+          {/* Tabs row - show if any tabs available */}
+          {availableTabs.length > 0 && (
+            <div className="flex bg-neutral-100 dark:bg-neutral-700 rounded-lg p-1 mb-4">
+              {availableTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-1 rounded-md transition-colors text-center truncate whitespace-nowrap overflow-hidden ${
+                    activeTab === tab.id
+                      ? `${tab.colors.active} shadow-sm`
+                      : tab.colors.inactive
+                  }`}
                   style={{
-                    flexDirection: isMobile ? 'column' : 'row',
-                    alignItems: isMobile ? 'flex-start' : 'center',
-                    padding: isMobile ? '6px 10px' : undefined,
-                    width: isMobile ? '100%' : 'auto'
+                    fontSize: availableTabs.length >= 5 ? (isMobile ? '0.6rem' : '0.65rem') :
+                             availableTabs.length >= 4 ? (isMobile ? '0.65rem' : '0.7rem') :
+                             availableTabs.length >= 3 ? (isMobile ? '0.7rem' : '0.75rem') :
+                             (isMobile ? '0.75rem' : '0.875rem'),
+                    fontWeight: availableTabs.length >= 4 ? '500' : '600',
+                    padding: availableTabs.length >= 5 ? (isMobile ? '4px 2px' : '6px 4px') :
+                             availableTabs.length >= 4 ? (isMobile ? '5px 3px' : '6px 6px') :
+                             (isMobile ? '6px 8px' : '6px 8px')
                   }}
                 >
-                  <div className="flex items-center">
-                    <span className="font-medium text-primary-700 dark:text-primary-300">{currentTicker}</span>
-                    {selectedMessage?.quarter && (
-                      <>
-                        <span className="mx-1 text-neutral-400 dark:text-neutral-500">|</span>
-                        <span className="text-neutral-600 dark:text-neutral-300">Q{selectedMessage.quarter}</span>
-                      </>
-                    )}
-                  </div>
-                  {selectedMessage?.company_name && isMobile && (
-                    <span 
-                      className="text-xs text-neutral-500 dark:text-neutral-400"
-                      style={{
-                        marginTop: '2px',
-                        maxWidth: '100%',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {selectedMessage.company_name}
-                    </span>
-                  )}
-                </div>
-                {(currentMessage?.timestamp || selectedMessage?.timestamp) && (
-                  <span className="text-sm text-neutral-500 dark:text-neutral-400">
-                    {convertToEasternTime(currentMessage?.timestamp || selectedMessage?.timestamp || new Date().toISOString())}
-                  </span>
-                )}
-
-                {/* Feedback icon */}
-                <div
-                  className="ml-1 cursor-pointer hover:opacity-80 transition-opacity text-blue-500 dark:text-blue-400"
-                  onClick={() => setFeedbackModalOpen(true)}
-                  title="Provide feedback"
-                >
-                  <ThumbsDown size={16} />
-                </div>
-              </div>
-              
-              {/* Action buttons */}
-              <div className="flex items-center gap-2">
-                {/* Collapse/Expand button for desktop */}
-                {!isMobile && (
-                  <button
-                    onClick={handleCollapseToggle}
-                    className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 flex items-center justify-center w-[30px] h-[30px] rounded-full bg-neutral-200 dark:bg-neutral-700 transition-all"
-                    title={isCollapsed ? 'Expand panel' : 'Collapse panel'}
-                  >
-                    {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-                  </button>
-                )}
-
-                {/* Close button for mobile */}
-                {isMobile && (
-                  <button
-                    onClick={handleCloseAnalysisPanel}
-                    className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 flex items-center justify-center w-[30px] h-[30px] rounded-full bg-neutral-200 dark:bg-neutral-700"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
-              </div>
+                  {tab.label}
+                </button>
+              ))}
             </div>
+          )}
 
-            {/* Collapsible content area */}
-            {/* Tabs row - show if any tabs available */}
-            {availableTabs.length > 0 && (
-              <div className="flex bg-neutral-100 dark:bg-neutral-700 rounded-lg p-1">
-                {availableTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex-1 rounded-md transition-colors text-center truncate whitespace-nowrap overflow-hidden ${
-                      activeTab === tab.id
-                        ? `${tab.colors.active} shadow-sm`
-                        : tab.colors.inactive
-                    }`}
-                    style={{
-                      fontSize: availableTabs.length >= 5 ? (isMobile ? '0.6rem' : '0.65rem') :
-                               availableTabs.length >= 4 ? (isMobile ? '0.65rem' : '0.7rem') :
-                               availableTabs.length >= 3 ? (isMobile ? '0.7rem' : '0.75rem') :
-                               (isMobile ? '0.75rem' : '0.875rem'),
-                      fontWeight: availableTabs.length >= 4 ? '500' : '600',
-                      padding: availableTabs.length >= 5 ? (isMobile ? '4px 2px' : '6px 4px') :
-                               availableTabs.length >= 4 ? (isMobile ? '5px 3px' : '6px 6px') :
-                               (isMobile ? '6px 8px' : '6px 8px')
-                    }}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Content */}
-            <div className="flex-1 overflow-auto">
+          {/* Content */}
+          <div className="flex-1 overflow-auto">
             <div
               className="text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap markdown-content break-words overflow-wrap-anywhere"
               style={{
@@ -820,111 +703,50 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                   </div>
                 ) : (
                   // Enhanced Earnings tab with flexible report display
-                  (() => {
-                    const earningsMessage = relatedMessages.earnings;
-                    const reportMessage = relatedMessages.earningsReport;
-                    const hasEarningsData = earningsMessage && parsedMessage && Object.keys(parsedMessage).length > 0;
-                    const hasReportData = reportMessage;
+                  <div className="space-y-4">
+                    {/* Show earnings header */}
+                    <div className="text-sky-700 dark:text-sky-400 font-semibold mb-3">
+                      📊 Earnings Analysis
+                    </div>
 
-                    return (
+                    {currentTab?.hasData && parsedMessage && Object.keys(parsedMessage).length > 0 ? (
                       <div className="space-y-4">
-                        {/* Show earnings header */}
-                        <div className="text-sky-700 dark:text-sky-400 font-semibold mb-3">
-                          📊 Earnings Analysis
-                        </div>
-
-                        {currentTab?.hasData ? (
-                          <>
-                            {hasEarningsData ? (
-                          // Show earnings analysis
-                          <div className="space-y-4">
-                            {Object.entries(parsedMessage).map(([section, items]) => (
-                              <div key={section}>
-                                <div className="text-primary-700 dark:text-primary-400 font-semibold mb-2">{section}</div>
-                                { ['Additional Metrics', 'Company Highlights'].includes(section) ? (
-                                  <ul className="space-y-1 list-disc pl-5">
-                                    {items.map((item, idx) => (
-                                      <li key={idx} className="text-neutral-600 dark:text-neutral-300">
-                                        {typeof item === 'string' ? item : item.text || item.label}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                ) : (
-                                  <div className="space-y-1">
-                                  {items.map((item, idx: number) => (
-                                    <div key={idx} className="flex flex-wrap gap-2 items-center">
-                                      <span className="text-neutral-600 dark:text-neutral-300">
-                                        {typeof item === 'string' ? item : item.text || item.label}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                                )
-                                }
-                              </div>
-                            ))}
-                          </div>
-                        ) : hasReportData ? (
-                          // Show report-only content with pending message
-                          <div className="space-y-4">
-                            {/* Show report content */}
-                            {(reportMessage?.title || reportMessage?.subject || reportMessage?.message) && (
-                              <div className="text-sky-700 dark:text-sky-400 font-semibold mb-3">
-                                {reportMessage.title || reportMessage.subject || reportMessage.message}
-                              </div>
-                            )}
-
-                            {/* Pending earnings message */}
-                            <div className="bg-sky-50 dark:bg-sky-900/30 border border-sky-200 dark:border-sky-800 rounded-lg p-3 mb-4">
-                              <div className="text-sky-800 dark:text-sky-300 text-sm">
-                                📊 Earnings analysis pending... Report available below.
-                              </div>
-                            </div>
-                          </div>
+                        {Object.entries(parsedMessage).map(([section, items]) => (
+                          <div key={section}>
+                            <div className="text-primary-700 dark:text-primary-400 font-semibold mb-2">{section}</div>
+                            {['Additional Metrics', 'Company Highlights'].includes(section) ? (
+                              <ul className="space-y-1 list-disc pl-5">
+                                {items.map((item, idx) => (
+                                  <li key={idx} className="text-neutral-600 dark:text-neutral-300">
+                                    {typeof item === 'string' ? item : item.text || item.label}
+                                  </li>
+                                ))}
+                              </ul>
                             ) : (
-                              // No data available when has data but no actual content
-                              <div className="text-neutral-500 dark:text-neutral-400 text-center p-4">
-                                No earnings data available
+                              <div className="space-y-1">
+                                {items.map((item, idx: number) => (
+                                  <div key={idx} className="flex flex-wrap gap-2 items-center">
+                                    <span className="text-neutral-600 dark:text-neutral-300">
+                                      {typeof item === 'string' ? item : item.text || item.label}
+                                    </span>
+                                  </div>
+                                ))}
                               </div>
                             )}
-
-                            {/* Always show report link if available */}
-                            {hasReportData && (
-                              <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4">
-                                <div className="text-sky-700 dark:text-sky-400 font-medium mb-3 text-sm">
-                                  📄 Related Report
-                                </div>
-                                <div className="text-center">
-                                  <a
-                                    href={reportMessage?.link || reportMessage?.report_data?.link || '#'}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center px-6 py-3 bg-sky-500 hover:bg-sky-600 text-white rounded-lg font-medium transition-colors shadow-sm"
-                                  >
-                                    <span>View Full Report</span>
-                                    <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                    </svg>
-                                  </a>
-                                </div>
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          // No data available for earnings tab
-                          <div className="text-neutral-500 dark:text-neutral-400 text-center p-4">
-                            No data available
                           </div>
-                        )}
+                        ))}
                       </div>
-                    );
-                  })()
+                    ) : (
+                      <div className="text-neutral-500 dark:text-neutral-400 text-center p-4">
+                        No data available
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
           </div>
-        </div>
-      ) : (
+        ) : (
         <div className="h-full flex items-center justify-center text-neutral-500 dark:text-neutral-400">
           <p>Select a message to view analysis</p>
         </div>
