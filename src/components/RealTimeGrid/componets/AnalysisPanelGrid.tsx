@@ -447,16 +447,16 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
           ? 'flex w-full h-full absolute inset-0 z-10'
           : 'hidden'
         : 'flex w-[35%] relative'}
-      flex-col bg-white dark:bg-neutral-800 p-6 rounded-md shadow border border-[#f1f1f1] dark:border-neutral-700
+      flex-col bg-white dark:bg-neutral-800 rounded-md shadow border border-[#f1f1f1] dark:border-neutral-700
     `}
     >
       {selectedMessage || currentTicker ? (
         <div className="h-full flex flex-col">
-          {/* Header */}
-          <div className="pb-4 border-b border-neutral-200 dark:border-neutral-700 mb-4">
+          {/* Header - aligned with search row */}
+          <div className="px-3 sm:px-4 py-2 border-b border-neutral-200 dark:border-neutral-700">
             {/* Title row */}
-            <div 
-              className="flex items-center justify-between mb-3"
+            <div
+              className="flex items-center justify-between mb-1"
               style={{
                 flexWrap: isMobile ? 'wrap' : 'nowrap',
                 gap: isMobile ? '8px' : undefined
@@ -530,9 +530,9 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
               )}
             </div>
 
-            {/* Tabs row - show if any tabs available */}
+            {/* Tabs row - aligned with filter controls */}
             {availableTabs.length > 0 && (
-              <div className="flex bg-neutral-100 dark:bg-neutral-700 rounded-lg p-1">
+              <div className="flex bg-neutral-100 dark:bg-neutral-700 rounded-lg p-1 mt-2">
                 {availableTabs.map((tab) => (
                   <button
                     key={tab.id}
@@ -561,7 +561,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
           </div>
           
           {/* Content */}
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto px-3 sm:px-4 py-4">
             <div
               className="text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap markdown-content break-words overflow-wrap-anywhere"
               style={{
@@ -894,7 +894,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
           </div>
         </div>
       ) : (
-        <div className="h-full flex items-center justify-center text-neutral-500 dark:text-neutral-400">
+        <div className="h-full flex items-center justify-center text-neutral-500 dark:text-neutral-400 px-3 sm:px-4">
           <p>Select a message to view analysis</p>
         </div>
       )}
