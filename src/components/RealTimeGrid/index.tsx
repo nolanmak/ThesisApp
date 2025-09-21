@@ -2388,6 +2388,7 @@ const RealTimeGrid: React.FC = () => {
                   name="name"
                   type="text"
                   required
+                  maxLength={15}
                   placeholder="My Custom View"
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
                 />
@@ -2475,6 +2476,7 @@ const RealTimeGrid: React.FC = () => {
                   name="name"
                   type="text"
                   required
+                  maxLength={15}
                   defaultValue={editingView.name}
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
                 />
