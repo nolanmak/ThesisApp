@@ -27,7 +27,7 @@ const WatchlistToggle: React.FC = () => {
         {watchlist.length > 0 ? (
           <>
             <span className="text-xs text-neutral-600 dark:text-neutral-400">
-              {watchListOn ? 'Filtering On' : 'Show All'}
+              Watchlist Only
             </span>
             <button
               onClick={() => toggleWatchlist(!watchListOn)}

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Search, Wifi, WifiOff, Loader, RefreshCw } from 'lucide-react';
 import { useWatchlistToggle } from '../../../hooks/useWatchlistToggle';
-import GlobalAudioControls from '../../ui/GlobalAudioControls';
 
 
 interface WebSocketStatusProps {
@@ -77,11 +76,9 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
             )}
           </button>
 
-          {/* Audio Controls - now global! */}
-          <GlobalAudioControls size="sm" />
-          
+
           {/* Refresh button */}
-          <button
+          {/* <button
             onClick={onRefresh}
             disabled={refreshing}
             className={`flex items-center justify-center rounded-full w-6 h-6 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 transition-colors duration-150 ease-in-out shadow-sm ${
@@ -90,7 +87,7 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
             title="Refresh data"
           >
             <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
-          </button>
+          </button> */}
         </div>
       </div>
     </div>
