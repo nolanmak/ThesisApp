@@ -395,7 +395,7 @@ const RealTimeGrid: React.FC = () => {
     { key: 'nq_rev_change_pct', label: 'NQ Rev % change', width: 130, sortable: true, type: 'percentage' },
     // Current Year
     { key: 'curfyepsmean', label: 'CY EPS Est', width: 110, sortable: true, type: 'number' },
-    { key: 'cy_eps_guide', label: 'CY EPS Guide', width: 110, sortable: true, type: 'number' },
+    { key: 'cy_eps_guide', label: 'CY EPS Est Prior', width: 120, sortable: true, type: 'number' },
     { key: 'cy_eps_change_pct', label: 'CY EPS % change', width: 130, sortable: true, type: 'percentage' },
     { key: 'curfysalesmean', label: 'CY Rev Est', width: 110, sortable: true, type: 'currency' },
     { key: 'cy_rev_guide', label: 'CY Rev Guide', width: 110, sortable: true, type: 'currency' },
@@ -2388,6 +2388,7 @@ const RealTimeGrid: React.FC = () => {
                   name="name"
                   type="text"
                   required
+                  maxLength={15}
                   placeholder="My Custom View"
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
                 />
@@ -2475,6 +2476,7 @@ const RealTimeGrid: React.FC = () => {
                   name="name"
                   type="text"
                   required
+                  maxLength={15}
                   defaultValue={editingView.name}
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
                 />
