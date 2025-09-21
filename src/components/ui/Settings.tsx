@@ -365,7 +365,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
               {/* App Info */}
               <div className="pt-4 border-t border-neutral-200 dark:border-neutral-700">
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 text-center">
-                  EarningsOwl Alpha Version
+                  EarningsOwl Beta Version
                 </p>
                 <p className="text-xs text-neutral-400 dark:text-neutral-500 text-center mt-1">
                   Please validate data through other sources
