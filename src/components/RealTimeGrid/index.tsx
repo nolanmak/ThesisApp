@@ -1655,48 +1655,77 @@ const RealTimeGrid: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Grid Controls Header - spans full width, separate from grid data */}
-      <GridControls
-        searchableColumns={searchableColumns}
-        searchColumn={searchColumn}
-        setSearchColumn={setSearchColumn}
-        searchValue={searchValue}
-        setSearchValue={setSearchValue}
-        showSearchDropdown={showSearchDropdown}
-        setShowSearchDropdown={setShowSearchDropdown}
-        searchDropdownRef={searchDropdownRef}
-        showWatchlistOnly={showWatchlistOnly}
-        setShowWatchlistOnly={setShowWatchlistOnly}
-        showDatePicker={showDatePicker}
-        setShowDatePicker={setShowDatePicker}
-        startDate={tempDateRange.start}
-        setStartDate={(date) => setTempDateRange(prev => ({...prev, start: date}))}
-        endDate={tempDateRange.end}
-        setEndDate={(date) => setTempDateRange(prev => ({...prev, end: date}))}
-        datePickerRef={datePickerRef}
-        handleDatePickerOpen={handleDatePickerOpen}
-        handleDatePickerCancel={handleDatePickerCancel}
-        handleDatePickerApply={handleDatePickerApply}
-        visibleColumns={visibleColumns}
-        showColumnToggle={showColumnToggle}
-        setShowColumnToggle={setShowColumnToggle}
-        columnToggleRef={columnToggleRef}
-        toggleColumnVisibility={toggleColumnVisibility}
-        allColumns={defaultColumns}
-        resetColumnOrder={resetColumnOrder}
-        resetColumnWidths={resetColumnWidths}
-        showViewsDropdown={showViewsDropdown}
-        setShowViewsDropdown={setShowViewsDropdown}
-        viewsDropdownRef={viewsDropdownRef}
-        savedViews={savedViews}
-        currentViewId={currentViewId}
-        applyView={applyView}
-        showSaveViewModal={showSaveViewModal}
-        setShowSaveViewModal={setShowSaveViewModal}
-        showEditViewModal={showEditViewModal}
-        setShowEditViewModal={setShowEditViewModal}
-        deleteView={deleteView}
-      />
+      {/* Header area with GridControls and PanelHeader aligned */}
+      <div className="flex-shrink-0">
+        <div className="flex">
+          {/* GridControls - left side */}
+          <div
+            style={{
+              width: isMobile ? '100%' : showAnalysisPanel ? (isAnalysisPanelCollapsed ? '100%' : '72.5%') : '100%',
+              display: 'block',
+              marginRight: isMobile ? 0 : (showAnalysisPanel && !isAnalysisPanelCollapsed) ? '1rem' : 0
+            }}
+          >
+            <GridControls
+              searchableColumns={searchableColumns}
+              searchColumn={searchColumn}
+              setSearchColumn={setSearchColumn}
+              searchValue={searchValue}
+              setSearchValue={setSearchValue}
+              showSearchDropdown={showSearchDropdown}
+              setShowSearchDropdown={setShowSearchDropdown}
+              searchDropdownRef={searchDropdownRef}
+              showWatchlistOnly={showWatchlistOnly}
+              setShowWatchlistOnly={setShowWatchlistOnly}
+              showDatePicker={showDatePicker}
+              setShowDatePicker={setShowDatePicker}
+              startDate={tempDateRange.start}
+              setStartDate={(date) => setTempDateRange(prev => ({...prev, start: date}))}
+              endDate={tempDateRange.end}
+              setEndDate={(date) => setTempDateRange(prev => ({...prev, end: date}))}
+              datePickerRef={datePickerRef}
+              handleDatePickerOpen={handleDatePickerOpen}
+              handleDatePickerCancel={handleDatePickerCancel}
+              handleDatePickerApply={handleDatePickerApply}
+              visibleColumns={visibleColumns}
+              showColumnToggle={showColumnToggle}
+              setShowColumnToggle={setShowColumnToggle}
+              columnToggleRef={columnToggleRef}
+              toggleColumnVisibility={toggleColumnVisibility}
+              allColumns={defaultColumns}
+              resetColumnOrder={resetColumnOrder}
+              resetColumnWidths={resetColumnWidths}
+              showViewsDropdown={showViewsDropdown}
+              setShowViewsDropdown={setShowViewsDropdown}
+              viewsDropdownRef={viewsDropdownRef}
+              savedViews={savedViews}
+              currentViewId={currentViewId}
+              applyView={applyView}
+              showSaveViewModal={showSaveViewModal}
+              setShowSaveViewModal={setShowSaveViewModal}
+              showEditViewModal={showEditViewModal}
+              setShowEditViewModal={setShowEditViewModal}
+              deleteView={deleteView}
+            />
+          </div>
+
+          {/* PanelHeader - right side, aligned with GridControls */}
+          {showAnalysisPanel && (
+            <PanelHeader
+              selectedMessage={selectedMessage}
+              selectedTicker={selectedTicker}
+              isMobile={isMobile}
+              showAnalysisPanel={showAnalysisPanel}
+              convertToEasternTime={convertToEasternTime}
+              handleCloseAnalysisPanel={handleCloseAnalysisPanel}
+              setFeedbackModalOpen={setFeedbackModalOpen}
+              isCollapsed={isAnalysisPanelCollapsed}
+              onCollapseToggle={setIsAnalysisPanelCollapsed}
+              messages={messages}
+            />
+          )}
+        </div>
+      </div>
 
       {/* Main content with two-column layout */}
       <div className="flex-1 min-h-0">
@@ -1710,7 +1739,7 @@ const RealTimeGrid: React.FC = () => {
           <div
             style={{
               width: isMobile ? '100%' : showAnalysisPanel ? (isAnalysisPanelCollapsed ? '100%' : '72.5%') : '100%',
-              display: isMobile && showAnalysisPanel ? 'none' : 'flex',
+              display: 'flex',
               flexDirection: 'column',
               marginRight: isMobile ? 0 : (showAnalysisPanel && !isAnalysisPanelCollapsed) ? '1rem' : 0,
               height: '100%',
@@ -1971,20 +2000,45 @@ const RealTimeGrid: React.FC = () => {
               )}
             </div>
           </div>
-          
-          {/* Analysis panel header - always visible when showAnalysisPanel is true */}
-          <PanelHeader
-            selectedMessage={selectedMessage}
-            selectedTicker={selectedTicker}
-            isMobile={isMobile}
-            showAnalysisPanel={showAnalysisPanel}
-            convertToEasternTime={convertToEasternTime}
-            handleCloseAnalysisPanel={handleCloseAnalysisPanel}
-            setFeedbackModalOpen={setFeedbackModalOpen}
-            isCollapsed={isAnalysisPanelCollapsed}
-            onCollapseToggle={setIsAnalysisPanelCollapsed}
-            messages={messages}
-          />
+
+          {/* Analysis Panel Content */}
+          {showAnalysisPanel && (
+            <div
+              style={{
+                width: isMobile ? '100%' : '27.5%',
+                display: isAnalysisPanelCollapsed ? 'none' : 'block',
+                height: '100%',
+                minHeight: 0
+              }}
+              className="bg-white dark:bg-neutral-900 border-l border-neutral-200 dark:border-neutral-800"
+            >
+              {/* Analysis Panel Content Area */}
+              <div className="h-full overflow-auto p-4">
+                {selectedMessage ? (
+                  <div>
+                    <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-4">
+                      Analysis for {selectedTicker}
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="text-sm text-neutral-600 dark:text-neutral-400">
+                        {convertToEasternTime(selectedMessage.timestamp)}
+                      </div>
+                      <div className="text-neutral-900 dark:text-neutral-100">
+                        {selectedMessage.content || selectedMessage.summary || 'No content available'}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-neutral-500 dark:text-neutral-400">
+                    <div className="text-center">
+                      <p>Select a ticker from the grid to view analysis</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
       
