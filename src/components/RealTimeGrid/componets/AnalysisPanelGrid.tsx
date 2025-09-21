@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Message } from '../../../types';
-import { ThumbsDown, X } from 'lucide-react';
+import { ThumbsDown, X, ChevronUp } from 'lucide-react';
 import { ParseMessagePayload, ParseTranscriptData, ParseSentimentData, ParseSwingAnalysisData } from '../../Earnings/utils/messageUtils';
 import useGlobalData from '../../../hooks/useGlobalData';
 
@@ -27,8 +27,9 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<string>('earnings');
   const [userPreferredTab, setUserPreferredTab] = useState<string>('earnings'); // Track user's explicit tab choice
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const { metricsData } = useGlobalData();
-  
+
   // Get message type for tab identification
   const getMessageType = (message: Message): string => {
     if (message.source === 'transcript_analysis') return 'transcript';
@@ -57,7 +58,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     if (!selectedMessage && !selectedTicker) {
       return {};
     }
-    
+
     // If we have a selectedTicker but no selectedMessage, group all messages for that ticker
     const targetTicker = selectedTicker || selectedMessage?.ticker;
     if (!targetTicker) {
@@ -69,8 +70,8 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
       if (!msg.ticker) return false;
       return msg.ticker.toUpperCase() === targetTicker.toUpperCase();
     });
-    
-    
+
+
     // Group by message type
     const grouped: Record<string, Message> = {};
     let earningsReportMessage: Message | null = null;
@@ -381,21 +382,21 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
             const value2 = series2[index];
             const isValid1 = value1 !== null && !isNaN(value1);
             const isValid2 = value2 !== null && !isNaN(value2);
-            
+
             const barHeight1 = isValid1 ? Math.max(((value1 - minValue) / range) * height * 0.8, 2) : 0;
             const barHeight2 = isValid2 ? Math.max(((value2 - minValue) / range) * height * 0.8, 2) : 0;
-            
+
             return (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="flex-1 flex flex-col items-center min-w-0 relative"
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex(null)}
               >
                 <div className="flex w-full justify-center gap-0.5" style={{ height: `${height}px`, alignItems: 'flex-end' }}>
-                  <div 
+                  <div
                     className="transition-all duration-200 cursor-pointer hover:opacity-80"
-                    style={{ 
+                    style={{
                       height: `${barHeight1}px`,
                       backgroundColor: isValid1 ? series1Color : '#e5e7eb',
                       minWidth: '4px',
@@ -403,9 +404,9 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                       maxWidth: isMobile ? '8px' : '12px'
                     }}
                   />
-                  <div 
+                  <div
                     className="transition-all duration-200 cursor-pointer hover:opacity-80"
-                    style={{ 
+                    style={{
                       height: `${barHeight2}px`,
                       backgroundColor: isValid2 ? series2Color : '#e5e7eb',
                       minWidth: '4px',
@@ -417,7 +418,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                 <span className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 truncate w-full text-center">
                   {labels[index]}
                 </span>
-                
+
                 {/* Hover Tooltip */}
                 {hoveredIndex === index && (value1 !== null || value2 !== null) && (
                   <div className="absolute bottom-full mb-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 px-2 py-1 rounded text-xs whitespace-nowrap z-10 shadow-lg">
@@ -448,17 +449,17 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   };
 
   return (
-    <div 
-    className={`
-      ${isMobile
-        ? showAnalysisPanel
-          ? 'flex w-full h-full absolute inset-0 z-10'
-          : 'hidden'
-        : 'flex w-[35%] relative'}
-      flex-col bg-white dark:bg-neutral-800 rounded-md shadow border border-[#f1f1f1] dark:border-neutral-700
-    `}
+    <div
+      className={`
+        ${isMobile
+          ? showAnalysisPanel
+            ? 'flex w-full h-full absolute inset-0 z-10'
+            : 'hidden'
+          : `flex w-[35%] relative ${isCollapsed ? 'h-fit' : ''}`}
+        flex-col bg-white dark:bg-neutral-800 rounded-md shadow border border-[#f1f1f1] dark:border-neutral-700
+      `}
     >
-      {selectedMessage || currentTicker ? (
+    {selectedMessage || currentTicker ? (
         <div className="h-full flex flex-col">
           {/* Header - aligned with search row */}
           <div className="mb-3 border-b border-neutral-200 dark:border-neutral-700">
@@ -470,7 +471,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                 gap: isMobile ? '8px' : undefined
               }}
             >
-              <div 
+              <div
                 className="flex items-center space-x-2"
                 style={{
                   flexWrap: isMobile ? 'wrap' : 'nowrap',
@@ -497,7 +498,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                     )}
                   </div>
                   {selectedMessage?.company_name && isMobile && (
-                    <span 
+                    <span
                       className="text-xs text-neutral-500 dark:text-neutral-400"
                       style={{
                         marginTop: '2px',
@@ -516,9 +517,9 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                     {convertToEasternTime(currentMessage?.timestamp || selectedMessage?.timestamp || new Date().toISOString())}
                   </span>
                 )}
-                
+
                 {/* Feedback icon */}
-                <div 
+                <div
                   className="ml-1 cursor-pointer hover:opacity-80 transition-opacity text-blue-500 dark:text-blue-400"
                   onClick={() => setFeedbackModalOpen(true)}
                   title="Provide feedback"
@@ -526,10 +527,19 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                   <ThumbsDown size={16} />
                 </div>
               </div>
-              
+
+              {/* Chevron Up icon */}
+              <div
+                className="mr-1 cursor-pointer hover:opacity-80 transition-opacity text-neutral-500 dark:text-neutral-400"
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                title="Expand"
+              >
+                <ChevronUp size={16} className={ 'transition-transform ${isCollapsed ? "rotate-180" : ""}'} />
+              </div>
+
               {/* Close button for mobile */}
               {isMobile && (
-                <button 
+                <button
                   onClick={handleCloseAnalysisPanel}
                   className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 flex items-center justify-center w-[30px] h-[30px] rounded-full bg-neutral-200 dark:bg-neutral-700"
                 >
@@ -539,7 +549,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
             </div>
 
             {/* Tabs row - aligned with filter controls */}
-            {availableTabs.length > 0 && (
+            {availableTabs.length > 0 && !isCollapsed && (
               <div className="flex bg-neutral-100 dark:bg-neutral-700 rounded-lg p-1 mb-3">
                 {availableTabs.map((tab) => (
                   <button
@@ -555,8 +565,8 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                     }`}
                     style={{
                       fontSize: availableTabs.length >= 5 ? (isMobile ? '0.6rem' : '0.65rem') :
-                               availableTabs.length >= 4 ? (isMobile ? '0.65rem' : '0.7rem') : 
-                               availableTabs.length >= 3 ? (isMobile ? '0.7rem' : '0.75rem') : 
+                               availableTabs.length >= 4 ? (isMobile ? '0.65rem' : '0.7rem') :
+                               availableTabs.length >= 3 ? (isMobile ? '0.7rem' : '0.75rem') :
                                (isMobile ? '0.75rem' : '0.875rem'),
                       fontWeight: availableTabs.length >= 4 ? '500' : '600',
                       padding: availableTabs.length >= 5 ? (isMobile ? '4px 2px' : '6px 4px') :
@@ -570,8 +580,9 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
               </div>
             )}
           </div>
-          
+
           {/* Content */}
+          {!isCollapsed && (
           <div className="flex-1 overflow-auto px-3 sm:px-4 py-4">
             <div
               className="text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap markdown-content break-words overflow-wrap-anywhere"
@@ -928,6 +939,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                 )}
               </div>
           </div>
+          )}
         </div>
       ) : (
         <div className="h-full flex items-center justify-center text-neutral-500 dark:text-neutral-400 px-3 sm:px-4">
