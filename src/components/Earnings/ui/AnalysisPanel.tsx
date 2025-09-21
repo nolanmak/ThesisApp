@@ -655,6 +655,31 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                           height={140}
                         />
 
+                        {/* Quarterly EPS Chart */}
+                        <SimpleBarChart
+                          data={[
+                            parseFloat(String(tickerMetrics['$qeps4'] || 0)),
+                            parseFloat(String(tickerMetrics['$qeps3'] || 0)),
+                            parseFloat(String(tickerMetrics['$qeps2'] || 0)),
+                            parseFloat(String(tickerMetrics['$qeps1'] || 0)),
+                            parseFloat(String(tickerMetrics['$qeps0'] || 0)),
+                            parseFloat(String(tickerMetrics['curqepsmean'] || 0)),
+                            parseFloat(String(tickerMetrics['nextqepsmean'] || 0))
+                          ]}
+                          labels={['AV', 'AW', 'AX', 'AY', 'AZ', 'AR', 'AQ']}
+                          title="Quarterly EPS"
+                          color={[
+                            '#10b981', // AV - Historical (green)
+                            '#10b981', // AW - Historical (green)
+                            '#10b981', // AX - Historical (green)
+                            '#10b981', // AY - Historical (green)
+                            '#10b981', // AZ - Historical (green)
+                            '#f59e0b', // AR - Current Quarter Estimate (amber)
+                            '#ef4444'  // AQ - Next Quarter Estimate (red)
+                          ]}
+                          height={140}
+                        />
+
                         {/* Annual EPS Chart */}
                         <SimpleBarChart
                           data={[
