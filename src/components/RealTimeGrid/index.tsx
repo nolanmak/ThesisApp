@@ -1734,9 +1734,116 @@ const RealTimeGrid: React.FC = () => {
             <div className="flex-shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-3 sm:px-4 py-1">
               <div className="flex items-center justify-between max-w-full mx-auto">
                 <div className="flex items-center gap-4 flex-wrap">
-                 
-                  <div className="flex items-center justify-between max-w-full mx-auto">
-                <div className="flex items-center gap-2">
+
+                  {/* Watchlist Toggle - First */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-neutral-600 dark:text-neutral-400">Watchlist Only</span>
+                    <button
+                      onClick={() => setShowWatchlistOnly(!showWatchlistOnly)}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                        showWatchlistOnly
+                          ? 'bg-blue-500 dark:bg-blue-600'
+                          : 'bg-neutral-300 dark:bg-neutral-600'
+                      }`}
+                      role="switch"
+                      aria-checked={showWatchlistOnly}
+                      aria-label="Toggle watchlist only filter"
+                    >
+                      <span
+                        className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-sm transition-transform ${
+                          showWatchlistOnly ? 'translate-x-5' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Date Range Picker - Second */}
+                  <div className="flex items-center gap-2 relative" ref={datePickerRef}>
+                    <Calendar size={16} className="text-neutral-500" />
+                    <button
+                      onClick={handleDatePickerOpen}
+                      className="text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-3 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 hover:border-neutral-400 dark:hover:border-neutral-500 flex items-center gap-2 min-w-[200px] justify-between"
+                      disabled={isLoading}
+                    >
+                      <span className="text-left">
+                        {dateRange.start && dateRange.end && dateRange.start !== dateRange.end
+                          ? `${dateRange.start} to ${dateRange.end}`
+                          : dateRange.start
+                          ? dateRange.start
+                          : 'Select earnings date'}
+                      </span>
+                      <ChevronDown size={14} className={`transition-transform ${showDatePicker ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {isLoading && (
+                      <RefreshCw size={14} className="animate-spin text-neutral-500" />
+                    )}
+
+                    {(dateRange.start || dateRange.end) && !isLoading && (
+                      <button
+                        onClick={handleDatePickerClear}
+                        className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 px-2 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
+                        title="Clear earnings date filter"
+                      >
+                        Clear
+                      </button>
+                    )}
+
+                    {/* Date Range Picker Dropdown */}
+                    {showDatePicker && (
+                      <div className="absolute top-full left-0 mt-1 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-lg p-4 z-50 min-w-[320px]">
+                        <div className="space-y-3">
+                          <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
+                            Filter by earnings announcement date
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 w-16">From:</label>
+                            <input
+                              type="date"
+                              value={tempDateRange.start}
+                              onChange={(e) => setTempDateRange(prev => ({...prev, start: e.target.value}))}
+                              max={maxDate}
+                              className="text-sm border border-neutral-300 dark:border-neutral-600 rounded px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 flex-1"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 w-16">To:</label>
+                            <input
+                              type="date"
+                              value={tempDateRange.end}
+                              onChange={(e) => setTempDateRange(prev => ({...prev, end: e.target.value}))}
+                              max={maxDate}
+                              className="text-sm border border-neutral-300 dark:border-neutral-600 rounded px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 flex-1"
+                            />
+                          </div>
+                          <div className="flex justify-between pt-2 border-t border-neutral-200 dark:border-neutral-700">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={handleDatePickerClear}
+                                className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 px-3 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
+                              >
+                                Clear All
+                              </button>
+                              <button
+                                onClick={handleDatePickerCancel}
+                                className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 px-3 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                            <button
+                              onClick={handleDatePickerApply}
+                              className="text-xs bg-primary-500 hover:bg-primary-600 text-white px-3 py-1 rounded"
+                            >
+                              Apply
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Column Settings - Third */}
                   <div className="relative" ref={columnToggleRef}>
                     <button
                       onClick={() => setShowColumnToggle(!showColumnToggle)}
@@ -1980,124 +2087,7 @@ const RealTimeGrid: React.FC = () => {
                     )}
                   </div>
                 </div>
-                
-              </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-neutral-600 dark:text-neutral-400">Watchlist Only</span>
-                    <button
-                      onClick={() => setShowWatchlistOnly(!showWatchlistOnly)}
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                        showWatchlistOnly 
-                          ? 'bg-blue-500 dark:bg-blue-600' 
-                          : 'bg-neutral-300 dark:bg-neutral-600'
-                      }`}
-                      role="switch"
-                      aria-checked={showWatchlistOnly}
-                      aria-label="Toggle watchlist only filter"
-                    >
-                      <span
-                        className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-sm transition-transform ${
-                          showWatchlistOnly ? 'translate-x-5' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 relative" ref={datePickerRef}>
-                    <Calendar size={16} className="text-neutral-500" />
-                    <button
-                      onClick={handleDatePickerOpen}
-                      className="text-sm border border-neutral-300 dark:border-neutral-600 rounded-md px-3 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 hover:border-neutral-400 dark:hover:border-neutral-500 flex items-center gap-2 min-w-[200px] justify-between"
-                      disabled={isLoading}
-                    >
-                      <span className="text-left">
-                        {dateRange.start && dateRange.end && dateRange.start !== dateRange.end
-                          ? `${dateRange.start} to ${dateRange.end}`
-                          : dateRange.start
-                          ? dateRange.start
-                          : 'Select earnings date'}
-                      </span>
-                      <ChevronDown size={14} className={`transition-transform ${showDatePicker ? 'rotate-180' : ''}`} />
-                    </button>
-                    
-                    {isLoading && (
-                      <RefreshCw size={14} className="animate-spin text-neutral-500" />
-                    )}
-                    
-                    {(dateRange.start || dateRange.end) && !isLoading && (
-                      <button
-                        onClick={handleDatePickerClear}
-                        className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 px-2 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
-                        title="Clear earnings date filter"
-                      >
-                        Clear
-                      </button>
-                    )}
 
-                    {/* Date Range Picker Dropdown */}
-                    {showDatePicker && (
-                      <div className="absolute top-full left-0 mt-1 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-lg p-4 z-50 min-w-[320px]">
-                        <div className="space-y-3">
-                          <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
-                            Filter by earnings announcement date
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 w-16">From:</label>
-                            <input
-                              type="date"
-                              value={tempDateRange.start}
-                              onChange={(e) => setTempDateRange(prev => ({...prev, start: e.target.value}))}
-                              max={maxDate}
-                              className="text-sm border border-neutral-300 dark:border-neutral-600 rounded px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 flex-1"
-                            />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 w-16">To:</label>
-                            <input
-                              type="date"
-                              value={tempDateRange.end}
-                              onChange={(e) => setTempDateRange(prev => ({...prev, end: e.target.value}))}
-                              max={maxDate}
-                              className="text-sm border border-neutral-300 dark:border-neutral-600 rounded px-2 py-1 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 flex-1"
-                            />
-                          </div>
-                          <div className="flex justify-between pt-2 border-t border-neutral-200 dark:border-neutral-700">
-                            <div className="flex gap-2">
-                              <button
-                                onClick={handleDatePickerClear}
-                                className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 px-3 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
-                              >
-                                Clear All
-                              </button>
-                              <button
-                                onClick={handleDatePickerCancel}
-                                className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 px-3 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                            <button
-                              onClick={handleDatePickerApply}
-                              className="text-xs bg-primary-500 hover:bg-primary-600 text-white px-3 py-1 rounded"
-                            >
-                              Apply
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-   
-                </div>
-                
-                <div className="text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-2">
-                  <div className="flex items-center gap-2">
-                    
-           
-              
-                  </div>
-                </div>
               </div>
             </div>
 
