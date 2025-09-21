@@ -11,7 +11,7 @@ const Layout: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [showAlphaTooltip, setShowAlphaTooltip] = useState(false);
+  const [showBetaTooltip, setShowBetaTooltip] = useState(false);
   
   const isAdmin = user?.email === 'nolanmak7@gmail.com';
   
@@ -57,21 +57,21 @@ const Layout: React.FC = () => {
               <div className="flex items-center gap-2">
                 <GlobalAudioControls size="sm" />
 
-                {/* Alpha version info icon */}
+                {/* Beta version info icon */}
                 <div className="relative">
                   <button
-                    onMouseEnter={() => setShowAlphaTooltip(true)}
-                    onMouseLeave={() => setShowAlphaTooltip(false)}
+                    onMouseEnter={() => setShowBetaTooltip(true)}
+                    onMouseLeave={() => setShowBetaTooltip(false)}
                     className="flex items-center justify-center p-2 rounded-md transition-colors duration-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                    aria-label="Alpha version info"
+                    aria-label="Beta version info"
                   >
                     <Info size={16} />
                   </button>
 
                   {/* Tooltip */}
-                  {showAlphaTooltip && (
+                  {showBetaTooltip && (
                     <div className="absolute top-full right-0 mt-2 w-64 bg-red-50 dark:bg-red-900/90 text-red-600 dark:text-red-400 px-3 py-2 text-xs rounded-md border border-red-200 dark:border-red-800 shadow-lg z-50">
-                      This is an alpha version. Please validate any data through other sources.
+                      This is a beta version. Please validate any data through other sources.
                       <div className="absolute bottom-full right-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-red-200 dark:border-b-red-800"></div>
                     </div>
                   )}
@@ -153,21 +153,21 @@ const Layout: React.FC = () => {
 
             {/* Right side controls */}
             <div className="flex items-center gap-4">
-              {/* Alpha version info icon */}
+              {/* Beta version info icon */}
               <div className="relative">
                 <button
-                  onMouseEnter={() => setShowAlphaTooltip(true)}
-                  onMouseLeave={() => setShowAlphaTooltip(false)}
+                  onMouseEnter={() => setShowBetaTooltip(true)}
+                  onMouseLeave={() => setShowBetaTooltip(false)}
                   className="flex items-center justify-center p-1 rounded-full transition-colors duration-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                  aria-label="Alpha version info"
+                  aria-label="Beta version info"
                 >
                   <Info size={16} />
                 </button>
 
                 {/* Tooltip */}
-                {showAlphaTooltip && (
+                {showBetaTooltip && (
                   <div className="absolute top-full right-0 mt-2 w-80 bg-red-50 dark:bg-red-900/90 text-red-600 dark:text-red-400 px-3 py-2 text-xs rounded-md border border-red-200 dark:border-red-800 shadow-lg z-50">
-                    This is an alpha version. Please validate any data through other sources.
+                    This is a beta version. Please validate any data through other sources.
                     <div className="absolute bottom-full right-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-red-200 dark:border-b-red-800"></div>
                   </div>
                 )}
