@@ -453,10 +453,10 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
       {selectedMessage || currentTicker ? (
         <div className="h-full flex flex-col">
           {/* Header - aligned with search row */}
-          <div className="px-3 sm:px-4 py-2 border-b border-neutral-200 dark:border-neutral-700">
+          <div className="mb-3 border-b border-neutral-200 dark:border-neutral-700">
             {/* Title row */}
             <div
-              className="flex items-center justify-between mb-1"
+              className="flex items-center justify-between mb-3"
               style={{
                 flexWrap: isMobile ? 'wrap' : 'nowrap',
                 gap: isMobile ? '8px' : undefined
@@ -470,17 +470,17 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                   width: isMobile ? 'calc(100% - 30px)' : undefined
                 }}
               >
-                <div 
-                  className="flex items-center bg-primary-50 dark:bg-primary-900/30 px-3 py-1 rounded-md"
+                <div
+                  className="flex items-center bg-primary-50 dark:bg-primary-900/30 px-2 py-0.5 rounded"
                   style={{
                     flexDirection: isMobile ? 'column' : 'row',
                     alignItems: isMobile ? 'flex-start' : 'center',
-                    padding: isMobile ? '6px 10px' : undefined,
+                    padding: isMobile ? '4px 6px' : undefined,
                     width: isMobile ? '100%' : 'auto'
                   }}
                 >
                   <div className="flex items-center">
-                    <span className="font-medium text-primary-700 dark:text-primary-300">{currentTicker}</span>
+                    <span className="font-medium text-sm text-primary-700 dark:text-primary-300">{currentTicker}</span>
                     {selectedMessage?.quarter && (
                       <>
                         <span className="mx-1 text-neutral-400 dark:text-neutral-500">|</span>
@@ -532,7 +532,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
 
             {/* Tabs row - aligned with filter controls */}
             {availableTabs.length > 0 && (
-              <div className="flex bg-neutral-100 dark:bg-neutral-700 rounded-lg p-1 mt-2">
+              <div className="flex bg-neutral-100 dark:bg-neutral-700 rounded-lg p-1 mb-3">
                 {availableTabs.map((tab) => (
                   <button
                     key={tab.id}
