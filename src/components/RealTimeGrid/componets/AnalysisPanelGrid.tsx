@@ -26,6 +26,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   selectedTicker = null
 }) => {
   const [activeTab, setActiveTab] = useState<string>('earnings');
+  const [userPreferredTab, setUserPreferredTab] = useState<string>('earnings'); // Track user's explicit tab choice
   const { metricsData } = useGlobalData();
   
   // Get message type for tab identification
@@ -191,10 +192,10 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   useEffect(() => {
     const messageIdChanged = selectedMessage?.message_id !== lastMessageId;
     const tickerChanged = currentTicker !== lastTicker;
-    
+
     if (messageIdChanged || tickerChanged) {
       const availableTabIds = availableTabs.map(tab => tab.id);
-      
+
       if (selectedMessage && messageIdChanged) {
         // If we have a message, use its type
         const messageType = getMessageType(selectedMessage);
@@ -203,9 +204,16 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
         } else if (availableTabIds.length > 0) {
           setActiveTab(availableTabIds[0]);
         }
-      } else if (!selectedMessage && tickerChanged && availableTabIds.includes('fundamentals')) {
-        // If no message but have ticker with fundamentals, default to fundamentals
-        setActiveTab('fundamentals');
+      } else if (tickerChanged && !messageIdChanged) {
+        // Only ticker changed - try to keep user's preferred tab
+        if (availableTabIds.includes(userPreferredTab)) {
+          setActiveTab(userPreferredTab);
+        } else if (!selectedMessage && availableTabIds.includes('fundamentals')) {
+          // Preferred tab not available, default to fundamentals if no message
+          setActiveTab('fundamentals');
+        } else if (availableTabIds.length > 0) {
+          setActiveTab(availableTabIds[0]);
+        }
       } else if (availableTabIds.length > 0) {
         // Default to first available tab
         const firstTab = availableTabIds[0];
@@ -213,11 +221,11 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
           setActiveTab(firstTab);
         }
       }
-      
+
       setLastMessageId(selectedMessage?.message_id ?? selectedMessage?.id ?? null);
       setLastTicker(currentTicker || null);
     }
-  }, [selectedMessage, availableTabs, lastMessageId, currentTicker, lastTicker]);
+  }, [selectedMessage, availableTabs, lastMessageId, currentTicker, lastTicker, userPreferredTab]);
 
   const parsedMessage = currentMessage ? ParseMessagePayload(currentMessage) : null;
   const parsedTranscriptData = currentMessage ? ParseTranscriptData(currentMessage) : null;
@@ -536,7 +544,10 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                 {availableTabs.map((tab) => (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      setUserPreferredTab(tab.id); // Remember user's explicit choice
+                    }}
                     className={`flex-1 rounded-md transition-colors text-center truncate whitespace-nowrap overflow-hidden ${
                       activeTab === tab.id
                         ? `${tab.colors.active} shadow-sm`
