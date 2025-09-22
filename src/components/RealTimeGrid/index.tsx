@@ -1673,7 +1673,7 @@ const RealTimeGrid: React.FC = () => {
           {/* Grid panel */}
           <div
             style={{
-              width: isMobile || isCollapsed ? '90%' : '65%',
+              width: isMobile || isCollapsed ? '100%' : '65%',
               display: isMobile && showAnalysisPanel ? 'none' : 'flex',
               flexDirection: 'column',
               marginRight: isMobile ? 0 : '1rem',
