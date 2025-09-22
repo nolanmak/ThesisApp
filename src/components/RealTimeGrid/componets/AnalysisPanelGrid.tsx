@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { Message } from '../../../types';
 import { ThumbsDown, X, ChevronUp } from 'lucide-react';
 import { ParseMessagePayload, ParseTranscriptData, ParseSentimentData, ParseSwingAnalysisData } from '../../Earnings/utils/messageUtils';
 import useGlobalData from '../../../hooks/useGlobalData';
+import { CollapseContext } from '../../../contexts/CollapseContext'
 
 interface AnalysisPanelProps {
   selectedMessage: Message | null;
@@ -27,7 +28,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<string>('earnings');
   const [userPreferredTab, setUserPreferredTab] = useState<string>('earnings'); // Track user's explicit tab choice
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isCollapsed, setIsCollapsed } = useContext(CollapseContext);
   const { metricsData } = useGlobalData();
 
   // Get message type for tab identification
@@ -534,7 +535,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                 onClick={() => setIsCollapsed(!isCollapsed)}
                 title="Expand"
               >
-                <ChevronUp size={16} className={ 'transition-transform ${isCollapsed ? "rotate-180" : ""}'} />
+                <ChevronUp size={16} className={`transition-transform ${isCollapsed ? "rotate-180" : ""}`} />
               </div>
 
               {/* Close button for mobile */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useContext, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Activity, RefreshCw, AlertCircle, ChevronUp, ChevronDown, Settings, Calendar, Filter, Eye, EyeOff, Search, GripVertical, Bookmark, Edit3, Plus, Trash2 } from 'lucide-react';
 // Removed useMetricsData import - now using local metrics fetching
 import { useWatchlist } from '../../hooks/useWatchlist';
@@ -9,6 +9,7 @@ import { Message } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { getUserProfile, updateUserProfile, UserProfile } from '../../services/api';
 import { StockMetric } from '../../providers/GlobalDataProvider';
+import { CollapseContext } from '../../contexts/CollapseContext'
 
 interface ColumnConfig {
   key: string;
@@ -46,6 +47,7 @@ const RealTimeGrid: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const { isCollapsed, setIsCollapsed } = useContext(CollapseContext)
 
   // API configuration for local metrics fetching
   const API_BASE = import.meta.env.VITE_RESEARCH_API_BASE_URL;
@@ -73,7 +75,7 @@ const RealTimeGrid: React.FC = () => {
   // Handle new real-time messages from websocket
   const handleNewWebSocketMessage = useCallback((newMessage: Message) => {
     console.log(`📨 RealTimeGrid: Received new websocket message for ${newMessage.ticker}:`, newMessage.message_id?.substring(0, 8) || newMessage.id?.substring(0, 8) || 'no-id');
-    
+
     setRealtimeMessages(prev => {
       // Check if message already exists
       const exists = prev.some(msg => msg.message_id === newMessage.message_id || msg.id === newMessage.id);
@@ -81,12 +83,12 @@ const RealTimeGrid: React.FC = () => {
         console.log(`⚠️ Message already exists, skipping duplicate`);
         return prev;
       }
-      
+
       // Add new message and sort by timestamp (newest first)
       const updated = [...prev, newMessage].sort(
         (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
-      
+
       console.log(`✅ Added new message, total real-time messages: ${updated.length}`);
       return updated;
     });
@@ -101,7 +103,7 @@ const RealTimeGrid: React.FC = () => {
   // Combine global messages and real-time messages
   const messages = useMemo(() => {
     const combined = [...globalMessages, ...realtimeMessages];
-    
+
     // Remove duplicates based on message_id or id
     const seen = new Set();
     const unique = combined.filter(msg => {
@@ -112,14 +114,14 @@ const RealTimeGrid: React.FC = () => {
       seen.add(id);
       return true;
     });
-    
+
     // Sort by timestamp (newest first)
     const sorted = unique.sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
-    
+
     console.log(`📊 RealTimeGrid: Combined messages - Global: ${globalMessages.length}, Realtime: ${realtimeMessages.length}, Unique: ${sorted.length}`);
-    
+
     return sorted;
   }, [globalMessages, realtimeMessages]);
 
@@ -234,7 +236,7 @@ const RealTimeGrid: React.FC = () => {
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
   const [showColumnToggle, setShowColumnToggle] = useState(false);
   const columnToggleRef = useRef<HTMLDivElement>(null);
-  
+
   // Analysis panel state
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [initialMessageSet, setInitialMessageSet] = useState<boolean>(false);
@@ -243,23 +245,23 @@ const RealTimeGrid: React.FC = () => {
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [tickerMessages, setTickerMessages] = useState<Message[]>([]);
   const [tickerMessagesLoading, setTickerMessagesLoading] = useState<boolean>(false);
-  
+
   // Search state
   const [searchValue, setSearchValue] = useState<string>('');
   const [searchColumn, setSearchColumn] = useState<string>('ticker');
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const searchDropdownRef = useRef<HTMLDivElement>(null);
-  
+
   // Drag and drop state
   const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
-  
+
   // Column resizing state
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
   const [isResizing, setIsResizing] = useState<string | null>(null);
   const [resizeStartX, setResizeStartX] = useState<number>(0);
   const [resizeStartWidth, setResizeStartWidth] = useState<number>(0);
-  
+
   // Views state
   const [savedViews, setSavedViews] = useState<GridView[]>([]);
   const [currentViewId, setCurrentViewId] = useState<string | null>(null);
@@ -307,7 +309,7 @@ const RealTimeGrid: React.FC = () => {
   // Calculate date restrictions (allow past earnings dates, block future dates)
   const getDateRestrictions = useCallback(() => {
     const today = new Date();
-    
+
     return {
       maxDate: today.toISOString().split('T')[0] // Today's date
     };
@@ -431,18 +433,18 @@ const RealTimeGrid: React.FC = () => {
   useEffect(() => {
     // Force initialize all columns
     console.log('🔧 Initializing columns:', defaultColumns.map(col => col.key));
-    
+
     setColumnOrder(defaultColumns.map(col => col.key));
     setVisibleColumns(new Set(defaultColumns.map(col => col.key)));
     setColumnVisibility(initialColumnVisibility);
-    
+
     // Initialize column widths with defaults
     const initialWidths: Record<string, number> = {};
     defaultColumns.forEach(col => {
       initialWidths[col.key] = col.width || 100;
     });
     setColumnWidths(initialWidths);
-    
+
     console.log('✅ Columns initialized:', {
       order: defaultColumns.map(col => col.key),
       visible: defaultColumns.map(col => col.key),
@@ -485,10 +487,10 @@ const RealTimeGrid: React.FC = () => {
     const checkIfMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkIfMobile();
     window.addEventListener('resize', checkIfMobile);
-    
+
     return () => window.removeEventListener('resize', checkIfMobile);
   }, []);
 
@@ -496,21 +498,21 @@ const RealTimeGrid: React.FC = () => {
   useEffect(() => {
     if (!initialMessageSet && messages.length > 0) {
       const analysisMessages = messages.filter(msg => !msg.link);
-      
+
       if (analysisMessages.length > 0) {
         const sortedAnalysisMessages = [...analysisMessages].sort(
           (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
         );
-        
+
         setSelectedMessage(sortedAnalysisMessages[0]);
       } else if (messages.length > 0) {
         const sortedMessages = [...messages].sort(
           (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
         );
-        
+
         setSelectedMessage(sortedMessages[0]);
       }
-      
+
       setInitialMessageSet(true);
     }
   }, [messages, initialMessageSet]);
@@ -528,45 +530,45 @@ const RealTimeGrid: React.FC = () => {
   useEffect(() => {
     // Skip this effect until initial load is completed
     if (!initialLoadCompletedRef.current || !messages || messages.length === 0) return;
-    
+
     // Find genuinely new messages (following MessagesList pattern)
     const prevMessageIds = new Set(prevMessagesRef.current.map(msg => msg.message_id || msg.id));
-    
+
     const genuinelyNewMessages = messages.filter(msg => {
       const msgId = msg.message_id || msg.id;
       const isNewToState = !prevMessageIds.has(msgId);
       const messageTime = new Date(msg.timestamp).getTime();
       const isRecentMessage = messageTime > (Date.now() - 2 * 60 * 1000); // Last 2 minutes
-      
+
       // Only consider it truly new if it's new to our state AND is a very recent message
       return isNewToState && isRecentMessage;
     });
-    
+
     // If we have genuinely new messages, auto-select the newest one from ANY ticker
     if (genuinelyNewMessages.length > 0) {
       console.log(`🆕 RealTimeGrid: Found ${genuinelyNewMessages.length} genuinely new messages`);
-      
+
       // Sort all new messages by timestamp (newest first) and select the newest one
       const newestMessage = genuinelyNewMessages.sort(
         (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       )[0];
-      
+
       console.log(`🎯 RealTimeGrid: Auto-selecting newest message from ANY ticker (${newestMessage.ticker}):`, newestMessage.message_id?.substring(0, 8) || newestMessage.id?.substring(0, 8));
-      
+
       // Update selected message to the newest one from any ticker
       setSelectedMessage(newestMessage);
-      
+
       // Also update the selected ticker to match the new message
       if (newestMessage.ticker) {
         console.log(`📍 RealTimeGrid: Switching selected ticker to ${newestMessage.ticker}`);
         setSelectedTicker(newestMessage.ticker);
         setShowAnalysisPanel(true); // Ensure analysis panel is visible
-        
+
         // Note: fetchTickerMessages will be called automatically when selectedTicker changes
         // due to the existing useEffect that handles ticker selection
       }
     }
-    
+
     // Update the previous messages ref
     prevMessagesRef.current = messages;
   }, [messages]);
@@ -581,7 +583,7 @@ const RealTimeGrid: React.FC = () => {
     console.log(`🔍 RealTimeGrid: Processing messages for ticker: ${selectedTicker}`);
 
     // Filter messages for the selected ticker
-    const tickerSpecificMessages = messages.filter(msg => 
+    const tickerSpecificMessages = messages.filter(msg =>
       msg.ticker && msg.ticker.toUpperCase() === selectedTicker.toUpperCase()
     );
 
@@ -595,8 +597,8 @@ const RealTimeGrid: React.FC = () => {
 
     // Group messages by type and get the newest for each type
     const getMessageType = (message: Message): string => {
-      if (message.link || message.report_data?.link || 
-          message.source?.toLowerCase() === 'link' || 
+      if (message.link || message.report_data?.link ||
+          message.source?.toLowerCase() === 'link' ||
           message.type?.toLowerCase() === 'link') return 'report';
       if (message.source === 'transcript_analysis') return 'transcript';
       if (message.source === 'sentiment_analysis' || message.sentiment_additional_metrics) return 'sentiment';
@@ -605,25 +607,25 @@ const RealTimeGrid: React.FC = () => {
     };
 
     const messagesByType: Record<string, Message> = {};
-    
+
     tickerSpecificMessages.forEach((message: Message) => {
       const messageType = getMessageType(message);
-      
+
       // If we don't have a message of this type yet, or this message is newer
-      if (!messagesByType[messageType] || 
+      if (!messagesByType[messageType] ||
           new Date(message.timestamp) > new Date(messagesByType[messageType].timestamp)) {
         messagesByType[messageType] = message;
       }
     });
-    
+
     // Convert to array and sort by timestamp (newest first)
     const newestMessages = Object.values(messagesByType).sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
-    
-    console.log(`📈 Processed message types for ${selectedTicker}:`, 
+
+    console.log(`📈 Processed message types for ${selectedTicker}:`,
       newestMessages.map(msg => `${getMessageType(msg)}(${msg.message_id?.substring(0, 8) || msg.id?.substring(0, 8) || 'no-id'})`));
-    
+
     // Update ticker messages for AnalysisPanel
     setTickerMessages(newestMessages);
   }, [selectedTicker, messages]);
@@ -654,18 +656,18 @@ const RealTimeGrid: React.FC = () => {
   // View management functions (defined before useEffects that use them)
   const loadUserViews = useCallback(async () => {
     if (!user?.email) return;
-    
+
     try {
       setViewsLoading(true);
       const profile = await getUserProfile(user.email);
       if (profile?.settings?.gridViews) {
         setSavedViews(profile.settings.gridViews as GridView[]);
-        
+
         console.log('📚 Loaded saved views, but NOT applying default to preserve new column structure');
-        
+
         // DON'T auto-apply default view on load to preserve new column structure
         // The user can manually select a saved view if they want
-        
+
         // Just set the current view ID if there's a default one, but don't apply it
         const defaultView = (profile.settings.gridViews as GridView[]).find(view => view.isDefault);
         if (defaultView) {
@@ -733,7 +735,7 @@ const RealTimeGrid: React.FC = () => {
 
   const deleteView = useCallback(async (viewId: string) => {
     if (!user?.email) return;
-    
+
     try {
       const profile = await getUserProfile(user.email);
       const currentViews = (profile?.settings?.gridViews as GridView[]) || [];
@@ -774,10 +776,10 @@ const RealTimeGrid: React.FC = () => {
           gridViews: updatedViews
         }
       };
-      
+
       await updateUserProfile(updatedProfile);
       setSavedViews(updatedViews);
-      
+
       if (currentViewId === viewId) {
         setCurrentViewId(null);
       }
@@ -788,9 +790,9 @@ const RealTimeGrid: React.FC = () => {
 
   const applyView = useCallback((view: GridView) => {
     const { settings } = view;
-    
+
     console.log('🔄 Applying saved view:', view.name, 'with settings:', settings);
-    
+
     // Apply column configurations if they exist and are valid
     console.log('🔍 View settings column data:', {
       hasColumnOrder: !!settings.columnOrder,
@@ -836,7 +838,7 @@ const RealTimeGrid: React.FC = () => {
         setColumnWidths(validColumnWidths);
       }
     }
-    
+
     // Apply sorting
     if (settings.sortColumn && settings.sortDirection) {
       // Only apply if the sort column exists in our new columns
@@ -848,17 +850,17 @@ const RealTimeGrid: React.FC = () => {
         console.warn('⚠️ Saved sort column no longer exists:', settings.sortColumn);
       }
     }
-    
+
     // Apply watchlist toggle
     setShowWatchlistOnly(settings.showWatchlistOnly || false);
-    
+
     // Apply search column only if it exists
     const searchColumnExists = defaultColumns.some(col => col.key === (settings.searchColumn || 'ticker'));
     if (searchColumnExists) {
       setSearchColumn(settings.searchColumn || 'ticker');
     }
     setSearchValue(settings.searchValue || '');
-    
+
     // Apply date range if available, otherwise use default 7-day range
     if (settings.startDate || settings.endDate) {
       const newRange = {
@@ -875,9 +877,9 @@ const RealTimeGrid: React.FC = () => {
       setDateRange(defaultRange);
       setTempDateRange(defaultRange);
     }
-    
+
     setCurrentViewId(view.id);
-    
+
     console.log('✅ View applied with new column structure preserved');
   }, [getDefault7DayRange]);
 
@@ -918,7 +920,7 @@ const RealTimeGrid: React.FC = () => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    
+
     await saveView(newView);
   }, [getCurrentViewSettings, saveView]);
 
@@ -1190,7 +1192,7 @@ const RealTimeGrid: React.FC = () => {
   const calculateEpsSurprise = (actual: any, estimate: any): number | null => {
     const actualNum = parseFloat(String(actual));
     const estimateNum = parseFloat(String(estimate));
-    
+
     if (isNaN(actualNum) || isNaN(estimateNum) || estimateNum === 0) return null;
     return ((actualNum - estimateNum) / Math.abs(estimateNum)) * 100;
   };
@@ -1198,7 +1200,7 @@ const RealTimeGrid: React.FC = () => {
   const calculateRevenueSurprise = (actual: any, estimate: any): number | null => {
     const actualNum = parseFloat(String(actual));
     const estimateNum = parseFloat(String(estimate));
-    
+
     if (isNaN(actualNum) || isNaN(estimateNum) || estimateNum === 0) return null;
     return ((actualNum - estimateNum) / estimateNum) * 100;
   };
@@ -1206,7 +1208,7 @@ const RealTimeGrid: React.FC = () => {
   const calculateQQGrowth = (current: any, previous: any): number | null => {
     const currentNum = parseFloat(String(current));
     const previousNum = parseFloat(String(previous));
-    
+
     if (isNaN(currentNum) || isNaN(previousNum) || previousNum === 0) return null;
     return ((currentNum - previousNum) / Math.abs(previousNum)) * 100;
   };
@@ -1214,7 +1216,7 @@ const RealTimeGrid: React.FC = () => {
   const calculatePercentageChange = (current: any, previous: any): number | null => {
     const currentNum = parseFloat(String(current));
     const previousNum = parseFloat(String(previous));
-    
+
     if (isNaN(currentNum) || isNaN(previousNum) || previousNum === 0) return null;
     return ((currentNum - previousNum) / Math.abs(previousNum)) * 100;
   };
@@ -1282,7 +1284,7 @@ const RealTimeGrid: React.FC = () => {
     }
 
     const numValue = parseFloat(String(value));
-    
+
     switch (type) {
       case 'currency':
         if (isNaN(numValue)) return String(value);
@@ -1339,24 +1341,24 @@ const RealTimeGrid: React.FC = () => {
   // Search function that works with different column types
   const matchesSearch = useCallback((stock: any, searchTerm: string, columnKey: string) => {
     if (!searchTerm.trim()) return true;
-    
+
     const value = getValue(stock, columnKey);
     if (value === null || value === undefined || value === 'N/A' || value === '') return false;
-    
+
     const searchLower = searchTerm.toLowerCase().trim();
     const column = defaultColumns.find(col => col.key === columnKey);
-    
+
     // Handle different column types
     switch (column?.type) {
       case 'text':
         return String(value).toLowerCase().includes(searchLower);
-      
+
       case 'number':
       case 'currency':
       case 'percentage':
         const numValue = parseFloat(String(value));
         if (isNaN(numValue)) return false;
-        
+
         // Check if search term is a number for exact/range matching
         const searchNum = parseFloat(searchTerm);
         if (!isNaN(searchNum)) {
@@ -1381,7 +1383,7 @@ const RealTimeGrid: React.FC = () => {
           // Text search in formatted value
           return String(value).toLowerCase().includes(searchLower);
         }
-      
+
       default:
         return String(value).toLowerCase().includes(searchLower);
     }
@@ -1469,14 +1471,14 @@ const RealTimeGrid: React.FC = () => {
       .map(key => defaultColumns.find(col => col.key === key))
       .filter(Boolean)
       .filter(col => visibleColumns.has(col!.key)) as ColumnConfig[];
-    
+
     console.log('🔍 Ordered columns calculation:', {
       columnOrder: columnOrder,
       visibleColumns: Array.from(visibleColumns),
       result: result.map(col => col.key),
       resultCount: result.length
     });
-    
+
     return result;
   }, [columnOrder, visibleColumns]);
 
@@ -1488,7 +1490,7 @@ const RealTimeGrid: React.FC = () => {
     // Restore the original message selection if closing ticker-specific view
     if (!initialMessageSet && messages.length > 0) {
       const analysisMessages = messages.filter(msg => !msg.link);
-      
+
       if (analysisMessages.length > 0) {
         const sortedAnalysisMessages = [...analysisMessages].sort(
           (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
@@ -1528,21 +1530,21 @@ const RealTimeGrid: React.FC = () => {
   const handleDrop = (e: React.DragEvent, targetColumnKey: string) => {
     e.preventDefault();
     const sourceColumnKey = e.dataTransfer.getData('text/plain');
-    
+
     if (sourceColumnKey && sourceColumnKey !== targetColumnKey) {
       const newOrder = [...columnOrder];
       const sourceIndex = newOrder.indexOf(sourceColumnKey);
       const targetIndex = newOrder.indexOf(targetColumnKey);
-      
+
       if (sourceIndex !== -1 && targetIndex !== -1) {
         // Remove source column and insert at target position
         newOrder.splice(sourceIndex, 1);
         newOrder.splice(targetIndex, 0, sourceColumnKey);
-        
+
         setColumnOrder(newOrder);
       }
     }
-    
+
     setDraggedColumn(null);
     setDragOverColumn(null);
   };
@@ -1559,16 +1561,16 @@ const RealTimeGrid: React.FC = () => {
     try {
       // Import the API function from your existing services
       const { getMessages } = await import('../../services/api');
-      
+
       // Use the existing getMessages function with ticker search
       const data = await getMessages(50, undefined, ticker.toUpperCase());
-      
+
       console.log(`📡 API returned ${data.messages?.length || 0} messages for ${ticker}`);
-      
+
       // Note: Don't set ticker messages directly here anymore since real-time websocket
       // handling will take care of processing and filtering messages
       // This is just to ensure we have the latest data from API to supplement websocket
-      
+
       if (data.messages && data.messages.length > 0) {
         console.log(`✅ API fetch complete for ${ticker}, websocket will process messages`);
       } else {
@@ -1576,7 +1578,7 @@ const RealTimeGrid: React.FC = () => {
         // If no API messages found, clear the selected message
         setSelectedMessage(null);
       }
-      
+
     } catch (error) {
       console.error('Error fetching ticker messages via API:', error);
       // Don't clear ticker messages here - let the websocket handling manage the state
@@ -1604,10 +1606,10 @@ const RealTimeGrid: React.FC = () => {
 
   const handleResizeMove = useCallback((e: MouseEvent) => {
     if (!isResizing) return;
-    
+
     const deltaX = e.clientX - resizeStartX;
     const newWidth = Math.max(40, resizeStartWidth + deltaX); // Minimum 40px width for readability
-    
+
     setColumnWidths(prev => ({
       ...prev,
       [isResizing]: newWidth
@@ -1625,7 +1627,7 @@ const RealTimeGrid: React.FC = () => {
       document.addEventListener('mouseup', handleResizeEnd);
       document.body.style.cursor = 'col-resize';
       document.body.style.userSelect = 'none'; // Prevent text selection during resize
-      
+
       return () => {
         document.removeEventListener('mousemove', handleResizeMove);
         document.removeEventListener('mouseup', handleResizeEnd);
@@ -1662,16 +1664,16 @@ const RealTimeGrid: React.FC = () => {
     <div className="flex flex-col h-full">
       {/* Main content with two-column layout */}
       <div className="flex-1 min-h-0">
-        <div 
+        <div
           className="flex h-full"
           style={{
             flexDirection: isMobile ? 'column' : 'row'
           }}
         >
           {/* Grid panel */}
-          <div 
+          <div
             style={{
-              width: isMobile ? '100%' : '65%',
+              width: isMobile || isCollapsed ? '90%' : '65%',
               display: isMobile && showAnalysisPanel ? 'none' : 'flex',
               flexDirection: 'column',
               marginRight: isMobile ? 0 : '1rem',
@@ -1692,7 +1694,7 @@ const RealTimeGrid: React.FC = () => {
                         {searchableColumns.find(col => col.key === searchColumn)?.label || 'Ticker'}
                         <ChevronDown size={12} />
                       </button>
-                      
+
                       {showSearchDropdown && (
                         <div className="absolute left-0 top-full mt-1 w-40 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
                           {searchableColumns.map((column) => (
@@ -1703,8 +1705,8 @@ const RealTimeGrid: React.FC = () => {
                                 setShowSearchDropdown(false);
                               }}
                               className={`w-full text-left px-3 py-2 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 ${
-                                searchColumn === column.key 
-                                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' 
+                                searchColumn === column.key
+                                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                                   : 'text-neutral-900 dark:text-neutral-100'
                               }`}
                             >
@@ -1714,7 +1716,7 @@ const RealTimeGrid: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="relative">
                       <Search size={16} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-neutral-500" />
                       <input
@@ -1853,7 +1855,7 @@ const RealTimeGrid: React.FC = () => {
                       <Settings size={14} />
                       Columns
                     </button>
-                    
+
                     {showColumnToggle && (
                       <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
                         <div className="p-3 border-b border-neutral-200 dark:border-neutral-700">
@@ -1897,7 +1899,7 @@ const RealTimeGrid: React.FC = () => {
                             </button>
                           </div>
                         </div>
-                        
+
                         <div className="p-2">
                           {defaultColumns.map((column) => (
                             <label
@@ -1924,7 +1926,7 @@ const RealTimeGrid: React.FC = () => {
                             </label>
                           ))}
                         </div>
-                        
+
                         <div className="p-2 border-t border-neutral-200 dark:border-neutral-700 text-xs text-neutral-500 dark:text-neutral-400">
                           <div className="mb-1">
                             {visibleColumns.size} of {defaultColumns.length} columns visible
@@ -1944,7 +1946,7 @@ const RealTimeGrid: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Views Dropdown */}
                   <div className="relative" ref={viewsDropdownRef}>
                     <button
@@ -1960,7 +1962,7 @@ const RealTimeGrid: React.FC = () => {
                         </span>
                       )}
                     </button>
-                    
+
                     {showViewsDropdown && (
                       <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
                         <div className="p-3 border-b border-neutral-200 dark:border-neutral-700">
@@ -1986,7 +1988,7 @@ const RealTimeGrid: React.FC = () => {
                             Save Current View
                           </button>
                         </div>
-                        
+
                         <div className="p-2">
                           {viewsLoading ? (
                             <div className="flex items-center justify-center py-4">
@@ -2021,8 +2023,8 @@ const RealTimeGrid: React.FC = () => {
                                     >
                                       <div className="flex items-center gap-2">
                                         <span className={`text-sm font-medium ${
-                                          currentViewId === view.id 
-                                            ? 'text-blue-700 dark:text-blue-300' 
+                                          currentViewId === view.id
+                                            ? 'text-blue-700 dark:text-blue-300'
                                             : 'text-neutral-900 dark:text-neutral-100'
                                         }`}>
                                           {view.name}
@@ -2072,7 +2074,7 @@ const RealTimeGrid: React.FC = () => {
                             ))
                           )}
                         </div>
-                        
+
                         {savedViews.length > 0 && (
                           <div className="p-2 border-t border-neutral-200 dark:border-neutral-700 text-xs text-neutral-500 dark:text-neutral-400">
                             <div>{savedViews.length} saved view{savedViews.length !== 1 ? 's' : ''}</div>
@@ -2209,7 +2211,7 @@ const RealTimeGrid: React.FC = () => {
                             ? 'bg-blue-100 dark:bg-blue-900/30'
                             : ''
                       } relative`}
-                      style={{ 
+                      style={{
                         width: getColumnWidth(column.key, column.width),
                         maxWidth: getColumnWidth(column.key, column.width),
                         minWidth: getColumnWidth(column.key, column.width),
@@ -2219,7 +2221,7 @@ const RealTimeGrid: React.FC = () => {
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, column.key)}
                     >
-                      <div 
+                      <div
                         className={`flex items-center gap-1 ${!isMobile ? 'cursor-move hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded px-1 -mx-1' : ''}`}
                         draggable={!isMobile}
                         onDragStart={(e) => handleDragStart(e, column.key)}
@@ -2227,9 +2229,9 @@ const RealTimeGrid: React.FC = () => {
                         style={{ width: '100%', minWidth: 0 }}
                       >
                         {!isMobile && (
-                          <GripVertical 
-                            size={10} 
-                            className="text-neutral-400 dark:text-neutral-500 flex-shrink-0" 
+                          <GripVertical
+                            size={10}
+                            className="text-neutral-400 dark:text-neutral-500 flex-shrink-0"
                           />
                         )}
                         <div className="flex items-center gap-1 flex-1 min-w-0 overflow-hidden">
@@ -2241,7 +2243,7 @@ const RealTimeGrid: React.FC = () => {
                             >
                               <span
                                 className="text-xs whitespace-nowrap overflow-hidden text-ellipsis"
-                                style={{ 
+                                style={{
                                   fontSize: 'clamp(9px, 0.8vw, 12px)',
                                   maxWidth: '100%',
                                   display: 'block'
@@ -2259,7 +2261,7 @@ const RealTimeGrid: React.FC = () => {
                           ) : (
                             <span
                               className="text-xs whitespace-nowrap overflow-hidden text-ellipsis"
-                              style={{ 
+                              style={{
                                 fontSize: 'clamp(9px, 0.8vw, 12px)',
                                 maxWidth: '100%',
                                 display: 'block'
@@ -2271,17 +2273,17 @@ const RealTimeGrid: React.FC = () => {
                           )}
                         </div>
                       </div>
-                      
+
                       {/* Resize handle */}
                       {!isMobile && (
                         <div
                           className={`absolute right-0 top-0 bottom-0 w-3 cursor-col-resize transition-all duration-150 flex items-center justify-center ${
-                            isResizing === column.key 
-                              ? 'bg-blue-500 bg-opacity-80 opacity-100' 
+                            isResizing === column.key
+                              ? 'bg-blue-500 bg-opacity-80 opacity-100'
                               : 'hover:bg-blue-400 hover:bg-opacity-50 opacity-0 hover:opacity-100 group-hover:opacity-40'
                           }`}
                           onMouseDown={(e) => handleResizeStart(e, column.key)}
-                          style={{ 
+                          style={{
                             right: '-1px', // Slightly extend past border
                             zIndex: 15
                           }}
@@ -2298,11 +2300,11 @@ const RealTimeGrid: React.FC = () => {
               </thead>
               <tbody className="bg-white dark:bg-neutral-900 divide-y divide-neutral-200 dark:divide-neutral-700">
                 {sortedData.map((stock) => (
-                  <tr 
-                    key={stock.ticker} 
+                  <tr
+                    key={stock.ticker}
                     className={`hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer transition-colors ${
-                      selectedTicker === stock.ticker 
-                        ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500' 
+                      selectedTicker === stock.ticker
+                        ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500'
                         : ''
                     }`}
                     onClick={() => handleTickerRowClick(stock.ticker)}
@@ -2311,7 +2313,7 @@ const RealTimeGrid: React.FC = () => {
                     {orderedColumns.map((column, colIndex) => {
                       const value = getValue(stock, column.key);
                       const cellColor = getCellColor(value, column.colorCode);
-                      
+
                       return (
                         <td
                           key={column.key}
@@ -2322,7 +2324,7 @@ const RealTimeGrid: React.FC = () => {
                               ? 'text-right'
                               : 'text-left'
                           } overflow-hidden text-ellipsis`}
-                          style={{ 
+                          style={{
                             width: getColumnWidth(column.key, column.width),
                             maxWidth: getColumnWidth(column.key, column.width),
                             minWidth: getColumnWidth(column.key, column.width)
@@ -2343,7 +2345,7 @@ const RealTimeGrid: React.FC = () => {
               )}
             </div>
           </div>
-          
+
           {/* Analysis panel */}
           <AnalysisPanelGrid
             selectedMessage={selectedMessage}
@@ -2357,7 +2359,7 @@ const RealTimeGrid: React.FC = () => {
           />
         </div>
       </div>
-      
+
       {/* Save View Modal */}
       {showSaveViewModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -2372,7 +2374,7 @@ const RealTimeGrid: React.FC = () => {
                 const name = formData.get('name') as string;
                 const description = formData.get('description') as string;
                 const isDefault = formData.get('isDefault') === 'on';
-                
+
                 if (name.trim()) {
                   saveCurrentAsView(name.trim(), description || undefined, isDefault);
                   setShowSaveViewModal(false);
@@ -2393,7 +2395,7 @@ const RealTimeGrid: React.FC = () => {
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
                 />
               </div>
-              
+
               <div className="mb-4">
                 <label htmlFor="viewDescription" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   Description (optional)
@@ -2406,7 +2408,7 @@ const RealTimeGrid: React.FC = () => {
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
                 />
               </div>
-              
+
               <div className="mb-6">
                 <label className="flex items-center">
                   <input
@@ -2419,7 +2421,7 @@ const RealTimeGrid: React.FC = () => {
                   </span>
                 </label>
               </div>
-              
+
               <div className="flex gap-3">
                 <button
                   type="button"
@@ -2439,7 +2441,7 @@ const RealTimeGrid: React.FC = () => {
           </div>
         </div>
       )}
-      
+
       {/* Edit View Modal */}
       {showEditViewModal && editingView && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -2454,7 +2456,7 @@ const RealTimeGrid: React.FC = () => {
                 const name = formData.get('name') as string;
                 const description = formData.get('description') as string;
                 const isDefault = formData.get('isDefault') === 'on';
-                
+
                 if (name.trim()) {
                   updateExistingView(editingView.id, {
                     name: name.trim(),
@@ -2481,7 +2483,7 @@ const RealTimeGrid: React.FC = () => {
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
                 />
               </div>
-              
+
               <div className="mb-4">
                 <label htmlFor="editViewDescription" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   Description (optional)
@@ -2494,7 +2496,7 @@ const RealTimeGrid: React.FC = () => {
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
                 />
               </div>
-              
+
               <div className="mb-4">
                 <label className="flex items-center">
                   <input
@@ -2508,7 +2510,7 @@ const RealTimeGrid: React.FC = () => {
                   </span>
                 </label>
               </div>
-              
+
               <div className="mb-6">
                 <div className="text-xs text-neutral-500 dark:text-neutral-400 space-y-1">
                   <p>Current settings will be saved:</p>
@@ -2517,12 +2519,12 @@ const RealTimeGrid: React.FC = () => {
                     <li>• Sort: {sortColumn} ({sortDirection})</li>
                     <li>• Search: {searchColumn}</li>
                     <li>• Watchlist: {showWatchlistOnly ? 'On' : 'Off'}</li>
-                    <li>• Date range: {dateRange.start || dateRange.end ? 
+                    <li>• Date range: {dateRange.start || dateRange.end ?
                       `${dateRange.start || 'Any'} to ${dateRange.end || 'Any'}` : 'None'}</li>
                   </ul>
                 </div>
               </div>
-              
+
               <div className="flex gap-3">
                 <button
                   type="button"
