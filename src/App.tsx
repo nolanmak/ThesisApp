@@ -21,6 +21,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AudioSettingsProvider } from './contexts/AudioSettingsContext';
 import { GlobalAudioProvider } from './contexts/GlobalAudioContext';
+import { CollapseProvider } from './contexts/CollapseContext';
 
 function App() {
   return (
@@ -31,13 +32,14 @@ function App() {
             <GlobalDataProvider>
               <Router>
                 <GlobalAudioProvider>
+                  <CollapseProvider>
                   <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/reset-password" element={<PasswordReset />} />
               <Route path="/ScheduleTemplate" element={<ScheduleTemplate />} />
               <Route path="/EarningsDataTemplate" element={<EarningsDataTemplate />} />
               <Route path="/EarningsDataDemo" element={<EarningsDataTemplateDemo />} />
-              
+
               {/* Protected routes - require Authenticated User */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<Layout />}>
@@ -49,14 +51,15 @@ function App() {
                   <Route path="realtime-grid" element={<RealTimeGrid />} />
                 </Route>
               </Route>
-              
+
               {/* Catch-all route for 404 pages */}
               <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
+                  </CollapseProvider>
                 </GlobalAudioProvider>
               </Router>
               <ToastContainer position="top-right" />
-            </GlobalDataProvider>
+              </GlobalDataProvider>
           </AuthProvider>
         </AudioSettingsProvider>
       </ThemeProvider>
