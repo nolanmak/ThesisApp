@@ -456,7 +456,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
           ? showAnalysisPanel
             ? 'flex w-full h-full absolute inset-0 z-10'
             : 'hidden'
-          : `flex w-[35%] fixed right-4 ${isCollapsed ? 'h-fit' : ''}`}
+          : `flex w-[35%] relative ${isCollapsed ? 'h-fit' : ''}`}
         flex-col bg-white dark:bg-neutral-800 rounded-md shadow border border-[#f1f1f1] dark:border-neutral-700
       `}
     >
