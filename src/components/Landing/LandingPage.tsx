@@ -14,22 +14,47 @@ const LandingPage: React.FC = () => {
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [pendingEmail, setPendingEmail] = useState('');
+  const [accessCode, setAccessCode] = useState('');
+  const [hasValidAccess, setHasValidAccess] = useState(false);
+  const [accessError, setAccessError] = useState('');
+
+  // Check for existing access on mount
+  useEffect(() => {
+    const storedAccess = localStorage.getItem('earningsowl_access');
+    if (storedAccess === 'granted') {
+      setHasValidAccess(true);
+    }
+  }, []);
 
   // Handle responsive design
   useEffect(() => {
     const checkIfMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     // Initial check
     checkIfMobile();
-    
+
     // Add event listener for window resize
     window.addEventListener('resize', checkIfMobile);
-    
+
     // Cleanup
     return () => window.removeEventListener('resize', checkIfMobile);
   }, []);
+
+  const handleAccessCodeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAccessError('');
+
+    if (accessCode === 'EarningsOwl2025') {
+      setHasValidAccess(true);
+      localStorage.setItem('earningsowl_access', 'granted');
+      toast.success('Early access granted! Welcome to EarningsOwl.');
+    } else {
+      setAccessError('Invalid early access code. Please try again.');
+      setAccessCode('');
+    }
+  };
 
   const handleEmailSignUp = async (email: string, password: string) => {
     setIsLoading(true);
@@ -178,25 +203,54 @@ const LandingPage: React.FC = () => {
                 AI-enabled financial intelligence at the speed of information.
               </p>
           </div>
-          <div 
-            className={`flex ${isMobile ? 'flex-col' : 'flex-row'} gap-4 justify-center mx-auto`}
-            style={{ width: isMobile ? '100%' : 'auto' }}
-          >
-            <div style={{ width: isMobile ? '100%' : '14rem' }}>
-              <GoogleSignInButton />
-            </div>
-            <div style={{ width: isMobile ? '100%' : '14rem' }}>
+          {!hasValidAccess ? (
+            // Access Code Form
+            <form onSubmit={handleAccessCodeSubmit} className="max-w-md mx-auto">
+              <div className="mb-4">
+                <input
+                  type="text"
+                  value={accessCode}
+                  onChange={(e) => setAccessCode(e.target.value)}
+                  placeholder="Enter early access code"
+                  className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+                {accessError && (
+                  <p className="mt-2 text-sm text-red-600 dark:text-red-400">{accessError}</p>
+                )}
+              </div>
               <button
-                onClick={() => setIsEmailModalOpen(true)}
-                className="w-full flex items-center justify-center px-4 py-3 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300 text-neutral-900 dark:text-neutral-100"
+                type="submit"
+                className="w-full flex items-center justify-center px-4 py-3 border border-transparent rounded-md shadow-sm bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300 text-white font-medium"
               >
                 <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
                 </svg>
-                Sign in with Email
+                Access Platform
               </button>
+            </form>
+          ) : (
+            // Login Buttons (shown after access code is verified)
+            <div
+              className={`flex ${isMobile ? 'flex-col' : 'flex-row'} gap-4 justify-center mx-auto`}
+              style={{ width: isMobile ? '100%' : 'auto' }}
+            >
+              <div style={{ width: isMobile ? '100%' : '14rem' }}>
+                <GoogleSignInButton />
+              </div>
+              <div style={{ width: isMobile ? '100%' : '14rem' }}>
+                <button
+                  onClick={() => setIsEmailModalOpen(true)}
+                  className="w-full flex items-center justify-center px-4 py-3 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300 text-neutral-900 dark:text-neutral-100"
+                >
+                  <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Sign in with Email
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
