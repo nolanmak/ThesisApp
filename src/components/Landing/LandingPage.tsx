@@ -157,12 +157,12 @@ const LandingPage: React.FC = () => {
                   wordBreak: 'break-word'
                 }}
               >
-                <img 
-                  src="/favicon.svg" 
-                  alt="Logo" 
-                  className="mr-2" 
-                  width={isMobile ? 36 : 48} 
-                  height={isMobile ? 36 : 48} 
+                <img
+                  src="/Logos/logoEO.png"
+                  alt="Logo"
+                  className="mr-2"
+                  width={isMobile ? 43 : 58}
+                  height={isMobile ? 43 : 58}
                 />
                 EarningsOwl
               </h1>
