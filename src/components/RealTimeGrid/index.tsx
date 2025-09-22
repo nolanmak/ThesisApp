@@ -1665,7 +1665,7 @@ const RealTimeGrid: React.FC = () => {
       {/* Main content with two-column layout */}
       <div className="flex-1 min-h-0 relative">
 
-        <div className="absolute top-0 right-0 h-full z-10 w-[30%]">
+        <div className="absolute top-0 right-0 h-full z-10 w-[35%]">
         {/* Analysis panel */}
           <AnalysisPanelGrid
             selectedMessage={selectedMessage}
@@ -1688,7 +1688,7 @@ const RealTimeGrid: React.FC = () => {
           {/* Grid panel */}
           <div
             style={{
-              width: isMobile || isCollapsed ? '100%' : '65%',
+              width: isMobile || isCollapsed ? '100%' : '62.5%',
               display: isMobile && showAnalysisPanel ? 'none' : 'flex',
               flexDirection: 'column',
               marginRight: isMobile ? 0 : '1rem',
