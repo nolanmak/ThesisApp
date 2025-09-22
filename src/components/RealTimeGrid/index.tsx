@@ -1663,11 +1663,26 @@ const RealTimeGrid: React.FC = () => {
   return (
     <div className="flex flex-col h-full">
       {/* Main content with two-column layout */}
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 relative">
+
+        <div className="absolute top-0 right-0 h-full z-10 w-[30%]">
+        {/* Analysis panel */}
+          <AnalysisPanelGrid
+            selectedMessage={selectedMessage}
+            isMobile={isMobile}
+            showAnalysisPanel={showAnalysisPanel}
+            convertToEasternTime={convertToEasternTime}
+            handleCloseAnalysisPanel={handleCloseAnalysisPanel}
+            setFeedbackModalOpen={setFeedbackModalOpen}
+            messages={selectedTicker ? tickerMessages : messages}
+            selectedTicker={selectedTicker}
+          />
+        </div>
+
         <div
           className="flex h-full"
           style={{
-            flexDirection: isMobile ? 'column' : 'row'
+            flexDirection: isMobile ? 'column' : 'row',
           }}
         >
           {/* Grid panel */}
@@ -1678,7 +1693,7 @@ const RealTimeGrid: React.FC = () => {
               flexDirection: 'column',
               marginRight: isMobile ? 0 : '1rem',
               height: '100%',
-              minHeight: 0
+              minHeight: 0,
             }}
             className="bg-white dark:bg-neutral-900"
           >
@@ -2346,17 +2361,6 @@ const RealTimeGrid: React.FC = () => {
             </div>
           </div>
 
-          {/* Analysis panel */}
-          <AnalysisPanelGrid
-            selectedMessage={selectedMessage}
-            isMobile={isMobile}
-            showAnalysisPanel={showAnalysisPanel}
-            convertToEasternTime={convertToEasternTime}
-            handleCloseAnalysisPanel={handleCloseAnalysisPanel}
-            setFeedbackModalOpen={setFeedbackModalOpen}
-            messages={selectedTicker ? tickerMessages : messages}
-            selectedTicker={selectedTicker}
-          />
         </div>
       </div>
 
