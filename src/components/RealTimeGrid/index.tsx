@@ -289,9 +289,21 @@ const RealTimeGrid: React.FC = () => {
 
       const positionScrollbar = () => {
         console.log("changing container size");
-        const viewportBottom = window.scrollY + window.innerHeight;
 
-        bodyContainer.style.height = (viewportBottom-150)+'px';
+        // Get the parent container that holds both header and body
+        const gridContainer = bodyContainer.parentElement;
+        if (!gridContainer) return;
+
+        // Calculate available height for the scrollable body area
+        const viewportHeight = window.innerHeight;
+        const gridRect = gridContainer.getBoundingClientRect();
+        const headerHeight = headerContainer.offsetHeight;
+
+        // Available height is viewport height minus the distance from grid top to viewport top
+        // This ensures the body fills the remaining vertical space
+        const availableHeight = Math.max(viewportHeight - gridRect.top - 50, 300);
+
+        bodyContainer.style.height = availableHeight + 'px';
       }
 
       bodyContainer.addEventListener('scroll', handleBodyScroll);
