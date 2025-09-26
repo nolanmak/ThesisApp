@@ -2206,7 +2206,7 @@ const RealTimeGrid: React.FC = () => {
           </div>
         ) : (
           <div className="h-full flex-col">
-            <div className="min-w-full sticky top-0 z-10 bg-neutral-50">
+            <div className="overflow-hidden min-w-full sticky top-0 z-10 bg-neutral-50">
             <table className="border-collapse" style={{ width: 'auto', minWidth: '100%' }}>
               <thead>
                 <tr>
@@ -2338,7 +2338,7 @@ const RealTimeGrid: React.FC = () => {
                             <td
                               key={column.key}
                               className={`px-3 py-2 whitespace-nowrap text-sm border-r border-neutral-200 dark:border-neutral-700 ${cellColor} ${
-                                colIndex === 0 ? 'sticky left-0 bg-white dark:bg-neutral-900 z-10' : ''
+                                colIndex === 0 ? 'bg-white dark:bg-neutral-900 z-10' : ''
                               } ${
                                 column.type === 'number' || column.type === 'currency' || column.type === 'percentage'
                                   ? 'text-right'
