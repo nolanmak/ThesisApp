@@ -269,23 +269,78 @@ const RealTimeGrid: React.FC = () => {
   // Views state
   const [savedViews, setSavedViews] = useState<GridView[]>([]);
 
-  // Scroll synchronization effect
+  // Scroll synchronization effect - waits for elements to load
   useEffect(() => {
-    const headerContainer = headerScrollRef.current;
-    const bodyContainer = bodyScrollRef.current;
+    const setupScrollSync = () => {
+      const headerContainer = headerScrollRef.current;
+      const bodyContainer = bodyScrollRef.current;
 
-    if (!headerContainer || !bodyContainer) return;
-
-    const handleBodyScroll = () => {
-      if (headerContainer.scrollLeft !== bodyContainer.scrollLeft) {
-        headerContainer.scrollLeft = bodyContainer.scrollLeft;
+      if (!headerContainer || !bodyContainer) {
+        console.log("Elements not yet available, waiting...");
+        return false;
       }
+
+      const handleBodyScroll = () => {
+        console.log("scrolling");
+        if (headerContainer.scrollLeft !== bodyContainer.scrollLeft) {
+          headerContainer.scrollLeft = bodyContainer.scrollLeft;
+        }
+      };
+
+      const positionScrollbar = () => {
+        console.log("changing container size");
+        const viewportBottom = window.scrollY + window.innerHeight;
+
+        bodyContainer.style.height = (viewportBottom-150)+'px';
+      }
+
+      bodyContainer.addEventListener('scroll', handleBodyScroll);
+      window.addEventListener('resize', positionScrollbar);
+      window.addEventListener('scroll', positionScrollbar);
+
+      console.log("Scroll synchronization setup complete");
+      return () => {
+        bodyContainer.removeEventListener('scroll', handleBodyScroll);
+        window.removeEventListener('resize', positionScrollbar);
+        window.removeEventListener('scroll', positionScrollbar);
+      };
     };
 
-    bodyContainer.addEventListener('scroll', handleBodyScroll);
+    // Try to setup immediately
+    const cleanup = setupScrollSync();
+    if (cleanup) {
+      return cleanup;
+    }
+
+    // If elements not available, use MutationObserver to wait for them
+    const observer = new MutationObserver(() => {
+      const cleanup = setupScrollSync();
+      if (cleanup) {
+        observer.disconnect();
+      }
+    });
+
+    // Observe the entire document for changes
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    // Also try again after a short delay
+    const timeoutId = setTimeout(() => {
+      const cleanup = setupScrollSync();
+      if (cleanup) {
+        observer.disconnect();
+      }
+    }, 100);
 
     return () => {
-      bodyContainer.removeEventListener('scroll', handleBodyScroll);
+      observer.disconnect();
+      clearTimeout(timeoutId);
+      const cleanupFn = setupScrollSync();
+      if (cleanupFn) {
+        cleanupFn();
+      }
     };
   }, []);
 
