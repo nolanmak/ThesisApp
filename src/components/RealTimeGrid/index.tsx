@@ -301,20 +301,20 @@ const RealTimeGrid: React.FC = () => {
 
         // Available height is viewport height minus the distance from grid top to viewport top
         // This ensures the body fills the remaining vertical space
-        const availableHeight = Math.max(viewportHeight - gridRect.top - 50, 300);
+        const availableHeight = Math.max(viewportHeight - gridRect.top - 30, 300);
 
         bodyContainer.style.height = availableHeight + 'px';
       }
 
       bodyContainer.addEventListener('scroll', handleBodyScroll);
       window.addEventListener('resize', positionScrollbar);
-      window.addEventListener('scroll', positionScrollbar);
+      document.addEventListener('scroll', positionScrollbar, true);
 
       console.log("Scroll synchronization setup complete");
       return () => {
         bodyContainer.removeEventListener('scroll', handleBodyScroll);
         window.removeEventListener('resize', positionScrollbar);
-        window.removeEventListener('scroll', positionScrollbar);
+        document.removeEventListener('scroll', positionScrollbar);
       };
     };
 
