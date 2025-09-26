@@ -276,19 +276,16 @@ const RealTimeGrid: React.FC = () => {
       const bodyContainer = bodyScrollRef.current;
 
       if (!headerContainer || !bodyContainer) {
-        console.log("Elements not yet available, waiting...");
         return false;
       }
 
       const handleBodyScroll = () => {
-        console.log("scrolling");
         if (headerContainer.scrollLeft !== bodyContainer.scrollLeft) {
           headerContainer.scrollLeft = bodyContainer.scrollLeft;
         }
       };
 
       const positionScrollbar = () => {
-        console.log("changing container size");
 
         // Get the parent container that holds both header and body
         const gridContainer = bodyContainer.parentElement;
@@ -297,13 +294,29 @@ const RealTimeGrid: React.FC = () => {
         // Calculate available height for the scrollable body area
         const viewportHeight = window.innerHeight;
         const gridRect = gridContainer.getBoundingClientRect();
-        const headerHeight = headerContainer.offsetHeight;
 
-        // Available height is viewport height minus the distance from grid top to viewport top
-        // This ensures the body fills the remaining vertical space
-        const availableHeight = Math.max(viewportHeight - gridRect.top - 30, 300);
+        // Find the last row in the table body to get the actual content height
+        const tableBody = bodyContainer.querySelector('tbody');
+        const lastRow = tableBody?.lastElementChild as HTMLElement;
 
-        bodyContainer.style.height = availableHeight + 'px';
+        if (!lastRow) return;
+
+        // Get the absolute bottom position of the last row
+        const lastRowBottom = lastRow.getBoundingClientRect().bottom + window.scrollY;
+
+        // Calculate available space in viewport
+        const availableSpace = viewportHeight - gridRect.top;
+
+        // Calculate the actual content height (from grid top to last row bottom)
+        const contentHeight = lastRowBottom - gridRect.top - window.scrollY;
+
+        // Only extend height if content is shorter than available space
+        if (contentHeight > availableSpace) {
+          bodyContainer.style.height = Math.max(availableSpace-30, 300) + 'px';
+        } else {
+          // Reset to auto when content is taller than available space
+          bodyContainer.style.height = 'auto';
+        }
       }
 
       bodyContainer.addEventListener('scroll', handleBodyScroll);
