@@ -2109,7 +2109,7 @@ const RealTimeGrid: React.FC = () => {
             </div>
 
             {/* Grid Content */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1">
               {isLoading && stockData.length === 0 ? (
                 <div className="flex items-center justify-center h-full py-20">
                   <RefreshCw size={40} className="animate-spin text-blue-500" />
@@ -2205,10 +2205,10 @@ const RealTimeGrid: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="overflow-auto h-full">
+          <div className="h-full">
             <div className="min-w-full">
             <table className="border-collapse" style={{ width: 'auto', minWidth: '100%' }}>
-              <thead className="bg-neutral-50 dark:bg-neutral-800 sticky top-0 z-10">
+              <thead>
                 <tr>
                   {orderedColumns.map((column, index) => (
                     <th
@@ -2217,27 +2217,26 @@ const RealTimeGrid: React.FC = () => {
                         column.type === 'number' || column.type === 'currency' || column.type === 'percentage'
                           ? 'text-right'
                           : 'text-left'
-                      } text-xs text-neutral-500 dark:text-neutral-400 border-r border-neutral-200 dark:border-neutral-700 select-none transition-colors group ${
-                        index === 0 ? 'sticky left-0 bg-neutral-50 dark:bg-neutral-800 z-20' : ''
+                      } text-xs text-neutral-500 dark:text-neutral-400 border-r border-neutral-200 dark:border-neutral-700 select-none transition-colors group sticky top-0 bg-neutral-50 dark:bg-neutral-800 ${
+                        index === 0 ? 'sticky left-0 z-10' : 'z-10'
                       } ${
                         draggedColumn === column.key
                           ? 'opacity-50'
                           : dragOverColumn === column.key
                             ? 'bg-blue-100 dark:bg-blue-900/30'
                             : ''
-                      } relative`}
+                      } sticky`}
                       style={{
                         width: getColumnWidth(column.key, column.width),
                         maxWidth: getColumnWidth(column.key, column.width),
                         minWidth: getColumnWidth(column.key, column.width),
-                        overflow: 'hidden'
                       }}
                       onDragOver={(e) => handleDragOver(e, column.key)}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, column.key)}
                     >
                       <div
-                        className={`flex items-center gap-1 ${!isMobile ? 'cursor-move hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded px-1 -mx-1' : ''}`}
+                        className={`sticky flex items-center gap-1 ${!isMobile ? 'cursor-move hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded px-1 -mx-1' : ''}`}
                         draggable={!isMobile}
                         onDragStart={(e) => handleDragStart(e, column.key)}
                         onDragEnd={handleDragEnd}
@@ -2249,15 +2248,15 @@ const RealTimeGrid: React.FC = () => {
                             className="text-neutral-400 dark:text-neutral-500 flex-shrink-0"
                           />
                         )}
-                        <div className="flex items-center gap-1 flex-1 min-w-0 overflow-hidden">
+                        <div className="flex items-center gap-1 flex-1 min-w-0">
                           {column.sortable ? (
                             <button
                               onClick={() => handleSort(column.key)}
-                              className="flex items-center gap-1 hover:text-neutral-700 dark:hover:text-neutral-200 min-w-0 flex-1 overflow-hidden"
+                              className="flex items-center gap-1 hover:text-neutral-700 dark:hover:text-neutral-200 min-w-0 flex-1 "
                               style={{ justifyContent: 'flex-start' }}
                             >
                               <span
-                                className="text-xs whitespace-nowrap overflow-hidden text-ellipsis"
+                                className="text-xs whitespace-nowrap text-ellipsis"
                                 style={{
                                   fontSize: 'clamp(9px, 0.8vw, 12px)',
                                   maxWidth: '100%',
@@ -2275,7 +2274,7 @@ const RealTimeGrid: React.FC = () => {
                             </button>
                           ) : (
                             <span
-                              className="text-xs whitespace-nowrap overflow-hidden text-ellipsis"
+                              className="text-xs whitespace-nowrap text-ellipsis"
                               style={{
                                 fontSize: 'clamp(9px, 0.8vw, 12px)',
                                 maxWidth: '100%',
@@ -2313,7 +2312,7 @@ const RealTimeGrid: React.FC = () => {
                   ))}
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-neutral-900 divide-y divide-neutral-200 dark:divide-neutral-700">
+              <tbody className="overflow-auto bg-white dark:bg-neutral-900 divide-y divide-neutral-200 dark:divide-neutral-700">
                 {sortedData.map((stock) => (
                   <tr
                     key={stock.ticker}
