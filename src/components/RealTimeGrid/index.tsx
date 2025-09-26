@@ -252,6 +252,10 @@ const RealTimeGrid: React.FC = () => {
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const searchDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Scroll synchronization refs
+  const headerScrollRef = useRef<HTMLDivElement>(null);
+  const bodyScrollRef = useRef<HTMLDivElement>(null);
+
   // Drag and drop state
   const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
@@ -264,6 +268,28 @@ const RealTimeGrid: React.FC = () => {
 
   // Views state
   const [savedViews, setSavedViews] = useState<GridView[]>([]);
+
+  // Scroll synchronization effect
+  useEffect(() => {
+    const headerContainer = headerScrollRef.current;
+    const bodyContainer = bodyScrollRef.current;
+
+    if (!headerContainer || !bodyContainer) return;
+
+    const handleBodyScroll = () => {
+      if (headerContainer.scrollLeft !== bodyContainer.scrollLeft) {
+        headerContainer.scrollLeft = bodyContainer.scrollLeft;
+      }
+    };
+
+    bodyContainer.addEventListener('scroll', handleBodyScroll);
+
+    return () => {
+      bodyContainer.removeEventListener('scroll', handleBodyScroll);
+    };
+  }, []);
+
+
   const [currentViewId, setCurrentViewId] = useState<string | null>(null);
   const [showViewsDropdown, setShowViewsDropdown] = useState(false);
   const [showSaveViewModal, setShowSaveViewModal] = useState(false);
@@ -2206,7 +2232,7 @@ const RealTimeGrid: React.FC = () => {
           </div>
         ) : (
           <div className="h-full flex-col">
-            <div className="overflow-hidden min-w-full sticky top-0 z-10 bg-neutral-50">
+            <div ref={headerScrollRef} className="overflow-x-auto min-w-full sticky top-0 z-10 bg-neutral-50 [scrollbar-width:none]">
             <table className="border-collapse" style={{ width: 'auto', minWidth: '100%' }}>
               <thead>
                 <tr>
@@ -2315,7 +2341,7 @@ const RealTimeGrid: React.FC = () => {
             </table>
             </div>
 
-            <div className="overflow-x-auto">
+            <div ref={bodyScrollRef} className="overflow-x-auto">
               <div className="min-w-full">
                 <table style={{ width: 'auto', minWidth: '100%' }}>
                   <tbody className="bg-white dark:bg-neutral-900 divide-y divide-neutral-200 dark:divide-neutral-700">
