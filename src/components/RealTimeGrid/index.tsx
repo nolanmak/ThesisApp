@@ -2205,8 +2205,8 @@ const RealTimeGrid: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="h-full">
-            <div className="min-w-full">
+          <div className="h-full flex-col">
+            <div className="min-w-full sticky top-0 z-10 bg-neutral-50">
             <table className="border-collapse" style={{ width: 'auto', minWidth: '100%' }}>
               <thead>
                 <tr>
@@ -2312,46 +2312,53 @@ const RealTimeGrid: React.FC = () => {
                   ))}
                 </tr>
               </thead>
-              <tbody className="overflow-auto bg-white dark:bg-neutral-900 divide-y divide-neutral-200 dark:divide-neutral-700">
-                {sortedData.map((stock) => (
-                  <tr
-                    key={stock.ticker}
-                    className={`hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer transition-colors ${
-                      selectedTicker === stock.ticker
-                        ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500'
-                        : ''
-                    }`}
-                    onClick={() => handleTickerRowClick(stock.ticker)}
-                    title={`Click to view analysis for ${stock.ticker}`}
-                  >
-                    {orderedColumns.map((column, colIndex) => {
-                      const value = getValue(stock, column.key);
-                      const cellColor = getCellColor(value, column.colorCode);
-
-                      return (
-                        <td
-                          key={column.key}
-                          className={`px-3 py-2 whitespace-nowrap text-sm border-r border-neutral-200 dark:border-neutral-700 ${cellColor} ${
-                            colIndex === 0 ? 'sticky left-0 bg-white dark:bg-neutral-900 z-10' : ''
-                          } ${
-                            column.type === 'number' || column.type === 'currency' || column.type === 'percentage'
-                              ? 'text-right'
-                              : 'text-left'
-                          } overflow-hidden text-ellipsis`}
-                          style={{
-                            width: getColumnWidth(column.key, column.width),
-                            maxWidth: getColumnWidth(column.key, column.width),
-                            minWidth: getColumnWidth(column.key, column.width)
-                          }}
-                        >
-                          {formatValue(value, column.type)}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
             </table>
+            </div>
+
+            <div className="overflow-x-auto">
+              <div className="min-w-full">
+                <table style={{ width: 'auto', minWidth: '100%' }}>
+                  <tbody className="bg-white dark:bg-neutral-900 divide-y divide-neutral-200 dark:divide-neutral-700">
+                    {sortedData.map((stock) => (
+                      <tr
+                        key={stock.ticker}
+                        className={`hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer transition-colors ${
+                          selectedTicker === stock.ticker
+                            ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500'
+                            : ''
+                        }`}
+                        onClick={() => handleTickerRowClick(stock.ticker)}
+                        title={`Click to view analysis for ${stock.ticker}`}
+                      >
+                        {orderedColumns.map((column, colIndex) => {
+                          const value = getValue(stock, column.key);
+                          const cellColor = getCellColor(value, column.colorCode);
+
+                          return (
+                            <td
+                              key={column.key}
+                              className={`px-3 py-2 whitespace-nowrap text-sm border-r border-neutral-200 dark:border-neutral-700 ${cellColor} ${
+                                colIndex === 0 ? 'sticky left-0 bg-white dark:bg-neutral-900 z-10' : ''
+                              } ${
+                                column.type === 'number' || column.type === 'currency' || column.type === 'percentage'
+                                  ? 'text-right'
+                                  : 'text-left'
+                              } overflow-hidden text-ellipsis`}
+                              style={{
+                                width: getColumnWidth(column.key, column.width),
+                                maxWidth: getColumnWidth(column.key, column.width),
+                                minWidth: getColumnWidth(column.key, column.width)
+                              }}
+                            >
+                              {formatValue(value, column.type)}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
             )}
