@@ -286,7 +286,10 @@ const RealTimeGrid: React.FC = () => {
         }
       };
 
-      const positionScrollbar = () => {
+      const positionScrollbar = (event: Event) => {
+        if (event.target as HTMLDivElement === bodyContainer) {
+          return;
+        }
 
         // Get the parent container that holds both header and body
         const gridContainer = bodyContainer.parentElement;
@@ -313,7 +316,7 @@ const RealTimeGrid: React.FC = () => {
 
         // Only extend height if content is shorter than available space
         if (contentHeight > availableSpace) {
-          bodyContainer.style.height = Math.max(availableSpace-30, 300) + 'px';
+          bodyContainer.style.height = Math.max(availableSpace-100, 300) + 'px';
         } else {
           // Reset to auto when content is taller than available space
           bodyContainer.style.height = 'auto';
