@@ -220,6 +220,7 @@ const RealTimeGrid: React.FC = () => {
   // Handle refresh function
   const handleRefresh = useCallback(async (startDate?: string, endDate?: string) => {
     await fetchMetrics(startDate, endDate);
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
   }, [fetchMetrics]);
 
   const [sortColumn, setSortColumn] = useState<string>('ticker');
