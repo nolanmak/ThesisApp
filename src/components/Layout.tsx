@@ -12,34 +12,34 @@ const Layout: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showBetaTooltip, setShowBetaTooltip] = useState(false);
-  
+
   const isAdmin = user?.email === 'nolanmak7@gmail.com';
-  
+
   // Check if the device is mobile based on screen width
   useEffect(() => {
     const checkIfMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     // Initial check
     checkIfMobile();
-    
+
     // Add event listener for window resize
     window.addEventListener('resize', checkIfMobile);
-    
+
     // Cleanup
     return () => window.removeEventListener('resize', checkIfMobile);
   }, []);
-  
+
   const isActive = (path: string) => {
     return location.pathname === path ? 'text-blue-500 dark:text-blue-400' : 'text-neutral-500 dark:text-neutral-400 hover:text-blue-400 dark:hover:text-blue-300';
   };
-  
-  
+
+
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
   };
-  
+
   return (
     <div className="flex flex-col h-screen bg-neutral-50 dark:bg-neutral-900">
       {/* Top Navigation Bar */}
@@ -53,7 +53,7 @@ const Layout: React.FC = () => {
                 <img src="/favicon.svg" alt="Logo" className="mr-2" width={30} height={30} />
                 EarningsOwl
               </h1>
-              
+
               <div className="flex items-center gap-2">
                 <GlobalAudioControls size="sm" />
 
@@ -198,10 +198,10 @@ const Layout: React.FC = () => {
               </div>
             </div>
           </div>
-          
+
           {/* Mobile Navigation Overlay */}
           {isMobile && menuOpen && (
-            <div 
+            <div
               className="fixed inset-0 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-sm z-20 flex flex-col justify-center items-center pt-15"
             >
               <nav>
@@ -244,16 +244,16 @@ const Layout: React.FC = () => {
           )}
         </div>
       </div>
-      
+
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
-        <div className="p-4 max-w-7xl mx-auto">
+        <div className="p-4 w-[80%] mx-auto">
           <Outlet />
         </div>
       </div>
 
       {/* Settings Modal */}
-      <SettingsModal 
+      <SettingsModal
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
       />
