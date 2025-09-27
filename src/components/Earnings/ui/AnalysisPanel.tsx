@@ -27,7 +27,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<string>('earnings');
   const { metricsData } = useGlobalData();
-  
+
   // Get message type for tab identification
   const getMessageType = (message: Message): string => {
     if (message.source === 'transcript_analysis') return 'transcript';
@@ -56,7 +56,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
     if (!selectedMessage && !selectedTicker) {
       return {};
     }
-    
+
     // If we have a selectedTicker but no selectedMessage, group all messages for that ticker
     const targetTicker = selectedTicker || selectedMessage?.ticker;
     if (!targetTicker) {
@@ -68,8 +68,8 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
       if (!msg.ticker) return false;
       return msg.ticker.toUpperCase() === targetTicker.toUpperCase();
     });
-    
-    
+
+
     // Group by message type
     const grouped: Record<string, Message> = {};
     let earningsReportMessage: Message | null = null;
@@ -191,10 +191,10 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   useEffect(() => {
     const messageIdChanged = selectedMessage?.message_id !== lastMessageId;
     const tickerChanged = currentTicker !== lastTicker;
-    
+
     if (messageIdChanged || tickerChanged) {
       const availableTabIds = availableTabs.map(tab => tab.id);
-      
+
       if (selectedMessage && messageIdChanged) {
         // If we have a message, use its type
         const messageType = getMessageType(selectedMessage);
@@ -213,7 +213,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
           setActiveTab(firstTab);
         }
       }
-      
+
       setLastMessageId(selectedMessage?.message_id ?? selectedMessage?.id ?? null);
       setLastTicker(currentTicker || null);
     }
@@ -373,21 +373,21 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
             const value2 = series2[index];
             const isValid1 = value1 !== null && !isNaN(value1);
             const isValid2 = value2 !== null && !isNaN(value2);
-            
+
             const barHeight1 = isValid1 ? Math.max(((value1 - minValue) / range) * height * 0.8, 2) : 0;
             const barHeight2 = isValid2 ? Math.max(((value2 - minValue) / range) * height * 0.8, 2) : 0;
-            
+
             return (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="flex-1 flex flex-col items-center min-w-0 relative"
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex(null)}
               >
                 <div className="flex w-full justify-center gap-0.5" style={{ height: `${height}px`, alignItems: 'flex-end' }}>
-                  <div 
+                  <div
                     className="transition-all duration-200 cursor-pointer hover:opacity-80"
-                    style={{ 
+                    style={{
                       height: `${barHeight1}px`,
                       backgroundColor: isValid1 ? series1Color : '#e5e7eb',
                       minWidth: '4px',
@@ -395,9 +395,9 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                       maxWidth: isMobile ? '8px' : '12px'
                     }}
                   />
-                  <div 
+                  <div
                     className="transition-all duration-200 cursor-pointer hover:opacity-80"
-                    style={{ 
+                    style={{
                       height: `${barHeight2}px`,
                       backgroundColor: isValid2 ? series2Color : '#e5e7eb',
                       minWidth: '4px',
@@ -409,7 +409,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                 <span className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 truncate w-full text-center">
                   {labels[index]}
                 </span>
-                
+
                 {/* Hover Tooltip */}
                 {hoveredIndex === index && (value1 !== null || value2 !== null) && (
                   <div className="absolute bottom-full mb-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 px-2 py-1 rounded text-xs whitespace-nowrap z-10 shadow-lg">
@@ -440,7 +440,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   };
 
   return (
-    <div 
+    <div
     className={`
       ${isMobile
         ? showAnalysisPanel
@@ -455,14 +455,14 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
           {/* Header - aligned with search bar */}
           <div className="mb-3 border-b border-neutral-200 dark:border-neutral-700">
             {/* Title row */}
-            <div 
+            <div
               className="flex items-center justify-between mb-3"
               style={{
                 flexWrap: isMobile ? 'wrap' : 'nowrap',
                 gap: isMobile ? '8px' : undefined
               }}
             >
-              <div 
+              <div
                 className="flex items-center space-x-2"
                 style={{
                   flexWrap: isMobile ? 'wrap' : 'nowrap',
@@ -489,7 +489,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                     )}
                   </div>
                   {selectedMessage?.company_name && isMobile && (
-                    <span 
+                    <span
                       className="text-xs text-neutral-500 dark:text-neutral-400"
                       style={{
                         marginTop: '2px',
@@ -508,9 +508,9 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                     {convertToEasternTime(currentMessage?.timestamp || selectedMessage?.timestamp || new Date().toISOString())}
                   </span>
                 )}
-                
+
                 {/* Feedback icon */}
-                <div 
+                <div
                   className="ml-1 cursor-pointer hover:opacity-80 transition-opacity text-blue-500 dark:text-blue-400"
                   onClick={() => setFeedbackModalOpen(true)}
                   title="Provide feedback"
@@ -518,10 +518,10 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                   <ThumbsDown size={16} />
                 </div>
               </div>
-              
+
               {/* Close button for mobile */}
               {isMobile && (
-                <button 
+                <button
                   onClick={handleCloseAnalysisPanel}
                   className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 flex items-center justify-center w-[30px] h-[30px] rounded-full bg-neutral-200 dark:bg-neutral-700"
                 >
@@ -544,8 +544,8 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                     }`}
                     style={{
                       fontSize: availableTabs.length >= 5 ? (isMobile ? '0.6rem' : '0.65rem') :
-                               availableTabs.length >= 4 ? (isMobile ? '0.65rem' : '0.7rem') : 
-                               availableTabs.length >= 3 ? (isMobile ? '0.7rem' : '0.75rem') : 
+                               availableTabs.length >= 4 ? (isMobile ? '0.65rem' : '0.7rem') :
+                               availableTabs.length >= 3 ? (isMobile ? '0.7rem' : '0.75rem') :
                                (isMobile ? '0.75rem' : '0.875rem'),
                       fontWeight: availableTabs.length >= 4 ? '500' : '600',
                       padding: availableTabs.length >= 5 ? (isMobile ? '4px 2px' : '6px 4px') :
@@ -559,7 +559,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
               </div>
             )}
           </div>
-          
+
           {/* Content */}
           <div className="flex-1 overflow-auto px-3 sm:px-4 py-4">
             <div
@@ -674,8 +674,8 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                             '#10b981', // AX - Historical (green)
                             '#10b981', // AY - Historical (green)
                             '#10b981', // AZ - Historical (green)
-                            '#f59e0b', // AR - Current Quarter Estimate (amber)
-                            '#ef4444'  // AQ - Next Quarter Estimate (red)
+                            '#f59e0b', // AR - Current Quarter Estimate
+                            '#f59e0b'  // AQ - Next Quarter Estimate (red)
                           ]}
                           height={140}
                         />
@@ -699,7 +699,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                             '#10b981', // EPS2 - Historical (solid green)
                             '#10b981', // EPS1 - Historical (solid green)
                             '#10b981', // EPS0 - Historical (solid green)
-                            '#fbbf24', // CY - Current Year Estimate (amber/yellow)
+                            '#f59e0b', // CY - Current Year Estimate
                             '#f59e0b'  // NY - Next Year Estimate (darker amber/orange)
                           ]}
                           height={120}
@@ -718,7 +718,15 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                           ]}
                           labels={['Y5', 'Y4', 'Y3', 'Y2', 'Y1', 'CY', 'NY']}
                           title="Annual Sales"
-                          color="#f59e0b"
+                          color={[
+                            '#10b981', // (solid green)
+                            '#10b981',
+                            '#10b981',
+                            '#10b981',
+                            '#10b981',
+                            '#f59e0b', // (darker amber/orange)
+                            '#f59e0b'
+                          ]}
                           height={120}
                         />
 

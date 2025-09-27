@@ -220,6 +220,7 @@ const RealTimeGrid: React.FC = () => {
   // Handle refresh function
   const handleRefresh = useCallback(async (startDate?: string, endDate?: string) => {
     await fetchMetrics(startDate, endDate);
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
   }, [fetchMetrics]);
 
   const [sortColumn, setSortColumn] = useState<string>('ticker');
@@ -252,6 +253,10 @@ const RealTimeGrid: React.FC = () => {
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const searchDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Scroll synchronization refs
+  const headerScrollRef = useRef<HTMLDivElement>(null);
+  const bodyScrollRef = useRef<HTMLDivElement>(null);
+
   // Drag and drop state
   const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
@@ -264,6 +269,108 @@ const RealTimeGrid: React.FC = () => {
 
   // Views state
   const [savedViews, setSavedViews] = useState<GridView[]>([]);
+
+  // Scroll synchronization effect - waits for elements to load
+  useEffect(() => {
+    const setupScrollSync = () => {
+      const headerContainer = headerScrollRef.current;
+      const bodyContainer = bodyScrollRef.current;
+
+      if (!headerContainer || !bodyContainer) {
+        return false;
+      }
+
+      const handleBodyScroll = () => {
+        if (headerContainer.scrollLeft !== bodyContainer.scrollLeft) {
+          headerContainer.scrollLeft = bodyContainer.scrollLeft;
+        }
+      };
+
+      const positionScrollbar = () => {
+
+        // Get the parent container that holds both header and body
+        const gridContainer = bodyContainer.parentElement;
+        if (!gridContainer) return;
+
+        // Calculate available height for the scrollable body area
+        const viewportHeight = window.innerHeight;
+        const gridRect = gridContainer.getBoundingClientRect();
+
+        // Find the last row in the table body to get the actual content height
+        const tableBody = bodyContainer.querySelector('tbody');
+        const lastRow = tableBody?.lastElementChild as HTMLElement;
+
+        if (!lastRow) return;
+
+        // Get the absolute bottom position of the last row
+        const lastRowBottom = lastRow.getBoundingClientRect().bottom + window.scrollY;
+
+        // Calculate available space in viewport
+        const availableSpace = viewportHeight - gridRect.top;
+
+        // Calculate the actual content height (from grid top to last row bottom)
+        const contentHeight = lastRowBottom - gridRect.top - window.scrollY;
+
+        // Only extend height if content is shorter than available space
+        if (contentHeight > availableSpace) {
+          bodyContainer.style.height = Math.max(availableSpace-30, 300) + 'px';
+        } else {
+          // Reset to auto when content is taller than available space
+          bodyContainer.style.height = 'auto';
+        }
+      }
+
+      bodyContainer.addEventListener('scroll', handleBodyScroll);
+      window.addEventListener('resize', positionScrollbar);
+      document.addEventListener('scroll', positionScrollbar, true);
+
+      console.log("Scroll synchronization setup complete");
+      return () => {
+        bodyContainer.removeEventListener('scroll', handleBodyScroll);
+        window.removeEventListener('resize', positionScrollbar);
+        document.removeEventListener('scroll', positionScrollbar);
+      };
+    };
+
+    // Try to setup immediately
+    const cleanup = setupScrollSync();
+    if (cleanup) {
+      return cleanup;
+    }
+
+    // If elements not available, use MutationObserver to wait for them
+    const observer = new MutationObserver(() => {
+      const cleanup = setupScrollSync();
+      if (cleanup) {
+        observer.disconnect();
+      }
+    });
+
+    // Observe the entire document for changes
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    // Also try again after a short delay
+    const timeoutId = setTimeout(() => {
+      const cleanup = setupScrollSync();
+      if (cleanup) {
+        observer.disconnect();
+      }
+    }, 100);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(timeoutId);
+      const cleanupFn = setupScrollSync();
+      if (cleanupFn) {
+        cleanupFn();
+      }
+    };
+  }, []);
+
+
   const [currentViewId, setCurrentViewId] = useState<string | null>(null);
   const [showViewsDropdown, setShowViewsDropdown] = useState(false);
   const [showSaveViewModal, setShowSaveViewModal] = useState(false);
@@ -2109,7 +2216,7 @@ const RealTimeGrid: React.FC = () => {
             </div>
 
             {/* Grid Content */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1">
               {isLoading && stockData.length === 0 ? (
                 <div className="flex items-center justify-center h-full py-20">
                   <RefreshCw size={40} className="animate-spin text-blue-500" />
@@ -2205,10 +2312,10 @@ const RealTimeGrid: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="overflow-auto h-full">
-            <div className="min-w-full">
+          <div className="h-full flex-col">
+            <div ref={headerScrollRef} className="overflow-x-auto min-w-full sticky top-0 z-10 bg-neutral-50 [scrollbar-width:none]">
             <table className="border-collapse" style={{ width: 'auto', minWidth: '100%' }}>
-              <thead className="bg-neutral-50 dark:bg-neutral-800 sticky top-0 z-10">
+              <thead>
                 <tr>
                   {orderedColumns.map((column, index) => (
                     <th
@@ -2217,27 +2324,26 @@ const RealTimeGrid: React.FC = () => {
                         column.type === 'number' || column.type === 'currency' || column.type === 'percentage'
                           ? 'text-right'
                           : 'text-left'
-                      } text-xs text-neutral-500 dark:text-neutral-400 border-r border-neutral-200 dark:border-neutral-700 select-none transition-colors group ${
-                        index === 0 ? 'sticky left-0 bg-neutral-50 dark:bg-neutral-800 z-20' : ''
+                      } text-xs text-neutral-500 dark:text-neutral-400 border-r border-neutral-200 dark:border-neutral-700 select-none transition-colors group sticky top-0 bg-neutral-50 dark:bg-neutral-800 ${
+                        index === 0 ? 'sticky left-0 z-10' : 'z-10'
                       } ${
                         draggedColumn === column.key
                           ? 'opacity-50'
                           : dragOverColumn === column.key
                             ? 'bg-blue-100 dark:bg-blue-900/30'
                             : ''
-                      } relative`}
+                      } sticky`}
                       style={{
                         width: getColumnWidth(column.key, column.width),
                         maxWidth: getColumnWidth(column.key, column.width),
                         minWidth: getColumnWidth(column.key, column.width),
-                        overflow: 'hidden'
                       }}
                       onDragOver={(e) => handleDragOver(e, column.key)}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, column.key)}
                     >
                       <div
-                        className={`flex items-center gap-1 ${!isMobile ? 'cursor-move hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded px-1 -mx-1' : ''}`}
+                        className={`sticky flex items-center gap-1 ${!isMobile ? 'cursor-move hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded px-1 -mx-1' : ''}`}
                         draggable={!isMobile}
                         onDragStart={(e) => handleDragStart(e, column.key)}
                         onDragEnd={handleDragEnd}
@@ -2249,15 +2355,15 @@ const RealTimeGrid: React.FC = () => {
                             className="text-neutral-400 dark:text-neutral-500 flex-shrink-0"
                           />
                         )}
-                        <div className="flex items-center gap-1 flex-1 min-w-0 overflow-hidden">
+                        <div className="flex items-center gap-1 flex-1 min-w-0">
                           {column.sortable ? (
                             <button
                               onClick={() => handleSort(column.key)}
-                              className="flex items-center gap-1 hover:text-neutral-700 dark:hover:text-neutral-200 min-w-0 flex-1 overflow-hidden"
+                              className="flex items-center gap-1 hover:text-neutral-700 dark:hover:text-neutral-200 min-w-0 flex-1 "
                               style={{ justifyContent: 'flex-start' }}
                             >
                               <span
-                                className="text-xs whitespace-nowrap overflow-hidden text-ellipsis"
+                                className="text-xs whitespace-nowrap text-ellipsis"
                                 style={{
                                   fontSize: 'clamp(9px, 0.8vw, 12px)',
                                   maxWidth: '100%',
@@ -2275,7 +2381,7 @@ const RealTimeGrid: React.FC = () => {
                             </button>
                           ) : (
                             <span
-                              className="text-xs whitespace-nowrap overflow-hidden text-ellipsis"
+                              className="text-xs whitespace-nowrap text-ellipsis"
                               style={{
                                 fontSize: 'clamp(9px, 0.8vw, 12px)',
                                 maxWidth: '100%',
@@ -2313,46 +2419,53 @@ const RealTimeGrid: React.FC = () => {
                   ))}
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-neutral-900 divide-y divide-neutral-200 dark:divide-neutral-700">
-                {sortedData.map((stock) => (
-                  <tr
-                    key={stock.ticker}
-                    className={`hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer transition-colors ${
-                      selectedTicker === stock.ticker
-                        ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500'
-                        : ''
-                    }`}
-                    onClick={() => handleTickerRowClick(stock.ticker)}
-                    title={`Click to view analysis for ${stock.ticker}`}
-                  >
-                    {orderedColumns.map((column, colIndex) => {
-                      const value = getValue(stock, column.key);
-                      const cellColor = getCellColor(value, column.colorCode);
-
-                      return (
-                        <td
-                          key={column.key}
-                          className={`px-3 py-2 whitespace-nowrap text-sm border-r border-neutral-200 dark:border-neutral-700 ${cellColor} ${
-                            colIndex === 0 ? 'sticky left-0 bg-white dark:bg-neutral-900 z-10' : ''
-                          } ${
-                            column.type === 'number' || column.type === 'currency' || column.type === 'percentage'
-                              ? 'text-right'
-                              : 'text-left'
-                          } overflow-hidden text-ellipsis`}
-                          style={{
-                            width: getColumnWidth(column.key, column.width),
-                            maxWidth: getColumnWidth(column.key, column.width),
-                            minWidth: getColumnWidth(column.key, column.width)
-                          }}
-                        >
-                          {formatValue(value, column.type)}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
             </table>
+            </div>
+
+            <div ref={bodyScrollRef} className="overflow-x-auto">
+              <div className="min-w-full">
+                <table style={{ width: 'auto', minWidth: '100%' }}>
+                  <tbody className="bg-white dark:bg-neutral-900 divide-y divide-neutral-200 dark:divide-neutral-700">
+                    {sortedData.map((stock) => (
+                      <tr
+                        key={stock.ticker}
+                        className={`hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer transition-colors ${
+                          selectedTicker === stock.ticker
+                            ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500'
+                            : ''
+                        }`}
+                        onClick={() => handleTickerRowClick(stock.ticker)}
+                        title={`Click to view analysis for ${stock.ticker}`}
+                      >
+                        {orderedColumns.map((column, colIndex) => {
+                          const value = getValue(stock, column.key);
+                          const cellColor = getCellColor(value, column.colorCode);
+
+                          return (
+                            <td
+                              key={column.key}
+                              className={`px-3 py-2 whitespace-nowrap text-sm border-r border-neutral-200 dark:border-neutral-700 ${cellColor} ${
+                                colIndex === 0 ? 'bg-white dark:bg-neutral-900 z-10' : ''
+                              } ${
+                                column.type === 'number' || column.type === 'currency' || column.type === 'percentage'
+                                  ? 'text-right'
+                                  : 'text-left'
+                              } overflow-hidden text-ellipsis`}
+                              style={{
+                                width: getColumnWidth(column.key, column.width),
+                                maxWidth: getColumnWidth(column.key, column.width),
+                                minWidth: getColumnWidth(column.key, column.width)
+                              }}
+                            >
+                              {formatValue(value, column.type)}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
             )}

@@ -698,7 +698,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                             '#10b981', // Q1 - Historical (green)
                             '#10b981', // Q0 - Historical (green)
                             '#f59e0b', // Est - Current Quarter Estimate (amber)
-                            '#ef4444'  // Next - Next Quarter Estimate (red)
+                            '#f59e0b'  // Next - Next Quarter Estimate (red)
                           ]}
                           height={140}
                         />
@@ -722,7 +722,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                             '#10b981', // EPS2 - Historical (solid green)
                             '#10b981', // EPS1 - Historical (solid green)
                             '#10b981', // EPS0 - Historical (solid green)
-                            '#fbbf24', // CY - Current Year Estimate (amber/yellow)
+                            '#f59e0b', // CY - Current Year Estimate (amber/yellow)
                             '#f59e0b'  // NY - Next Year Estimate (darker amber/orange)
                           ]}
                           height={120}
@@ -741,7 +741,15 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                           ]}
                           labels={['Y5', 'Y4', 'Y3', 'Y2', 'Y1', 'CY', 'NY']}
                           title="Annual Sales"
-                          color="#f59e0b"
+                          color={[
+                            '#10b981', // (solid green)
+                            '#10b981',
+                            '#10b981',
+                            '#10b981',
+                            '#10b981',
+                            '#f59e0b', // (darker amber/orange)
+                            '#f59e0b'
+                          ]}
                           height={120}
                         />
 
