@@ -6,20 +6,20 @@
   * {
     @apply transition-colors duration-200 ease-in-out;
   }
-  
+
   /* Ensure smooth theme transitions */
   html, body, #root {
     transition: background-color 200ms ease-in-out, color 200ms ease-in-out;
   }
-  
+
   body {
     @apply bg-neutral-50 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 font-sans;
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-light tracking-tight text-neutral-900 dark:text-neutral-100;
   }
-  
+
   input, select, textarea {
     @apply border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:border-primary-500 focus:ring-primary-500;
   }
@@ -29,15 +29,15 @@
   .btn {
     @apply px-4 py-2 rounded-md transition-colors duration-150 ease-in-out shadow-sm;
   }
-  
+
   .btn-primary {
     @apply bg-primary-600 text-white hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600;
   }
-  
+
   .btn-secondary {
     @apply bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600;
   }
-  
+
   .card {
     @apply bg-white dark:bg-neutral-800 rounded-md shadow-md dark:shadow-lg border border-neutral-100 dark:border-neutral-700 p-6;
   }
@@ -45,8 +45,8 @@
 
 /* Custom scrollbar for a sleeker look */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
@@ -67,7 +67,7 @@
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
   }
-  
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;  /* Chrome, Safari and Opera */
   }
